@@ -1,0 +1,1759 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Federación Estudiantil - Gestión Financiera</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="estilos.css">
+    <style>
+        body {
+            color: #ffffff !important;
+        }
+        
+        .neon-text, .neon-text-purple, .neon-text-green, .neon-text-blue {
+            text-shadow: 0 0 3px #fff, 0 0 5px #fff, 0 0 7px currentColor, 0 0 10px currentColor !important;
+            font-weight: 600 !important;
+        }
+        
+        .card-title, .card-header h3, .card-header h5 {
+            color: #ffffff !important;
+            font-weight: 700 !important;
+        }
+        
+        .table th {
+            background-color: rgba(255, 94, 0, 0.2) !important;
+            color: #ffffff !important;
+            font-weight: 700 !important;
+        }
+        
+        .table td {
+            color: #f0f0f0 !important;
+            font-weight: 500 !important;
+        }
+        
+        .form-label {
+            color: #ffffff !important;
+            font-weight: 600 !important;
+        }
+        
+        .modal-title {
+            color: #ffffff !important;
+            font-weight: 700 !important;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            color: #ffffff !important;
+            font-weight: 700 !important;
+        }
+        
+        .navbar-brand span {
+            color: #ffffff !important;
+            font-weight: 700 !important;
+        }
+        
+        .nav-link {
+            color: #ffffff !important;
+        }
+        
+        .nav-link.active {
+            color: #ffcc00 !important;
+        }
+        
+        .card-body {
+            color: #f0f0f0 !important;
+        }
+        
+        .firma-creador {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: #aaa;
+            font-style: italic;
+            font-size: 0.9rem;
+        }
+        
+        .curso-imagen {
+            width: 80px;
+            height: 80px;
+            border-radius: 10px;
+            object-fit: cover;
+            margin: 0 auto 15px auto;
+            display: block;
+            border: 2px solid #ff5e00;
+            box-shadow: 0 0 10px rgba(255, 94, 0, 0.5);
+        }
+        
+        .evento-card-mejorado {
+            background: linear-gradient(135deg, rgba(255, 94, 0, 0.1), rgba(188, 19, 254, 0.1));
+            border: 2px solid #bc13fe;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .evento-card-mejorado:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(188, 19, 254, 0.3);
+        }
+        
+        .evento-card-mejorado::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5px;
+            height: 100%;
+            background: linear-gradient(180deg, #ff5e00, #bc13fe);
+        }
+        
+        .evento-titulo-mejorado {
+            color: #ffcc00;
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        
+        .evento-fecha-mejorada {
+            color: #00ffff;
+            font-weight: 600;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .evento-descripcion-mejorada {
+            color: #e0e0e0;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        
+        .btn-eliminar-estudiante {
+            background: linear-gradient(45deg, #dc3545, #c82333);
+            border: none;
+            color: white;
+            padding: 4px 8px;
+            font-size: 0.7rem;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 2px;
+            font-weight: 600;
+        }
+        
+        .btn-eliminar-estudiante:hover {
+            background: linear-gradient(45deg, #c82333, #dc3545);
+            transform: translateY(-1px);
+        }
+        
+        .contador-cobros {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #00ffff;
+            text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <!-- Modal de Login -->
+    <div id="loginOverlay" class="login-overlay">
+        <div class="login-modal">
+            <h2 class="login-title"><i class="fas fa-user-shield"></i> Acceso al Sistema</h2>
+            <form id="loginForm">
+                <div class="mb-3">
+                    <label for="loginPassword" class="form-label neon-text">Contraseña de Administrador</label>
+                    <input type="password" class="form-control neon-input" id="loginPassword" placeholder="Ingrese la contraseña">
+                </div>
+                <button type="submit" class="btn neon-btn login-btn">
+                    <i class="fas fa-sign-in-alt"></i> Ingresar como Administrador
+                </button>
+            </form>
+            <div class="viewer-access">
+                <p>¿Solo quieres ver los datos? <a id="viewerAccess">Ingresar como Observador</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Configuración de imágenes -->
+    <div id="image-config" style="display: none;">
+        <img id="logo-img" src="CHIRU.jpg" alt="Logo Federación">
+        <img id="background-img" src="CHIRU.jpg" alt="Background">
+        <img id="curso-imagen-default" src="CHIRU.jpg" alt="Imagen del Curso">
+    </div>
+
+    <!-- Fondo con imagen -->
+    <div class="background-image"></div>
+    
+    <!-- Efectos de partículas -->
+    <div class="particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+
+    <!-- Barra de navegación -->
+    <nav class="navbar navbar-expand-lg navbar-dark neon-navbar" style="display: none;">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <div class="logo-container">
+                    <img id="logo-display" class="logo-img" src="" alt="Logo Federación">
+                </div>
+                <span class="neon-text">Federación Estudiantil</span>
+                <small class="ms-2" id="userTypeBadge"></small>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" data-tab="dashboard">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-tab="caja">
+                            <i class="fas fa-cash-register"></i> Caja
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-tab="aportes">
+                            <i class="fas fa-hand-holding-usd"></i> Aportes
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-tab="cursos">
+                            <i class="fas fa-graduation-cap"></i> Cursos
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-tab="seguimiento">
+                            <i class="fas fa-search-dollar"></i> Seguimiento
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-tab="casilleros">
+                            <i class="fas fa-archive"></i> Casilleros
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-tab="gastos">
+                            <i class="fas fa-receipt"></i> Gastos
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-tab="otros-cobros">
+                            <i class="fas fa-money-bill"></i> Otros Cobros
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-tab="eventos">
+                            <i class="fas fa-calendar-alt"></i> Eventos
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-tab="reportes">
+                            <i class="fas fa-chart-bar"></i> Reportes
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <button class="btn btn-outline-warning btn-sm ms-2" onclick="cerrarSesion()">
+                            <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Contenido principal -->
+    <div class="container mt-4 main-content" style="display: none;">
+        <!-- Pestaña Dashboard -->
+        <section id="dashboard" class="tab-content active">
+            <div class="row">
+                <div class="col-md-3 mb-4">
+                    <div class="card neon-card">
+                        <div class="card-body text-center">
+                            <div class="card-icon">
+                                <i class="fas fa-piggy-bank"></i>
+                            </div>
+                            <h5 class="card-title neon-text">Total Aportes Estudiantes</h5>
+                            <h2 class="neon-text" id="totalAportesEstudiantes">Bs 0.00</h2>
+                            <small class="text-muted">Suma de pagos de estudiantes</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <div class="card neon-card">
+                        <div class="card-body text-center">
+                            <div class="card-icon">
+                                <i class="fas fa-money-bill-wave"></i>
+                            </div>
+                            <h5 class="card-title neon-text">Total Gastos</h5>
+                            <h2 class="neon-text" id="totalGastos">Bs 0.00</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <div class="card neon-card">
+                        <div class="card-body text-center">
+                            <div class="card-icon">
+                                <i class="fas fa-cash-register"></i>
+                            </div>
+                            <h5 class="card-title neon-text">
+                                Dinero Inicial 
+                                <i class="fas fa-info-circle text-info" 
+                                   style="cursor: pointer; font-size: 0.8rem;" 
+                                   onclick="mostrarInfoDineroInicial()"
+                                   title="Click para más información"></i>
+                            </h5>
+                            <h2 class="neon-text" id="dineroInicial">Bs 0.00</h2>
+                            <small class="text-muted">Primer ingreso en caja</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <div class="card neon-card">
+                        <div class="card-body text-center">
+                            <div class="card-icon">
+                                <i class="fas fa-wallet"></i>
+                            </div>
+                            <h5 class="card-title neon-text">Dinero Final</h5>
+                            <h2 class="neon-text" id="dineroFinal">Bs 0.00</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resumen de Aportes por Curso -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card neon-card">
+                        <div class="card-header">
+                            <h3 class="neon-text"><i class="fas fa-chart-pie"></i> Resumen de Aportes por Curso</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-dark table-hover neon-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Curso</th>
+                                            <th>Total 2026</th>
+                                            <th>Total 2027</th>
+                                            <th>Total General</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="resumenAportesCursos">
+                                        <!-- Se llenará dinámicamente -->
+                                    </tbody>
+                                    <tfoot>
+                                        <tr class="table-primary">
+                                            <th>TOTAL GENERAL</th>
+                                            <th id="total2026">Bs 0.00</th>
+                                            <th id="total2027">Bs 0.00</th>
+                                            <th id="totalGeneral">Bs 0.00</th>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-12">
+                    <div class="card neon-card">
+                        <div class="card-header">
+                            <h3 class="neon-text">Resumen Financiero</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5 class="neon-text">Últimos Aportes</h5>
+                                    <div class="table-responsive">
+                                        <table class="table table-dark table-hover neon-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Curso</th>
+                                                    <th>Año</th>
+                                                    <th>Monto</th>
+                                                    <th>Fecha</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="ultimosAportes">
+                                                <!-- Los últimos aportes se cargarán aquí -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h5 class="neon-text">Últimos Gastos</h5>
+                                    <div class="table-responsive">
+                                        <table class="table table-dark table-hover neon-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Categoría</th>
+                                                    <th>Descripción</th>
+                                                    <th>Monto</th>
+                                                    <th>Fecha</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="ultimosGastos">
+                                                <!-- Los últimos gastos se cargarán aquí -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botón de Reset -->
+            <div class="row mt-4">
+                <div class="col-12 text-center">
+                    <button class="btn btn-warning" onclick="resetearDatos()" id="resetButton">
+                        <i class="fas fa-redo"></i> Resetear Todos los Datos a 0
+                    </button>
+                    <small class="text-muted d-block mt-2">Use este botón solo si necesita empezar desde cero</small>
+                </div>
+            </div>
+            
+            <!-- Firma del creador -->
+            <div class="firma-creador">
+                <p>Sistema de Gestión Financiera - Federación Estudiantil</p>
+                <p>Desarrollado con ❤️ para la gestión eficiente de recursos estudiantiles</p>
+            </div>
+        </section>
+
+        <!-- Pestaña Caja -->
+        <section id="caja" class="tab-content">
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card neon-card">
+                        <div class="card-header">
+                            <h3 class="neon-text">Movimientos de Caja</h3>
+                        </div>
+                        <div class="card-body">
+                            <form id="formMovimientoCaja">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label for="tipoMovimiento" class="form-label neon-text">Tipo de Movimiento</label>
+                                            <select class="form-select neon-input" id="tipoMovimiento" required>
+                                                <option value="ingreso">Ingreso a Caja</option>
+                                                <option value="egreso">Egreso de Caja</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label for="montoCaja" class="form-label neon-text">Monto (Bs)</label>
+                                            <input type="number" step="0.01" class="form-control neon-input" id="montoCaja" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label for="fechaCaja" class="form-label neon-text">Fecha</label>
+                                            <input type="date" class="form-control neon-input" id="fechaCaja" required>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="conceptoCaja" class="form-label neon-text">Concepto</label>
+                                    <textarea class="form-control neon-input" id="conceptoCaja" rows="2" required></textarea>
+                                </div>
+                                <button type="submit" class="btn neon-btn">Registrar Movimiento</button>
+                            </form>
+                            
+                            <div class="mt-4">
+                                <h4 class="neon-text">Movimientos Registrados</h4>
+                                <div class="table-responsive">
+                                    <table class="table table-dark table-hover neon-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Fecha</th>
+                                                <th>Tipo</th>
+                                                <th>Concepto</th>
+                                                <th>Monto (Bs)</th>
+                                                <th>Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tablaMovimientosCaja">
+                                            <!-- Los movimientos se cargarán aquí dinámicamente -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card neon-card">
+                        <div class="card-body text-center">
+                            <div class="card-icon">
+                                <i class="fas fa-cash-register"></i>
+                            </div>
+                            <h3 class="neon-text">Estado de Caja</h3>
+                            <h1 class="neon-text" id="totalCajaDisplay">Bs 0.00</h1>
+                            <p class="text-muted">Saldo actual en caja</p>
+                            
+                            <div class="mt-4">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="neon-text">Total Ingresos:</span>
+                                    <span class="neon-text" id="totalIngresosCaja">Bs 0.00</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="neon-text">Total Egresos:</span>
+                                    <span class="neon-text" id="totalEgresosCaja">Bs 0.00</span>
+                                </div>
+                                <hr>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <strong class="neon-text">Saldo Caja:</strong>
+                                    <strong class="neon-text" id="saldoCaja">Bs 0.00</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Detalle de Caja Fuerte -->
+                    <div class="card neon-card mt-4">
+                        <div class="card-header">
+                            <h5 class="neon-text"><i class="fas fa-safe"></i> Detalle Caja Fuerte</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <strong class="neon-text">Ingresos por Aportes:</strong>
+                                <span class="float-end neon-text" id="ingresosAportes">Bs 0.00</span>
+                            </div>
+                            <div class="mb-3">
+                                <strong class="neon-text">Ingresos por Casilleros:</strong>
+                                <span class="float-end neon-text" id="ingresosCasilleros">Bs 0.00</span>
+                            </div>
+                            <div class="mb-3">
+                                <strong class="neon-text">Otros Ingresos:</strong>
+                                <span class="float-end neon-text" id="otrosIngresos">Bs 0.00</span>
+                            </div>
+                            <hr>
+                            <div class="mb-3">
+                                <strong class="neon-text">Gastos Operativos:</strong>
+                                <span class="float-end neon-text" id="gastosOperativos">Bs 0.00</span>
+                            </div>
+                            <div class="mb-3">
+                                <strong class="neon-text">Inversiones:</strong>
+                                <span class="float-end neon-text" id="gastosInversiones">Bs 0.00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pestaña Aportes -->
+        <section id="aportes" class="tab-content">
+            <div class="card neon-card">
+                <div class="card-header">
+                    <h3 class="neon-text"><i class="fas fa-hand-holding-usd"></i> Registro de Aportes por Curso</h3>
+                </div>
+                <div class="card-body">
+                    <form id="formAporte">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="curso" class="form-label neon-text">Curso</label>
+                                    <select class="form-select neon-input" id="curso" required>
+                                        <option value="">Seleccione un curso</option>
+                                        <option value="1. No se sabe">1. No se sabe</option>
+                                        <option value="1. No se sabe (2)">1. No se sabe (2)</option>
+                                        <option value="1. No se sabe (3)">1. No se sabe (3)</option>
+                                        <option value="2. INICIAL">2. INICIAL</option>
+                                        <option value="2. PRIMARIA">2. PRIMARIA</option>
+                                        <option value="2. CIENCIAS SOCIALES">2. CIENCIAS SOCIALES</option>
+                                        <option value="3. INICIAL">3. INICIAL</option>
+                                        <option value="3. PRIMARIA">3. PRIMARIA</option>
+                                        <option value="3. INGLES">3. INGLES</option>
+                                        <option value="4. INICIAL">4. INICIAL</option>
+                                        <option value="4. PRIMARIA">4. PRIMARIA</option>
+                                        <option value="5. INICIAL">5. INICIAL</option>
+                                        <option value="5. PRIMARIA">5. PRIMARIA</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="anio" class="form-label neon-text">Año</label>
+                                    <select class="form-select neon-input" id="anio" required>
+                                        <option value="2026">2026</option>
+                                        <option value="2027">2027</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="montoAporte" class="form-label neon-text">Monto por Estudiante (Bs)</label>
+                                    <input type="number" step="0.01" class="form-control neon-input" id="montoAporte" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label neon-text">Estudiantes que Pagaron</label>
+                            <div class="estudiantes-pagos-container neon-input" style="max-height: 200px; overflow-y: auto; padding: 15px;">
+                                <p class="text-muted">Seleccione un curso para cargar los estudiantes</p>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn neon-btn"><i class="fas fa-save"></i> Registrar Aporte</button>
+                    </form>
+                    
+                    <div class="mt-4">
+                        <h4 class="neon-text"><i class="fas fa-list"></i> Resumen de Aportes</h4>
+                        <div class="table-responsive">
+                            <table class="table table-dark table-hover neon-table">
+                                <thead>
+                                    <tr>
+                                        <th>Curso</th>
+                                        <th>Año</th>
+                                        <th>Estudiantes que Pagaron</th>
+                                        <th>Total Recaudado (Bs)</th>
+                                        <th>Fecha</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tablaAportes">
+                                    <!-- Los aportes se cargarán aquí dinámicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pestaña Cursos -->
+        <section id="cursos" class="tab-content">
+            <div class="card neon-card">
+                <div class="card-header">
+                    <h3 class="neon-text">Gestión de Cursos - Control de Pagos 2026-2027</h3>
+                    <p class="mb-0 text-warning"><small><i class="fas fa-info-circle"></i> NOTA: Los montos de 2027 han sido ajustados según el cambio de grado</small></p>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card neon-card-inner">
+                                <div class="card-body">
+                                    <h5 class="neon-text text-center mb-4">Seleccione un Curso para Gestionar Pagos</h5>
+                                    <div class="row">
+                                        <div class="col-md-3 mb-3">
+                                            <select class="form-select neon-input" id="selectorCurso">
+                                                <option value="">Seleccione un curso</option>
+                                                <option value="1. No se sabe">1. No se sabe</option>
+                                                <option value="1. No se sabe (2)">1. No se sabe (2)</option>
+                                                <option value="1. No se sabe (3)">1. No se sabe (3)</option>
+                                                <option value="2. INICIAL">2. INICIAL</option>
+                                                <option value="2. PRIMARIA">2. PRIMARIA</option>
+                                                <option value="2. CIENCIAS SOCIALES">2. CIENCIAS SOCIALES</option>
+                                                <option value="3. INICIAL">3. INICIAL</option>
+                                                <option value="3. PRIMARIA">3. PRIMARIA</option>
+                                                <option value="3. INGLES">3. INGLES</option>
+                                                <option value="4. INICIAL">4. INICIAL</option>
+                                                <option value="4. PRIMARIA">4. PRIMARIA</option>
+                                                <option value="5. INICIAL">5. INICIAL</option>
+                                                <option value="5. PRIMARIA">5. PRIMARIA</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3 mb-3">
+                                            <button class="btn neon-btn w-100" onclick="cargarCursoSeleccionado()">
+                                                <i class="fas fa-search"></i> Cargar Curso
+                                            </button>
+                                        </div>
+                                        <div class="col-md-3 mb-3">
+                                            <button class="btn btn-success w-100" onclick="exportarExcel()">
+                                                <i class="fas fa-file-excel"></i> Exportar Excel
+                                            </button>
+                                        </div>
+                                        <div class="col-md-3 mb-3">
+                                            <button class="btn btn-info w-100" onclick="generarPDFCurso()">
+                                                <i class="fas fa-file-pdf"></i> Listado PDF
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="contenedorCurso" style="display: none;">
+                        <!-- Imagen del curso -->
+                        <div class="row mb-4">
+                            <div class="col-12 text-center">
+                                <img id="curso-imagen" class="curso-imagen" src="" alt="Imagen del Curso">
+                            </div>
+                        </div>
+                        
+                        <div class="card neon-card-inner mb-4">
+                            <div class="card-header">
+                                <h4 class="neon-text" id="tituloCurso"></h4>
+                                <p class="mb-0" id="infoMontosCurso"></p>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-dark table-hover tabla-pagos" id="tablaPagos">
+                                        <thead>
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Nombre del Estudiante</th>
+                                                <th>2026</th>
+                                                <th>Fecha Pago 2026</th>
+                                                <th>Estado 2026</th>
+                                                <th>2027</th>
+                                                <th>Fecha Pago 2027</th>
+                                                <th>Estado 2027</th>
+                                                <th>Total Pagado</th>
+                                                <th>Estado General</th>
+                                                <th>Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="cuerpoTablaPagos">
+                                            <!-- Los estudiantes se cargarán aquí -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="mt-3">
+                                    <button class="btn neon-btn" onclick="guardarPagosCurso()" id="guardarPagosBtn">
+                                        <i class="fas fa-save"></i> Guardar Cambios
+                                    </button>
+                                    <button class="btn btn-warning" onclick="agregarEstudiante()" id="agregarEstudianteBtn">
+                                        <i class="fas fa-plus"></i> Agregar Estudiante
+                                    </button>
+                                    <button class="btn btn-danger" onclick="eliminarUltimoEstudiante()" id="eliminarEstudianteBtn">
+                                        <i class="fas fa-minus"></i> Eliminar Último
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pestaña Seguimiento - MEJORADA -->
+        <section id="seguimiento" class="tab-content">
+            <div class="card neon-card">
+                <div class="card-header">
+                    <h3 class="neon-text"><i class="fas fa-search-dollar"></i> Seguimiento de Estudiantes - Estado Completo</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card neon-card-inner">
+                                <div class="card-body text-center">
+                                    <h4 class="neon-text">Total en Caja</h4>
+                                    <h1 class="neon-text-purple" id="totalCajaSeguimiento">Bs 0.00</h1>
+                                    <p class="text-muted">Disponible para gastos</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card neon-card-inner">
+                                <div class="card-body text-center">
+                                    <h4 class="neon-text">Total Aportes</h4>
+                                    <h1 class="neon-text-green" id="totalAportesSeguimiento">Bs 0.00</h1>
+                                    <p class="text-muted">Pagado por estudiantes</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card neon-card-inner">
+                                <div class="card-body text-center">
+                                    <h4 class="neon-text">Total Deudas</h4>
+                                    <h1 class="neon-text" id="totalDeudasSeguimiento">Bs 0.00</h1>
+                                    <p class="text-muted">Por cobrar de estudiantes</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card neon-card-inner">
+                                <div class="card-body text-center">
+                                    <h4 class="neon-text">Estudiantes al Día</h4>
+                                    <h1 class="neon-text-blue" id="estudiantesAlDia">0</h1>
+                                    <p class="text-muted">Sin deudas pendientes</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filtros mejorados -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card neon-card-inner">
+                                <div class="card-body">
+                                    <h5 class="neon-text mb-3"><i class="fas fa-filter"></i> Filtros de Búsqueda</h5>
+                                    <div class="row">
+                                        <div class="col-md-3 mb-2">
+                                            <input type="text" class="form-control neon-input" id="filtroEstudiante" placeholder="Buscar estudiante...">
+                                        </div>
+                                        <div class="col-md-2 mb-2">
+                                            <select class="form-select neon-input" id="filtroCursoSeguimiento">
+                                                <option value="todos">Todos los cursos</option>
+                                                <option value="1. No se sabe">1. No se sabe</option>
+                                                <option value="1. No se sabe (2)">1. No se sabe (2)</option>
+                                                <option value="1. No se sabe (3)">1. No se sabe (3)</option>
+                                                <option value="2. INICIAL">2. INICIAL</option>
+                                                <option value="2. PRIMARIA">2. PRIMARIA</option>
+                                                <option value="2. CIENCIAS SOCIALES">2. CIENCIAS SOCIALES</option>
+                                                <option value="3. INICIAL">3. INICIAL</option>
+                                                <option value="3. PRIMARIA">3. PRIMARIA</option>
+                                                <option value="3. INGLES">3. INGLES</option>
+                                                <option value="4. INICIAL">4. INICIAL</option>
+                                                <option value="4. PRIMARIA">4. PRIMARIA</option>
+                                                <option value="5. INICIAL">5. INICIAL</option>
+                                                <option value="5. PRIMARIA">5. PRIMARIA</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2 mb-2">
+                                            <select class="form-select neon-input" id="filtroAnioSeguimiento">
+                                                <option value="todos">Todos los años</option>
+                                                <option value="2026">2026</option>
+                                                <option value="2027">2027</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2 mb-2">
+                                            <select class="form-select neon-input" id="filtroEstadoSeguimiento">
+                                                <option value="todos">Todos los estados</option>
+                                                <option value="al-dia">Al día</option>
+                                                <option value="con-deuda">Con deuda</option>
+                                                <option value="parcial">Pago parcial</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3 mb-2">
+                                            <div class="d-grid gap-2 d-md-flex">
+                                                <button class="btn neon-btn w-100" onclick="filtrarEstudiantesSeguimiento()">
+                                                    <i class="fas fa-filter"></i> Filtrar
+                                                </button>
+                                                <button class="btn btn-secondary w-100" onclick="limpiarFiltrosSeguimiento()">
+                                                    <i class="fas fa-times"></i> Limpiar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botón para generar PDF de todos los estudiantes -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card neon-card-inner">
+                                <div class="card-body text-center">
+                                    <button class="btn btn-danger w-100" onclick="generarPDFTodosEstudiantes()">
+                                        <i class="fas fa-file-pdf"></i> Generar PDF de Todos los Estudiantes
+                                    </button>
+                                    <small class="text-muted">Genera un reporte PDF con todos los estudiantes que pagaron y deben</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de todos los estudiantes de todos los cursos - MEJORADA -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card neon-card-inner">
+                                <div class="card-header">
+                                    <h5 class="neon-text"><i class="fas fa-users"></i> Lista General de Estudiantes - Estado Detallado de Pagos</h5>
+                                    <p class="mb-0"><small class="text-warning">Muestra el estado real de cada estudiante según los montos requeridos por curso y año</small></p>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+                                        <table class="table table-dark table-hover tabla-seguimiento">
+                                            <thead style="position: sticky; top: 0; z-index: 1;">
+                                                <tr>
+                                                    <th>#</th>
+                                                    <th>Curso</th>
+                                                    <th>Estudiante</th>
+                                                    <th>Monto Req. 2026</th>
+                                                    <th>Pagado 2026</th>
+                                                    <th>Estado 2026</th>
+                                                    <th>Monto Req. 2027</th>
+                                                    <th>Pagado 2027</th>
+                                                    <th>Estado 2027</th>
+                                                    <th>Total Pagado</th>
+                                                    <th>Deuda Total</th>
+                                                    <th>Estado General</th>
+                                                    <th>Acciones</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="tablaSeguimientoEstudiantes">
+                                                <!-- Se llenará dinámicamente -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Resumen por curso -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card neon-card-inner">
+                                <div class="card-header">
+                                    <h5 class="neon-text"><i class="fas fa-chart-bar"></i> Resumen por Curso</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row" id="resumenCursosSeguimiento">
+                                        <!-- Se llenará dinámicamente -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Movimientos de Caja Detallados -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card neon-card-inner">
+                                <div class="card-header">
+                                    <h5 class="neon-text"><i class="fas fa-money-bill-wave"></i> Últimos Ingresos</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                                        <table class="table table-dark table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th>Fecha</th>
+                                                    <th>Concepto</th>
+                                                    <th>Monto</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="tablaIngresosSeguimiento">
+                                                <!-- Se llenará dinámicamente -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card neon-card-inner">
+                                <div class="card-header">
+                                    <h5 class="neon-text"><i class="fas fa-receipt"></i> Últimos Gastos</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                                        <table class="table table-dark table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th>Fecha</th>
+                                                    <th>Categoría</th>
+                                                    <th>Monto</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="tablaGastosSeguimiento">
+                                                <!-- Se llenará dinámicamente -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pestaña Casilleros MEJORADA -->
+        <section id="casilleros" class="tab-content">
+            <div class="card neon-card">
+                <div class="card-header">
+                    <h3 class="neon-text"><i class="fas fa-archive"></i> Gestión de Casilleros 3x18 - 2026-2027</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="card neon-card-inner">
+                                <div class="card-body text-center">
+                                    <h4 class="neon-text">Sector A</h4>
+                                    <p class="text-muted">Casilleros 1-18</p>
+                                    <h2 class="neon-text" id="totalPagadoSectorA">Bs 0.00</h2>
+                                    <small>Total recaudado</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card neon-card-inner">
+                                <div class="card-body text-center">
+                                    <h4 class="neon-text">Sector B</h4>
+                                    <p class="text-muted">Casilleros 19-36</p>
+                                    <h2 class="neon-text" id="totalPagadoSectorB">Bs 0.00</h2>
+                                    <small>Total recaudado</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card neon-card-inner">
+                                <div class="card-body text-center">
+                                    <h4 class="neon-text">Total General</h4>
+                                    <p class="text-muted">2026 y 2027</p>
+                                    <h1 class="contador-cobros" id="totalGeneralCasilleros">Bs 0.00</h1>
+                                    <button class="btn btn-sm btn-info mt-2" onclick="generarReporteCasillerosPDF()">
+                                        <i class="fas fa-file-pdf"></i> Reporte PDF
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Sector A -->
+                        <div class="col-md-6 mb-4">
+                            <div class="card neon-card-inner">
+                                <div class="card-header">
+                                    <h5 class="neon-text text-center">SECTOR A - Casilleros 1-18</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row g-2" id="sectorA">
+                                        <!-- Casilleros 1-18 se generarán aquí -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sector B -->
+                        <div class="col-md-6 mb-4">
+                            <div class="card neon-card-inner">
+                                <div class="card-header">
+                                    <h5 class="neon-text text-center">SECTOR B - Casilleros 19-36</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row g-2" id="sectorB">
+                                        <!-- Casilleros 19-36 se generarán aquí -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="card neon-card-inner">
+                                <div class="card-header">
+                                    <h5 class="neon-text"><i class="fas fa-edit"></i> Gestión de Casilleros</h5>
+                                </div>
+                                <div class="card-body">
+                                    <!-- Formulario para agregar/editar casillero -->
+                                    <form id="formPagoCasillero">
+                                        <div class="row">
+                                            <div class="col-md-2">
+                                                <div class="mb-3">
+                                                    <label for="numeroCasillero" class="form-label neon-text">Número</label>
+                                                    <select class="form-select neon-input" id="numeroCasillero" required>
+                                                        <option value="">Seleccione</option>
+                                                        <!-- Opciones 1-36 se generarán dinámicamente -->
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="mb-3">
+                                                    <label for="estudianteCasillero" class="form-label neon-text">Estudiante</label>
+                                                    <input type="text" class="form-control neon-input" id="estudianteCasillero" required>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="mb-3">
+                                                    <label for="montoCasillero" class="form-label neon-text">Monto (Bs)</label>
+                                                    <input type="number" step="0.01" class="form-control neon-input" id="montoCasillero" value="50.00" required>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="mb-3">
+                                                    <label for="fechaPagoCasillero" class="form-label neon-text">Fecha Pago</label>
+                                                    <input type="date" class="form-control neon-input" id="fechaPagoCasillero" required>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="mb-3">
+                                                    <label for="mesCasillero" class="form-label neon-text">Mes</label>
+                                                    <select class="form-select neon-input" id="mesCasillero" required>
+                                                        <option value="1">Enero</option>
+                                                        <option value="2">Febrero</option>
+                                                        <option value="3">Marzo</option>
+                                                        <option value="4">Abril</option>
+                                                        <option value="5">Mayo</option>
+                                                        <option value="6">Junio</option>
+                                                        <option value="7">Julio</option>
+                                                        <option value="8">Agosto</option>
+                                                        <option value="9">Septiembre</option>
+                                                        <option value="10">Octubre</option>
+                                                        <option value="11">Noviembre</option>
+                                                        <option value="12">Diciembre</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-1">
+                                                <div class="mb-3">
+                                                    <label for="anioCasillero" class="form-label neon-text">Año</label>
+                                                    <select class="form-select neon-input" id="anioCasillero" required>
+                                                        <option value="2026">2026</option>
+                                                        <option value="2027">2027</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="multipleMeses">
+                                                    <label class="form-check-label neon-text" for="multipleMeses">
+                                                        Pago múltiple de meses
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-8" id="mesesMultipleContainer" style="display: none;">
+                                                <label class="form-label neon-text">Seleccione meses a pagar:</label>
+                                                <div class="meses-multiple">
+                                                    <!-- Se generarán dinámicamente -->
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="mt-3">
+                                            <button type="submit" class="btn neon-btn">
+                                                <i class="fas fa-save"></i> Registrar Pago
+                                            </button>
+                                            <button type="button" class="btn btn-warning" onclick="liberarCasilleroSeleccionado()">
+                                                <i class="fas fa-times"></i> Liberar Casillero
+                                            </button>
+                                            <button type="button" class="btn btn-info" onclick="editarCasilleroSeleccionado()">
+                                                <i class="fas fa-edit"></i> Editar
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pestaña Gastos -->
+        <section id="gastos" class="tab-content">
+            <div class="card neon-card">
+                <div class="card-header">
+                    <h3 class="neon-text">Registro de Gastos</h3>
+                </div>
+                <div class="card-body">
+                    <form id="formGasto" enctype="multipart/form-data">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="categoria" class="form-label neon-text">Categoría</label>
+                                    <select class="form-select neon-input" id="categoria" required>
+                                        <option value="">Seleccione una categoría</option>
+                                        <option value="viajes">Viajes</option>
+                                        <option value="compras">Compras</option>
+                                        <option value="cefom">Pagos a CEFOM</option>
+                                        <option value="inscripciones">Inscripciones</option>
+                                        <option value="talleres">Talleres</option>
+                                        <option value="otros">Otros</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="montoGasto" class="form-label neon-text">Monto (Bs)</label>
+                                    <input type="number" step="0.01" class="form-control neon-input" id="montoGasto" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="fechaGasto" class="form-label neon-text">Fecha</label>
+                                    <input type="date" class="form-control neon-input" id="fechaGasto" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="descripcion" class="form-label neon-text">Descripción Detallada</label>
+                            <textarea class="form-control neon-input" id="descripcion" rows="3" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="comprobante" class="form-label neon-text">Comprobante (Foto/PDF)</label>
+                            <input type="file" class="form-control neon-input" id="comprobante" accept="image/*,.pdf" style="padding: 3px;">
+                            <small class="text-muted">Puede subir imágenes o archivos PDF</small>
+                        </div>
+                        <button type="submit" class="btn neon-btn">Registrar Gasto</button>
+                    </form>
+                    
+                    <div class="mt-4">
+                        <h4 class="neon-text">Gastos Registrados</h4>
+                        <div class="table-responsive">
+                            <table class="table table-dark table-hover neon-table">
+                                <thead>
+                                    <tr>
+                                        <th>Categoría</th>
+                                        <th>Descripción</th>
+                                        <th>Monto (Bs)</th>
+                                        <th>Fecha</th>
+                                        <th>Comprobante</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tablaGastos">
+                                    <!-- Los gastos se cargarán aquí dinámicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pestaña Otros Cobros MEJORADA -->
+        <section id="otros-cobros" class="tab-content">
+            <div class="card neon-card">
+                <div class="card-header">
+                    <h3 class="neon-text"><i class="fas fa-money-bill"></i> Otros Cobros a Estudiantes</h3>
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <small class="text-warning">Estos cobros NO afectan la caja principal - Son registros independientes</small>
+                        <h4 class="contador-cobros mb-0" id="totalOtrosCobros">Bs 0.00</h4>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form id="formOtroCobro">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="cursoOtroCobro" class="form-label neon-text">Curso</label>
+                                    <select class="form-select neon-input" id="cursoOtroCobro" required>
+                                        <option value="">Seleccione un curso</option>
+                                        <option value="1. No se sabe">1. No se sabe</option>
+                                        <option value="1. No se sabe (2)">1. No se sabe (2)</option>
+                                        <option value="1. No se sabe (3)">1. No se sabe (3)</option>
+                                        <option value="2. INICIAL">2. INICIAL</option>
+                                        <option value="2. PRIMARIA">2. PRIMARIA</option>
+                                        <option value="2. CIENCIAS SOCIALES">2. CIENCIAS SOCIALES</option>
+                                        <option value="3. INICIAL">3. INICIAL</option>
+                                        <option value="3. PRIMARIA">3. PRIMARIA</option>
+                                        <option value="3. INGLES">3. INGLES</option>
+                                        <option value="4. INICIAL">4. INICIAL</option>
+                                        <option value="4. PRIMARIA">4. PRIMARIA</option>
+                                        <option value="5. INICIAL">5. INICIAL</option>
+                                        <option value="5. PRIMARIA">5. PRIMARIA</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="estudianteOtroCobro" class="form-label neon-text">Estudiante</label>
+                                    <select class="form-select neon-input" id="estudianteOtroCobro" required disabled>
+                                        <option value="">Seleccione estudiante</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="conceptoOtroCobro" class="form-label neon-text">Concepto</label>
+                                    <input type="text" class="form-control neon-input" id="conceptoOtroCobro" required>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="montoOtroCobro" class="form-label neon-text">Monto (Bs)</label>
+                                    <input type="number" step="0.01" class="form-control neon-input" id="montoOtroCobro" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="fechaOtroCobro" class="form-label neon-text">Fecha</label>
+                                    <input type="date" class="form-control neon-input" id="fechaOtroCobro" required>
+                                </div>
+                            </div>
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    <label for="observacionesOtroCobro" class="form-label neon-text">Observaciones</label>
+                                    <textarea class="form-control neon-input" id="observacionesOtroCobro" rows="2"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn neon-btn">
+                            <i class="fas fa-save"></i> Registrar Cobro
+                        </button>
+                    </form>
+                    
+                    <div class="mt-4">
+                        <h4 class="neon-text">Historial de Otros Cobros</h4>
+                        <div class="table-responsive">
+                            <table class="table table-dark table-hover neon-table">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Curso</th>
+                                        <th>Estudiante</th>
+                                        <th>Concepto</th>
+                                        <th>Monto (Bs)</th>
+                                        <th>Observaciones</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tablaOtrosCobros">
+                                    <!-- Los cobros se cargarán aquí dinámicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pestaña Eventos MEJORADA -->
+        <section id="eventos" class="tab-content">
+            <div class="card neon-card">
+                <div class="card-header">
+                    <h3 class="neon-text"><i class="fas fa-calendar-alt"></i> Eventos y Noticias - Federación Estudiantil</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card neon-card-inner">
+                                <div class="card-body">
+                                    <h5 class="neon-text text-center mb-4"><i class="fas fa-paper-plane"></i> Publicar Nueva Información</h5>
+                                    <form id="formEvento">
+                                        <div class="mb-3">
+                                            <label for="tituloEvento" class="form-label neon-text">Título del Evento</label>
+                                            <input type="text" class="form-control neon-input" id="tituloEvento" placeholder="Ej: Reunión de la Federación" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="descripcionEvento" class="form-label neon-text">Descripción Detallada</label>
+                                            <textarea class="form-control neon-input" id="descripcionEvento" rows="4" placeholder="Describe el evento, actividades, participantes..." required></textarea>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="fechaEvento" class="form-label neon-text">Fecha del Evento</label>
+                                                    <input type="date" class="form-control neon-input" id="fechaEvento" required>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="lugarEvento" class="form-label neon-text">Lugar (opcional)</label>
+                                                    <input type="text" class="form-control neon-input" id="lugarEvento" placeholder="Ej: Salón Principal">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="fotosEvento" class="form-label neon-text">Subir Fotos del Evento</label>
+                                            <input type="file" class="form-control neon-input" id="fotosEvento" accept="image/*" multiple style="padding: 3px;">
+                                            <small class="text-muted">Puede subir múltiples fotos para mostrar en la publicación</small>
+                                        </div>
+                                        <div class="text-center">
+                                            <button type="submit" class="btn neon-btn" style="padding: 12px 30px; font-size: 1.1rem;">
+                                                <i class="fas fa-paper-plane"></i> Publicar Evento
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card neon-card-inner">
+                                <div class="card-header">
+                                    <h5 class="neon-text"><i class="fas fa-newspaper"></i> Eventos y Noticias Publicadas</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div id="listaEventos">
+                                        <div class="text-center text-muted">
+                                            <i class="fas fa-calendar-plus fa-3x mb-3"></i>
+                                            <p>No hay eventos publicados aún</p>
+                                            <p class="small">¡Sé el primero en publicar un evento!</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pestaña Reportes MEJORADA -->
+        <section id="reportes" class="tab-content">
+            <div class="card neon-card">
+                <div class="card-header">
+                    <h3 class="neon-text">Reportes Financieros Avanzados</h3>
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <small class="text-warning">Filtra por año y mes para obtener reportes específicos</small>
+                        <button class="btn btn-danger btn-sm" onclick="generarReporteCompleto()">
+                            <i class="fas fa-file-pdf"></i> Reporte Completo PDF
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Filtros para Reportes MEJORADOS -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="filtroAnio" class="form-label neon-text">Filtrar por Año</label>
+                                <select class="form-select neon-input" id="filtroAnio">
+                                    <option value="todos">Todos los años</option>
+                                    <option value="2026">2026</option>
+                                    <option value="2027">2027</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="filtroMes" class="form-label neon-text">Filtrar por Mes</label>
+                                <select class="form-select neon-input" id="filtroMes">
+                                    <option value="todos">Todos los meses</option>
+                                    <option value="1">Enero</option>
+                                    <option value="2">Febrero</option>
+                                    <option value="3">Marzo</option>
+                                    <option value="4">Abril</option>
+                                    <option value="5">Mayo</option>
+                                    <option value="6">Junio</option>
+                                    <option value="7">Julio</option>
+                                    <option value="8">Agosto</option>
+                                    <option value="9">Septiembre</option>
+                                    <option value="10">Octubre</option>
+                                    <option value="11">Noviembre</option>
+                                    <option value="12">Diciembre</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label class="form-label neon-text">&nbsp;</label>
+                                <button class="btn neon-btn w-100" onclick="actualizarReportes()">
+                                    <i class="fas fa-sync-alt"></i> Actualizar Reportes
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label class="form-label neon-text">&nbsp;</label>
+                                <button class="btn btn-success w-100" onclick="exportarExcelCompleto()">
+                                    <i class="fas fa-file-excel"></i> Excel Completo
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gráficos -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card neon-card-inner">
+                                <div class="card-body">
+                                    <h5 class="neon-text text-center">Distribución de Gastos por Categoría</h5>
+                                    <canvas id="graficoGastos"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card neon-card-inner">
+                                <div class="card-body">
+                                    <h5 class="neon-text text-center">Aportes por Año</h5>
+                                    <canvas id="graficoAportes"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card neon-card-inner">
+                                <div class="card-body">
+                                    <h5 class="neon-text text-center">Evolución Financiera Mensual</h5>
+                                    <canvas id="graficoEvolucion"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Reporte Detallado por Año SEPARADO -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card neon-card-inner">
+                                <div class="card-header">
+                                    <h5 class="neon-text">Reporte Detallado 2026</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                                        <table class="table table-dark table-hover neon-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Mes</th>
+                                                    <th>Aportes</th>
+                                                    <th>Gastos</th>
+                                                    <th>Balance</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="tablaReporteMensual2026">
+                                                <!-- Se llenará dinámicamente -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card neon-card-inner">
+                                <div class="card-header">
+                                    <h5 class="neon-text">Reporte Detallado 2027</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                                        <table class="table table-dark table-hover neon-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Mes</th>
+                                                    <th>Aportes</th>
+                                                    <th>Gastos</th>
+                                                    <th>Balance</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="tablaReporteMensual2027">
+                                                <!-- Se llenará dinámicamente -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Modal para registrar pago -->
+    <div class="modal fade" id="modalPago" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content neon-modal">
+                <div class="modal-header">
+                    <h5 class="modal-title neon-text">Registrar Pago</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formPago">
+                        <input type="hidden" id="estudianteIndex">
+                        <input type="hidden" id="cursoActual">
+                        <div class="mb-3">
+                            <label for="anioPago" class="form-label neon-text">Año</label>
+                            <select class="form-select neon-input" id="anioPago" required>
+                                <option value="2026">2026</option>
+                                <option value="2027">2027</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="montoPago" class="form-label neon-text">Monto (Bs)</label>
+                            <input type="number" step="0.01" class="form-control neon-input" id="montoPago" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="fechaPago" class="form-label neon-text">Fecha de Pago</label>
+                            <input type="date" class="form-control neon-input" id="fechaPago" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn neon-btn" onclick="registrarPagoEstudiante()">Registrar Pago</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para editar datos -->
+    <div class="modal fade" id="modalEditar" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content neon-modal">
+                <div class="modal-header">
+                    <h5 class="modal-title neon-text">Editar Información</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formEditar">
+                        <input type="hidden" id="tipoEdicion">
+                        <input type="hidden" id="idEdicion">
+                        <div class="mb-3">
+                            <label for="campoEditar" class="form-label neon-text">Valor</label>
+                            <input type="text" class="form-control neon-input" id="campoEditar" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="fechaEditar" class="form-label neon-text">Fecha (si aplica)</label>
+                            <input type="date" class="form-control neon-input" id="fechaEditar">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn neon-btn" onclick="guardarEdicion()">Guardar Cambios</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para editar pago específico -->
+    <div class="modal fade" id="modalEditarPago" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content neon-modal">
+                <div class="modal-header">
+                    <h5 class="modal-title neon-text">Editar Pago Específico</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formEditarPago">
+                        <input type="hidden" id="editarCurso">
+                        <input type="hidden" id="editarIndex">
+                        <input type="hidden" id="editarAnio">
+                        <div class="mb-3">
+                            <label for="editarMontoPago" class="form-label neon-text">Monto (Bs)</label>
+                            <input type="number" step="0.01" class="form-control neon-input" id="editarMontoPago" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editarFechaPago" class="form-label neon-text">Fecha de Pago</label>
+                            <input type="date" class="form-control neon-input" id="editarFechaPago" required>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="editarPagado">
+                                <label class="form-check-label" for="editarPagado">
+                                    Marcar como pagado
+                                </label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn neon-btn" onclick="guardarEdicionPago()">Guardar Cambios</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para ver comprobante -->
+    <div class="modal fade" id="modalComprobante" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content neon-modal">
+                <div class="modal-header">
+                    <h5 class="modal-title neon-text">Comprobante</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <img id="imagenComprobante" src="" alt="Comprobante" class="img-fluid" style="max-height: 70vh;">
+                    <div id="pdfComprobante" style="display: none; width: 100%; height: 70vh;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para ver historial de casillero -->
+    <div class="modal fade" id="modalHistorialCasillero" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content neon-modal">
+                <div class="modal-header">
+                    <h5 class="modal-title neon-text">Historial de Pagos - Casillero <span id="numeroCasilleroHistorial"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="calendario-casillero" id="calendarioCasillero">
+                                <!-- Calendario se generará dinámicamente -->
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="info-casillero">
+                                <h6 class="neon-text">Información del Casillero:</h6>
+                                <p><strong>Estudiante:</strong> <span id="estudianteCasilleroHistorial"></span></p>
+                                <p><strong>Total Pagado:</strong> <span id="totalPagadoCasillero"></span></p>
+                                <p><strong>Meses Pagados:</strong> <span id="mesesPagadosCasillero"></span></p>
+                                <p><strong>Último Pago:</strong> <span id="ultimoPagoCasillero"></span></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <h6 class="neon-text">Detalle de Pagos por Año:</h6>
+                        <div id="detallePagosCasillero">
+                            <!-- Detalle se generará dinámicamente -->
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <button class="btn btn-sm btn-warning" onclick="editarCasilleroDesdeHistorial()">
+                            <i class="fas fa-edit"></i> Editar Casillero
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="liberarCasilleroDesdeHistorial()">
+                            <i class="fas fa-times"></i> Liberar Casillero
+                        </button>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para editar casillero -->
+    <div class="modal fade" id="modalEditarCasillero" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content neon-modal">
+                <div class="modal-header">
+                    <h5 class="modal-title neon-text">Editar Casillero</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formEditarCasillero">
+                        <input type="hidden" id="editarNumeroCasillero">
+                        <div class="mb-3">
+                            <label for="editarEstudianteCasillero" class="form-label neon-text">Estudiante</label>
+                            <input type="text" class="form-control neon-input" id="editarEstudianteCasillero" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label neon-text">Meses Pagados 2026</label>
+                            <div class="meses-editar" id="meses2026">
+                                <!-- Se generarán dinámicamente -->
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label neon-text">Meses Pagados 2027</label>
+                            <div class="meses-editar" id="meses2027">
+                                <!-- Se generarán dinámicamente -->
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn neon-btn" onclick="guardarEdicionCasillero()">Guardar Cambios</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="database.js"></script>
+<script src="script.js"></script>  <!-- Tu script modificado -->
+</body>
+</html>
