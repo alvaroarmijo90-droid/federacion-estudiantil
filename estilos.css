@@ -1,5 +1,5 @@
 /* Estilos generales */
-:root {mk
+:root {
     --neon-orange: #ff5e00;
     --neon-purple: #bc13fe;
     --neon-green: #00ff00;
@@ -699,23 +699,20 @@ body {
 }
 
 /* Calendario de meses pagados */
+/* Calendario en los casilleros - OCULTAR */
 .calendario-meses {
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 3px;
-    margin-top: 5px;
+    display: none !important; /* Esto oculta el calendario */
 }
 
-.mes-calendario {
-    width: 20px;
-    height: 20px;
-    border-radius: 3px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.6rem;
-    font-weight: 700;
-    cursor: help;
+/* Mostrar solo al pasar el mouse (opcional) */
+.casillero:hover .calendario-meses {
+    display: block !important;
+    position: absolute;
+    background: rgba(0, 0, 0, 0.9);
+    padding: 5px;
+    border-radius: 5px;
+    z-index: 100;
+    max-width: 120px;
 }
 
 .mes-pagado {
@@ -1347,5 +1344,1071 @@ button:disabled:hover {
 
 .info-casillero strong {
     color: var(--neon-blue);
+}
+/* ============================================
+   ESTILOS PARA LAS NUEVAS FUNCIONALIDADES
+   ============================================ */
 
+/* Calendario compacto en formulario */
+.meses-container-compacto {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 3px;
+    margin-bottom: 10px;
+}
+
+.mes-cuadrito {
+    width: 25px;
+    height: 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: bold;
+    transition: all 0.3s;
+}
+
+.mes-cuadrito.mes-pagado {
+    background: linear-gradient(135deg, #28a745, #1e7e34);
+    color: white;
+    border: 1px solid #1e7e34;
+    box-shadow: 0 0 5px #28a745;
+}
+
+.mes-cuadrito.mes-no-pagado {
+    background: linear-gradient(135deg, #6c757d, #545b62);
+    color: white;
+    border: 1px solid #545b62;
+    box-shadow: 0 0 5px #6c757d;
+}
+
+.mes-cuadrito:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 8px rgba(255,255,255,0.5);
+}
+
+/* Para visualización en modal */
+.mes-cuadrito-vista {
+    width: 22px;
+    height: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+    margin: 1px;
+    font-size: 9px;
+    font-weight: bold;
+    cursor: default;
+}
+
+.mes-cuadrito-vista.mes-pagado {
+    background: linear-gradient(135deg, #28a745, #1e7e34);
+    color: white;
+    box-shadow: 0 0 4px #28a745;
+}
+
+.mes-cuadrito-vista.mes-no-pagado {
+    background: linear-gradient(135deg, #dc3545, #c82333);
+    color: white;
+    box-shadow: 0 0 4px #dc3545;
+}
+
+/* Casilleros en la vista principal mejorados */
+.casillero {
+    padding: 10px;
+    border-radius: 10px;
+    text-align: center;
+    margin-bottom: 12px;
+    transition: all 0.3s;
+    border: 2px solid transparent;
+    background: rgba(15, 12, 41, 0.9);
+    backdrop-filter: blur(5px);
+    position: relative;
+    overflow: hidden;
+    min-height: 110px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.casillero.pagado {
+    background: linear-gradient(135deg, rgba(40, 167, 69, 0.2), rgba(30, 126, 52, 0.2));
+    border-color: #28a745;
+    box-shadow: 0 0 15px rgba(40, 167, 69, 0.4);
+}
+
+.casillero.libre {
+    background: linear-gradient(135deg, rgba(108, 117, 125, 0.2), rgba(84, 91, 98, 0.2));
+    border-color: #6c757d;
+    box-shadow: 0 0 15px rgba(108, 117, 125, 0.4);
+}
+
+.casillero:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+.numero-casillero {
+    font-size: 1.4rem;
+    font-weight: 800;
+    margin-bottom: 5px;
+    color: #00ffff;
+    text-shadow: 0 0 5px #00ffff;
+}
+
+.casillero.pagado .numero-casillero {
+    color: #00ff00;
+    text-shadow: 0 0 5px #00ff00;
+}
+
+.casillero.libre .numero-casillero {
+    color: #6c757d;
+    text-shadow: none;
+}
+
+.estudiante-casillero {
+    font-size: 0.75rem;
+    margin-bottom: 5px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #e0e0e0;
+    font-weight: 500;
+    line-height: 1.2;
+    max-height: 20px;
+}
+
+.estado-casillero {
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: 12px;
+    display: inline-block;
+    margin: 3px auto;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.casillero.pagado .estado-casillero {
+    background: linear-gradient(135deg, #28a745, #1e7e34);
+    color: white;
+    box-shadow: 0 0 8px #28a745;
+}
+
+.casillero.libre .estado-casillero {
+    background: linear-gradient(135deg, #6c757d, #545b62);
+    color: white;
+    box-shadow: 0 0 8px #6c757d;
+}
+
+.btn-historial-casillero {
+    background: linear-gradient(45deg, var(--neon-purple), #800080);
+    border: none;
+    color: white;
+    padding: 3px 6px;
+    font-size: 0.6rem;
+    border-radius: 3px;
+    cursor: pointer;
+    margin: 2px;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.btn-historial-casillero:hover {
+    background: linear-gradient(45deg, #800080, var(--neon-purple));
+    transform: translateY(-2px);
+    box-shadow: 0 0 10px var(--neon-purple);
+}
+
+/* Historial en modal */
+.historial-container {
+    max-height: 300px;
+    overflow-y: auto;
+    margin-top: 15px;
+    border: 1px solid var(--neon-blue);
+    border-radius: 8px;
+    padding: 10px;
+    background: rgba(10, 8, 35, 0.8);
+}
+
+.historial-container table {
+    font-size: 0.8rem;
+}
+
+.historial-container th {
+    background: rgba(0, 255, 255, 0.2);
+    color: var(--neon-blue);
+    font-weight: 700;
+}
+
+.historial-container tr:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Resumen de calendario */
+.resumen-calendario {
+    margin-top: 15px;
+    padding: 12px;
+    background: linear-gradient(135deg, rgba(0, 255, 255, 0.1), rgba(188, 19, 254, 0.1));
+    border: 1px solid var(--neon-purple);
+    border-radius: 10px;
+}
+
+.resumen-item {
+    margin-bottom: 5px;
+}
+
+.resumen-titulo {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--neon-blue);
+    margin-bottom: 2px;
+}
+
+.resumen-valor {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: white;
+}
+
+.resumen-monto {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #00ff00;
+}
+
+/* Para seguimiento - Tabla de gastos */
+.gastos-seguimiento {
+    border: 2px solid rgba(220, 53, 69, 0.4);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 0 15px rgba(220, 53, 69, 0.3);
+}
+
+.gastos-seguimiento thead th {
+    background: linear-gradient(135deg, rgba(220, 53, 69, 0.3), rgba(200, 35, 51, 0.3));
+    border-bottom: 2px solid #dc3545;
+    color: #ffffff;
+}
+
+/* Resumen mensual en seguimiento */
+.resumen-mensual-seguimiento {
+    border: 2px solid rgba(0, 255, 255, 0.4);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+}
+
+.resumen-mensual-seguimiento thead th {
+    background: linear-gradient(135deg, rgba(0, 255, 255, 0.3), rgba(0, 150, 255, 0.3));
+    border-bottom: 2px solid var(--neon-blue);
+    color: #ffffff;
+}
+
+/* Para otros cobros - Tabla de marcar pagos */
+.tabla-marcar-pagos {
+    border: 2px solid rgba(0, 255, 0, 0.4);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
+}
+
+.tabla-marcar-pagos thead th {
+    background: linear-gradient(135deg, rgba(0, 255, 0, 0.3), rgba(0, 150, 0, 0.3));
+    border-bottom: 2px solid #00ff00;
+    color: #ffffff;
+}
+
+.tabla-marcar-pagos .text-success {
+    color: #00ff00 !important;
+    font-weight: 700;
+}
+
+.tabla-marcar-pagos .text-danger {
+    color: #ff4444 !important;
+    font-weight: 700;
+}
+
+/* Contenedor para marcar pagos */
+.contenedor-marcar-pagos {
+    border: 2px solid var(--neon-blue);
+    border-radius: 10px;
+    padding: 15px;
+    margin-top: 20px;
+    background: rgba(10, 8, 35, 0.8);
+    backdrop-filter: blur(5px);
+}
+
+/* Botones para marcar/desmarcar */
+.btn-marcar {
+    background: linear-gradient(45deg, #28a745, #1e7e34);
+    border: none;
+    color: white;
+    padding: 5px 10px;
+    font-size: 0.8rem;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 700;
+    transition: all 0.3s;
+}
+
+.btn-marcar:hover {
+    background: linear-gradient(45deg, #1e7e34, #28a745);
+    transform: translateY(-2px);
+    box-shadow: 0 0 10px #28a745;
+}
+
+.btn-desmarcar {
+    background: linear-gradient(45deg, #dc3545, #c82333);
+    border: none;
+    color: white;
+    padding: 5px 10px;
+    font-size: 0.8rem;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 700;
+    transition: all 0.3s;
+}
+
+.btn-desmarcar:hover {
+    background: linear-gradient(45deg, #c82333, #dc3545);
+    transform: translateY(-2px);
+    box-shadow: 0 0 10px #dc3545;
+}
+
+.btn-marcar-todos {
+    background: linear-gradient(45deg, var(--neon-orange), var(--neon-purple));
+    border: none;
+    color: white;
+    padding: 5px 15px;
+    font-size: 0.9rem;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 700;
+    transition: all 0.3s;
+}
+
+.btn-marcar-todos:hover {
+    background: linear-gradient(45deg, var(--neon-purple), var(--neon-orange));
+    transform: translateY(-2px);
+    box-shadow: 0 0 15px var(--neon-orange);
+}
+
+/* Responsive para calendario */
+@media (max-width: 768px) {
+    .mes-cuadrito {
+        width: 22px;
+        height: 22px;
+        font-size: 9px;
+    }
+    
+    .meses-container-compacto {
+        grid-template-columns: repeat(4, 1fr);
+    }
+    
+    .casillero {
+        min-height: 100px;
+        padding: 8px;
+    }
+    
+    .numero-casillero {
+        font-size: 1.2rem;
+    }
+    
+    .estudiante-casillero {
+        font-size: 0.7rem;
+    }
+    
+    .historial-container {
+        max-height: 200px;
+        font-size: 0.7rem;
+    }
+}
+
+/* Animación para actualizaciones */
+@keyframes highlight {
+    0% { background-color: transparent; }
+    50% { background-color: rgba(0, 255, 255, 0.3); }
+    100% { background-color: transparent; }
+}
+
+.updated {
+    animation: highlight 1s ease;
+}
+
+/* Estilos para mensajes de confirmación */
+.confirmacion-rapida {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    background: linear-gradient(135deg, #28a745, #1e7e34);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 20px rgba(40, 167, 69, 0.5);
+    font-weight: 700;
+    animation: slideIn 0.5s ease, slideOut 0.5s ease 2.5s forwards;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+/* Estilos para resúmenes en seguimiento */
+.resumen-financiero {
+    background: linear-gradient(135deg, rgba(10, 8, 35, 0.9), rgba(26, 22, 64, 0.9));
+    border: 2px solid var(--neon-orange);
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 20px;
+    box-shadow: 0 0 15px rgba(255, 94, 0, 0.3);
+}
+
+.resumen-financiero h5 {
+    color: var(--neon-orange);
+    margin-bottom: 15px;
+    text-align: center;
+    font-weight: 700;
+}
+
+.metrica-financiera {
+    text-align: center;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    transition: all 0.3s;
+}
+
+.metrica-financiera:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.metrica-ingresos {
+    background: linear-gradient(135deg, rgba(0, 255, 0, 0.1), rgba(0, 150, 0, 0.1));
+    border: 1px solid #00ff00;
+}
+
+.metrica-egresos {
+    background: linear-gradient(135deg, rgba(255, 68, 68, 0.1), rgba(200, 0, 0, 0.1));
+    border: 1px solid #ff4444;
+}
+
+.metrica-balance {
+    background: linear-gradient(135deg, rgba(0, 255, 255, 0.1), rgba(0, 150, 255, 0.1));
+    border: 1px solid #00ffff;
+}
+
+.valor-metrica {
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin: 5px 0;
+}
+
+.metrica-ingresos .valor-metrica {
+    color: #00ff00;
+    text-shadow: 0 0 5px #00ff00;
+}
+
+.metrica-egresos .valor-metrica {
+    color: #ff4444;
+    text-shadow: 0 0 5px #ff4444;
+}
+
+.metrica-balance .valor-metrica {
+    color: #00ffff;
+    text-shadow: 0 0 5px #00ffff;
+}
+
+.label-metrica {
+    font-size: 0.8rem;
+    color: #ccc;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Estilos para botones de acción rápida */
+.accion-rapida {
+    margin: 5px;
+    padding: 8px 15px;
+    font-size: 0.9rem;
+    border-radius: 6px;
+    font-weight: 700;
+    transition: all 0.3s;
+    cursor: pointer;
+    border: none;
+    color: white;
+}
+
+.accion-rapida.verde {
+    background: linear-gradient(45deg, #28a745, #1e7e34);
+}
+
+.accion-rapida.rojo {
+    background: linear-gradient(45deg, #dc3545, #c82333);
+}
+
+.accion-rapida.azul {
+    background: linear-gradient(45deg, #007bff, #0056b3);
+}
+
+.accion-rapida.naranja {
+    background: linear-gradient(45deg, var(--neon-orange), #cc5200);
+}
+
+.accion-rapida:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.accion-rapida.verde:hover {
+    box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+}
+
+.accion-rapida.rojo:hover {
+    box-shadow: 0 5px 15px rgba(220, 53, 69, 0.4);
+}
+
+.accion-rapida.azul:hover {
+    box-shadow: 0 5px 15px rgba(0, 123, 255, 0.4);
+}
+
+.accion-rapida.naranja:hover {
+    box-shadow: 0 5px 15px rgba(255, 94, 0, 0.4);
+}
+
+/* Mejoras visuales para inputs */
+select.neon-input option {
+    background: rgba(10, 8, 35, 0.95);
+    color: white;
+    font-weight: 500;
+}
+
+select.neon-input option:hover {
+    background: rgba(255, 94, 0, 0.3);
+}
+
+/* Estilos para etiquetas de estado en tablas */
+.badge-estado-tabla {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge-pagado {
+    background: linear-gradient(135deg, #28a745, #1e7e34);
+    color: white;
+    box-shadow: 0 0 5px #28a745;
+}
+
+.badge-deuda {
+    background: linear-gradient(135deg, #dc3545, #c82333);
+    color: white;
+    box-shadow: 0 0 5px #dc3545;
+}
+
+.badge-parcial {
+    background: linear-gradient(135deg, #ffc107, #e0a800);
+    color: #000;
+    box-shadow: 0 0 5px #ffc107;
+}
+
+/* Tooltips personalizados */
+[title] {
+    position: relative;
+}
+
+[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    z-index: 1000;
+    border: 1px solid var(--neon-orange);
+    box-shadow: 0 0 10px var(--neon-orange);
+}
+
+/* Efecto de carga */
+.loading {
+    position: relative;
+    overflow: hidden;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
+/* Estilos para estadísticas rápidas */
+.estadistica-rapida {
+    text-align: center;
+    padding: 10px;
+    border-radius: 8px;
+    margin: 5px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.3s;
+}
+
+.estadistica-rapida:hover {
+    transform: translateY(-3px);
+    background: rgba(255, 255, 255, 0.15);
+    border-color: var(--neon-blue);
+}
+
+.numero-estadistica {
+    font-size: 1.8rem;
+    font-weight: 800;
+    margin: 5px 0;
+    color: var(--neon-blue);
+    text-shadow: 0 0 5px var(--neon-blue);
+}
+
+.label-estadistica {
+    font-size: 0.8rem;
+    color: #ccc;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+/* Ajustes finales para mejor visualización */
+.table-sm th, .table-sm td {
+    padding: 8px 10px;
+}
+
+.table-hover tbody tr:hover {
+    background: rgba(255, 94, 0, 0.15);
+}
+
+/* Para asegurar que todo se vea bien en pantallas pequeñas */
+@media (max-width: 576px) {
+    .resumen-calendario {
+        padding: 8px;
+    }
+    
+    .resumen-titulo {
+        font-size: 0.8rem;
+    }
+    
+    .resumen-valor {
+        font-size: 1rem;
+    }
+    
+    .resumen-monto {
+        font-size: 0.8rem;
+    }
+    
+    .historial-container {
+        padding: 5px;
+    }
+    
+    .confirmacion-rapida {
+        font-size: 0.9rem;
+        padding: 8px 15px;
+        right: 10px;
+    }
+}
+
+/* ESTILOS PARA LOS CUADRITOS CON CONTROLES */
+.mes-cuadrito-vista-con-control {
+    width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 2px;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    border: 1px solid transparent;
+}
+
+.mes-cuadrito-vista-con-control.mes-pagado {
+    background-color: #28a745 !important;
+    color: white;
+    border-color: #1e7e34;
+}
+
+.mes-cuadrito-vista-con-control.mes-no-pagado {
+    background-color: #6c757d !important;
+    color: white;
+    border-color: #545b62;
+}
+
+.mes-cuadrito-vista-con-control:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 5px rgba(0,0,0,0.3);
+}
+
+.indicador-admin {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #343a40;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #495057;
+}
+
+/* BOTONES DE ACCIÓN RÁPIDA */
+.acciones-rapidas .btn {
+    padding: 8px 5px;
+    font-size: 12px;
+    margin-bottom: 5px;
+}
+
+/* RESALTAR CONTADORES */
+.resumen-valor {
+    font-size: 18px;
+    font-weight: bold;
+    color: #00ffff;
+}
+
+.resumen-monto {
+    font-size: 14px;
+    color: #ffd700;
+}
+/* ESTILOS PARA LOS CUADRITOS CON CONTROLES */
+.mes-cuadrito-vista-con-control {
+    width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 2px;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    border: 1px solid transparent;
+}
+
+.mes-cuadrito-vista-con-control.mes-pagado {
+    background-color: #28a745 !important;
+    color: white;
+    border-color: #1e7e34;
+}
+
+.mes-cuadrito-vista-con-control.mes-no-pagado {
+    background-color: #6c757d !important;
+    color: white;
+    border-color: #545b62;
+}
+
+.mes-cuadrito-vista-con-control:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 5px rgba(0,0,0,0.3);
+}
+
+.indicador-admin {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #343a40;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #495057;
+}
+
+/* BOTONES DE ACCIÓN RÁPIDA */
+.acciones-rapidas .btn {
+    padding: 8px 5px;
+    font-size: 12px;
+    margin-bottom: 5px;
+}
+
+/* RESALTAR CONTADORES */
+.resumen-valor {
+    font-size: 18px;
+    font-weight: bold;
+    color: #00ffff;
+}
+
+.resumen-monto {
+    font-size: 14px;
+    color: #ffd700;
+}
+
+/* TABLA DE HISTORIAL CON ACCIONES */
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 255, 255, 0.1) !important;
+}
+/* EVITAR ACUMULACIÓN DE FONDOS */
+.modal-backdrop {
+    z-index: 1040 !important;
+}
+
+/* Solo permitir UN fondo a la vez */
+body.modal-open .modal-backdrop ~ .modal-backdrop {
+    display: none !important;
+}
+
+/* Forzar que solo haya un fondo visible */
+.modal-backdrop:not(:last-child) {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    display: none !important;
+}
+
+/* Botón de cierre de emergencia */
+.btn-cierre-emergencia {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 999999;
+    background: #ff0000;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+    cursor: pointer;
+    display: none;
+}
+
+/* Mostrar cuando hay fondos acumulados */
+body.modal-open .btn-cierre-emergencia {
+    display: block;
+}
+/* Estilos para las estadísticas por año */
+.estadistica-item {
+    padding: 10px;
+}
+
+.estadistica-valor {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.estadistica-label {
+    font-size: 0.9rem;
+    color: #aaa;
+}
+
+/* Estilos para las tarjetas financieras */
+.card-financiero {
+    border-radius: 10px;
+    margin-bottom: 15px;
+    border: none;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+}
+
+.card-financiero:hover {
+    transform: translateY(-5px);
+}
+
+.card-ingresos {
+    background: linear-gradient(135deg, rgba(40, 167, 69, 0.1), rgba(32, 201, 151, 0.1));
+    border-left: 4px solid #28a745;
+}
+
+.card-egresos {
+    background: linear-gradient(135deg, rgba(220, 53, 69, 0.1), rgba(255, 73, 97, 0.1));
+    border-left: 4px solid #dc3545;
+}
+
+.card-saldo {
+    background: linear-gradient(135deg, rgba(0, 123, 255, 0.1), rgba(0, 200, 255, 0.1));
+    border-left: 4px solid #007bff;
+}
+
+.card-financiero .card-title {
+    color: white !important;
+    font-size: 1.1rem;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.card-financiero .card-text {
+    font-size: 0.95rem;
+}
+
+/* Estilos para botones de marcado en otros cobros */
+.badge-estado-tabla {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.badge-pagado {
+    background-color: #28a745;
+    color: white;
+}
+
+.badge-deuda {
+    background-color: #dc3545;
+    color: white;
+}
+
+.btn-marcar {
+    background: linear-gradient(45deg, #28a745, #20c997);
+    border: none;
+    color: white;
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.btn-desmarcar {
+    background: linear-gradient(45deg, #dc3545, #c82333);
+    border: none;
+    color: white;
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.btn-marcar:hover {
+    background: linear-gradient(45deg, #20c997, #28a745);
+}
+
+.btn-desmarcar:hover {
+    background: linear-gradient(45deg, #c82333, #dc3545);
+}
+
+/* Para la tabla de marcar pagos */
+.tabla-marcar-pagos {
+    font-size: 0.9rem;
+}
+
+.tabla-marcar-pagos th {
+    background-color: rgba(0, 123, 255, 0.2) !important;
+}
+
+.btn-marcar-todos {
+    background: linear-gradient(45deg, #ffc107, #fd7e14);
+    border: none;
+    color: #000;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    width: 100%;
+}
+
+.btn-marcar-todos:hover {
+    background: linear-gradient(45deg, #fd7e14, #ffc107);
+}
+
+.contenedor-marcar-pagos {
+    background: rgba(0, 123, 255, 0.1);
+    border: 1px solid #007bff;
+    border-radius: 8px;
+    padding: 15px;
+}
+/* Estilos para el historial */
+.tabla-historial th {
+    position: sticky;
+    top: 0;
+    background-color: #1a1a2e !important;
+    z-index: 10;
+}
+
+.tipo-ingreso {
+    color: #28a745;
+    font-weight: bold;
+}
+
+.tipo-gasto {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+.tipo-aporte {
+    color: #ffc107;
+    font-weight: bold;
+}
+
+.badge-tipo {
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.badge-ingreso {
+    background-color: rgba(40, 167, 69, 0.2);
+    border: 1px solid #28a745;
+}
+
+.badge-gasto {
+    background-color: rgba(220, 53, 69, 0.2);
+    border: 1px solid #dc3545;
+}
+
+.badge-aporte {
+    background-color: rgba(255, 193, 7, 0.2);
+    border: 1px solid #ffc107;
+}
+
+.filtro-activo {
+    background-color: #007bff !important;
+    color: white !important;
 }
