@@ -1,5 +1,5 @@
 /* Estilos generales */
-:root {
+:root {mk
     --neon-orange: #ff5e00;
     --neon-purple: #bc13fe;
     --neon-green: #00ff00;
@@ -1347,4 +1347,5 @@ button:disabled:hover {
 
 .info-casillero strong {
     color: var(--neon-blue);
+
 }
