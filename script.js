@@ -1,49 +1,51 @@
 // Variables globales MEJORADAS
 // Variables globales - INICIALMENTE VACÍAS
-let datos = {};
-
-// Función para inicializar datos vacíos (solo si no existen)
-function inicializarDatosVacios() {
-    return {
-        totalAportesEstudiantes: 0,
-        totalGastos: 0,
-        dineroInicial: 0,
-        dineroFinal: 0,
-        totalIngresosCaja: 0,
-        totalEgresosCaja: 0,
-        totalOtrosCobros: 0,
-        aportes: [],
-        gastos: [],
-        movimientosCaja: [],
-        otrosCobros: [],
-        eventos: [],
-        casilleros: {},
-        cursos: {
-            '1. No se sabe': { estudiantes: [] },
-            '1. No se sabe (2)': { estudiantes: [] },
-            '1. No se sabe (3)': { estudiantes: [] },
-            '2. INICIAL': { estudiantes: [] },
-            '2. PRIMARIA': { estudiantes: [] },
-            '2. CIENCIAS SOCIALES': { estudiantes: [] },
-            '3. INICIAL': { estudiantes: [] },
-            '3. PRIMARIA': { estudiantes: [] },
-            '3. INGLES': { estudiantes: [] },
-            '4. INICIAL': { estudiantes: [] },
-            '4. PRIMARIA': { estudiantes: [] },
-            '5. INICIAL': { estudiantes: [] },
-            '5. PRIMARIA': { estudiantes: [] }
-        }
-    };
-}
+let datos = {
+    totalAportesEstudiantes: 0,
+    totalGastos: 0,
+    dineroInicial: 0,
+    dineroFinal: 0,
+    totalIngresosCaja: 0,
+    totalEgresosCaja: 0,
+    totalOtrosCobros: 0,
+    aportes: [],
+    gastos: [],
+    movimientosCaja: [],
+    otrosCobros: [],
+    eventos: [],
+    casilleros: {},
+    sectoresCobro: [], // Nuevo: para otros cobros
+    gastosCasilleros: [],
+    otrosCobrosIngresos: 0,          // Total recaudado en otros cobros
+    otrosCobrosGastos: 0,            // Total gastado de otros cobros
+    otrosCobrosSaldos: [],          // Gastos individuales
+    otrosCobrosHistorial: [],        // Historial completo // Nuevo: gastos de fondos de casilleros
+    cursos: {
+        '1. CIENCIAS NATURALES: BIOLOGÍA - GEOGRAFÍA': { estudiantes: [] },
+        '1. CIENCIAS SOCIALES': { estudiantes: [] },
+        '2. INICIAL': { estudiantes: [] },
+        '2. PRIMARIA': { estudiantes: [] },
+        '2. CIENCIAS SOCIALES': { estudiantes: [] },
+        '3. INICIAL': { estudiantes: [] },
+        '3. PRIMARIA': { estudiantes: [] },
+        '3. INGLES': { estudiantes: [] },
+        '4. INICIAL': { estudiantes: [] },
+        '4. PRIMARIA': { estudiantes: [] },
+        '5. INICIAL': { estudiantes: [] },
+        '5. PRIMARIA': { estudiantes: [] }
+    }
+};
 
 // Variable para sincronización
 let sincronizacionActiva = false;
 
 // Configuración de montos por curso PARA 2026
 const montosPorCurso2026 = {
-    '1. No se sabe': 200,
-    '1. No se sabe (2)': 200,
-    '1. No se sabe (3)': 200,
+    '0. CURSO ESPECIAL 1': 0,
+    '0. CURSO ESPECIAL 2': 0,
+    '0. CURSO ESPECIAL 3': 0,
+    '1. CIENCIAS NATURALES: BIOLOGÍA - GEOGRAFÍA': 200,
+    '1. CIENCIAS SOCIALES': 200,
     '2. INICIAL': 70,
     '2. PRIMARIA': 70,
     '2. CIENCIAS SOCIALES': 70,
@@ -58,9 +60,11 @@ const montosPorCurso2026 = {
 
 // Configuración de montos por curso PARA 2027
 const montosPorCurso2027 = {
-    '1. No se sabe': 70,
-    '1. No se sabe (2)': 70,
-    '1. No se sabe (3)': 70,
+    '0. CURSO ESPECIAL 1': 200,
+    '0. CURSO ESPECIAL 2': 200,
+    '0. CURSO ESPECIAL 3': 200,
+    '1. CIENCIAS NATURALES: BIOLOGÍA - GEOGRAFÍA': 70,
+    '1. CIENCIAS SOCIALES': 70,
     '2. INICIAL': 60,
     '2. PRIMARIA': 60,
     '2. CIENCIAS SOCIALES': 60,
@@ -69,18 +73,39 @@ const montosPorCurso2027 = {
     '3. INGLES': 50,
     '4. INICIAL': 50,
     '4. PRIMARIA': 50,
-    '5. INICIAL': 50,
-    '5. PRIMARIA': 50
+    '5. INICIAL': 0,  // ← CERO porque no pagan en 2027
+    '5. PRIMARIA': 0   // ← CERO porque no pagan en 2027
 };
+
+// Orden de cursos para mostrar (1-5)
+const ordenCursos = [
+    '0. CURSO ESPECIAL 1',
+    '0. CURSO ESPECIAL 2',
+    '0. CURSO ESPECIAL 3',
+    '1. CIENCIAS NATURALES: BIOLOGÍA - GEOGRAFÍA',
+    '1. CIENCIAS SOCIALES',
+    '2. INICIAL',
+    '2. PRIMARIA',
+    '2. CIENCIAS SOCIALES',
+    '3. INICIAL',
+    '3. PRIMARIA',
+    '3. INGLES',
+    '4. INICIAL',
+    '4. PRIMARIA',
+    '5. INICIAL',
+    '5. PRIMARIA'
+];
 
 // Función para obtener el monto requerido para un curso según el año
 function obtenerMontoCurso(curso, anio) {
     if (anio === '2026') {
-        return montosPorCurso2026[curso] || 50;
+        // Si no encuentra el curso, devuelve 0 (no 50)
+        return montosPorCurso2026[curso] !== undefined ? montosPorCurso2026[curso] : 0;
     } else if (anio === '2027') {
-        return montosPorCurso2027[curso] || 50;
+        // Si no encuentra el curso, devuelve 0 (no 50)
+        return montosPorCurso2027[curso] !== undefined ? montosPorCurso2027[curso] : 0;
     }
-    return 50;
+    return 0; // ← Cambia este 50 por 0
 }
 
 // Variables para control de acceso
@@ -123,7 +148,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     // Configurar fecha actual en los formularios
     const hoy = new Date().toISOString().split('T')[0];
-    ['fechaGasto', 'fechaCaja', 'fechaPago', 'fechaPagoCasillero', 'fechaOtroCobro', 'fechaEvento'].forEach(id => {
+    ['fechaGasto', 'fechaCaja', 'fechaPago', 'fechaGastoCasillero', 'fechaOtroCobro', 'fechaEvento', 'fechaLimiteSector'].forEach(id => {
         const elem = document.getElementById(id);
         if (elem) elem.value = hoy;
     });
@@ -133,30 +158,30 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     // Event listeners para formularios
     const cursoOtroCobro = document.getElementById('cursoOtroCobro');
-    if (cursoOtroCobro) {
-        cursoOtroCobro.addEventListener('change', cargarEstudiantesParaOtrosCobros);
-    }
+if (cursoOtroCobro) {
+    cursoOtroCobro.addEventListener('change', function() {
+        cargarEstudiantesParaOtrosCobros();
+        
+        // Si hay un sector seleccionado, mostrar el marcado
+        const sectorId = document.getElementById('sectorCobro').value;
+        if (sectorId && this.value) {
+            setTimeout(() => cargarEstudiantesParaMarcarPagos(), 100);
+        }
+    });
+}
+
+// Event listeners para filtros
+const filtroEstudiante = document.getElementById('filtroEstudiante');
+if (filtroEstudiante) {
+    filtroEstudiante.addEventListener('keyup', function(e) {
+        if (e.key === 'Enter') filtrarEstudiantesSeguimiento();
+    });
+}
     
-    // Event listeners para filtros
-    const filtroEstudiante = document.getElementById('filtroEstudiante');
-    if (filtroEstudiante) {
-        filtroEstudiante.addEventListener('keyup', function(e) {
-            if (e.key === 'Enter') filtrarEstudiantesSeguimiento();
-        });
-    }
-    
-    // Event listener para meses múltiples en casilleros
-    const multipleMesesCheckbox = document.getElementById('multipleMeses');
-    if (multipleMesesCheckbox) {
-        multipleMesesCheckbox.addEventListener('change', function() {
-            const container = document.getElementById('mesesMultipleContainer');
-            if (this.checked) {
-                container.style.display = 'block';
-                generarCheckboxesMeses();
-            } else {
-                container.style.display = 'none';
-            }
-        });
+    // Event listener para sector de cobro
+    const sectorCobroSelect = document.getElementById('sectorCobro');
+    if (sectorCobroSelect) {
+        sectorCobroSelect.addEventListener('change', actualizarMontoSector);
     }
     
     console.log('Inicialización completada');
@@ -218,10 +243,18 @@ function iniciarSesion() {
     // Mostrar contenido principal
     const mainContent = document.querySelector('.main-content');
     if (mainContent) mainContent.style.display = 'block';
+
+    // Event listener para gastos de otros cobros
+const formGastoOtroCobro = document.getElementById('formGastoOtroCobro');
+if (formGastoOtroCobro) {
+    formGastoOtroCobro.addEventListener('submit', registrarGastoOtroCobro);
+}
     
     // Actualizar interfaz según tipo de usuario
     actualizarInterfazPorUsuario();
-    
+    // Actualizar resumen de otros cobros
+actualizarResumenOtrosCobros();
+actualizarTablaGastosOtrosCobros();
     // Inicializar datos
     cargarDatos();
     inicializarGraficos();
@@ -231,26 +264,25 @@ function iniciarSesion() {
     actualizarDetalleCajaFuerte();
     actualizarSeguimiento();
     actualizarEventos();
-    actualizarTablaOtrosCobros();
+    actualizarSectoresCobro();
+    actualizarTablaGastosCasilleros();
+    // Agregar botones de administración de cursos
+agregarBotonesAdministracionCursos();
     
     // Event listeners para formularios
-    const formAporte = document.getElementById('formAporte');
     const formGasto = document.getElementById('formGasto');
     const formMovimientoCaja = document.getElementById('formMovimientoCaja');
-    const formPagoCasillero = document.getElementById('formPagoCasillero');
     const formOtroCobro = document.getElementById('formOtroCobro');
     const formEvento = document.getElementById('formEvento');
+    const formNuevoSector = document.getElementById('formNuevoSector');
+    const formGastoCasillero = document.getElementById('formGastoCasillero');
     
-    if (formAporte) formAporte.addEventListener('submit', registrarAporte);
     if (formGasto) formGasto.addEventListener('submit', registrarGasto);
     if (formMovimientoCaja) formMovimientoCaja.addEventListener('submit', registrarMovimientoCaja);
-    if (formPagoCasillero) formPagoCasillero.addEventListener('submit', registrarPagoCasillero);
     if (formOtroCobro) formOtroCobro.addEventListener('submit', registrarOtroCobro);
     if (formEvento) formEvento.addEventListener('submit', registrarEvento);
-    
-    // Event listener para cambio de curso en aportes
-    const cursoSelect = document.getElementById('curso');
-    if (cursoSelect) cursoSelect.addEventListener('change', cargarEstudiantesParaAportes);
+    if (formNuevoSector) formNuevoSector.addEventListener('submit', crearNuevoSector);
+    if (formGastoCasillero) formGastoCasillero.addEventListener('submit', registrarGastoCasillero);
     
     // Event listeners para filtros
     const filtroAnio = document.getElementById('filtroAnio');
@@ -291,7 +323,7 @@ function cerrarSesion() {
 }
 
 function actualizarInterfazPorUsuario() {
-    const elementosEditables = document.querySelectorAll('#formAporte, #formGasto, #formMovimientoCaja, #formPagoCasillero, #formOtroCobro, #formEvento, #guardarPagosBtn, #agregarEstudianteBtn, #eliminarEstudianteBtn, #resetButton, .btn-editar, .btn-pago');
+    const elementosEditables = document.querySelectorAll('#formGasto, #formMovimientoCaja, #formOtroCobro, #formEvento, #formNuevoSector, #formGastoCasillero, #guardarPagosBtn, #agregarEstudianteBtn, #eliminarEstudianteBtn, #resetButton, .btn-editar, .btn-pago');
     
     if (isAdmin) {
         elementosEditables.forEach(el => {
@@ -366,13 +398,13 @@ function inicializarNavegacion() {
                 
                 switch(tabId) {
                     case 'dashboard': actualizarDashboard(); break;
-                    case 'aportes': actualizarTablaAportes(); break;
-                    case 'gastos': actualizarTablaGastos(); break;
                     case 'caja': actualizarTablaMovimientosCaja(); break;
+                    case 'gastos': actualizarTablaGastos(); break;
+                    case 'cursos': break; // Se carga al seleccionar curso
                     case 'reportes': actualizarReportes(); break;
                     case 'seguimiento': actualizarSeguimiento(); break;
                     case 'casilleros': actualizarVistaCasilleros(); break;
-                    case 'otros-cobros': actualizarTablaOtrosCobros(); break;
+                    case 'otros-cobros': actualizarSectoresCobro(); break;
                     case 'eventos': actualizarEventos(); break;
                 }
             }
@@ -409,10 +441,10 @@ async function cargarDatos() {
         }
     }
     
-    // 3. Si NO HAY DATOS EN ABSOLUTO, inicializar vacíos
+    // 3. Si NO HAY DATOS EN ABSOLUTO, usar estructura por defecto
     if (!datosCargados) {
-        console.log('⚠️ No hay datos, inicializando nuevos...');
-        datosCargados = inicializarDatosVacios();
+        console.log('⚠️ No hay datos, usando estructura por defecto');
+        datosCargados = datos;
     }
     
     // 4. ASIGNAR LOS DATOS CARGADOS A LA VARIABLE GLOBAL
@@ -420,11 +452,17 @@ async function cargarDatos() {
     
     // 5. Asegurar que todos los cursos tengan la estructura correcta
     if (!datos.cursos) {
-        datos.cursos = inicializarDatosVacios().cursos;
+        datos.cursos = {};
+        ordenCursos.forEach(curso => {
+            datos.cursos[curso] = { estudiantes: [] };
+        });
     }
     
     // 6. Asegurar que cada curso tenga estudiantes
-    for (const cursoNombre in datos.cursos) {
+    for (const cursoNombre of ordenCursos) {
+        if (!datos.cursos[cursoNombre]) {
+            datos.cursos[cursoNombre] = { estudiantes: [] };
+        }
         if (!datos.cursos[cursoNombre].estudiantes) {
             datos.cursos[cursoNombre].estudiantes = [];
         }
@@ -435,22 +473,30 @@ async function cargarDatos() {
         datos.casilleros = {};
     }
     
-    // 8. Inicializar estudiantes si no existen
+    // 8. Asegurar que sectoresCobro exista
+    if (!datos.sectoresCobro) {
+        datos.sectoresCobro = [];
+    }
+    
+    // 9. Asegurar que gastosCasilleros exista
+    if (!datos.gastosCasilleros) {
+        datos.gastosCasilleros = [];
+    }
+    
+    // 10. Inicializar estudiantes si no existen
     inicializarEstudiantes();
     
-    // 9. Inicializar casilleros si no existen
+    // 11. Inicializar casilleros si no existen
     if (Object.keys(datos.casilleros).length === 0) {
         inicializarCasilleros();
     }
     
     console.log('📊 Datos cargados correctamente');
-    console.log('- Total aportes:', datos.aportes?.length || 0);
-    console.log('- Total gastos:', datos.gastos?.length || 0);
     console.log('- Total estudiantes:', Object.values(datos.cursos || {}).reduce((total, curso) => total + (curso.estudiantes?.length || 0), 0));
+    console.log('- Total sectores cobro:', datos.sectoresCobro?.length || 0);
     
-    // 10. Actualizar toda la interfaz
+    // 12. Actualizar toda la interfaz
     actualizarDashboard();
-    actualizarTablaAportes();
     actualizarTablaGastos();
     actualizarTablaMovimientosCaja();
     actualizarUltimosRegistros();
@@ -459,8 +505,14 @@ async function cargarDatos() {
     actualizarSeguimiento();
     actualizarVistaCasilleros();
     actualizarEventos();
-    actualizarTablaOtrosCobros();
+    actualizarSectoresCobro();
+    actualizarTablaGastosCasilleros();
     
+const hoy = new Date().toISOString().split('T')[0];
+const fechaGastoOtroCobro = document.getElementById('fechaGastoOtroCobro');
+if (fechaGastoOtroCobro) fechaGastoOtroCobro.value = hoy;
+
+
     return datos;
 }
 
@@ -479,7 +531,8 @@ function guardarDatos() {
 
 // Inicializar estudiantes
 function inicializarEstudiantes() {
-    for (const [cursoNombre, datosCurso] of Object.entries(datos.cursos)) {
+    for (const cursoNombre of ordenCursos) {
+        const datosCurso = datos.cursos[cursoNombre];
         if (!datosCurso.estudiantes || datosCurso.estudiantes.length === 0) {
             datosCurso.estudiantes = [];
             for (let i = 1; i <= 45; i++) {
@@ -504,10 +557,13 @@ function inicializarCasilleros() {
             datos.casilleros[i] = {
                 numero: i,
                 estudiante: '',
-                pagos: [], // Ahora es un array para múltiples pagos
-                historialMeses2026: [],
-                historialMeses2027: [],
-                totalPagado: 0
+                montoMensual: 10.00,
+                mesesPagados2026: [],
+                mesesPagados2027: [],
+                historialPagos: [], // Nuevo: historial detallado
+                fechaAsignacion: '',
+                totalPagado: 0,
+                estado: 'libre'
             };
         }
     }
@@ -523,31 +579,260 @@ function inicializarCasilleros() {
         }
     }
     
+    // Inicializar calendarios de meses COMPACTOS
+    inicializarCalendarioMesesCompacto('calendario2026', 2026);
+    inicializarCalendarioMesesCompacto('calendario2027', 2027);
+    
     actualizarVistaCasilleros();
 }
 
-// GENERAR CHECKBOXES PARA MESES MÚLTIPLES
-function generarCheckboxesMeses() {
-    const container = document.querySelector('.meses-multiple');
+
+function inicializarCalendarioMesesCompacto(containerId, anio) {
+    const container = document.getElementById(containerId);
     if (!container) return;
     
     container.innerHTML = '';
-    const mesesNombres = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
-                         'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     
-    mesesNombres.forEach((mes, index) => {
-        const mesNum = index + 1;
-        const div = document.createElement('div');
-        div.className = 'form-check form-check-inline mes-checkbox';
-        div.innerHTML = `
-            <input class="form-check-input" type="checkbox" id="mes${mesNum}" value="${mesNum}">
-            <label class="form-check-label" for="mes${mesNum}">${mes.charAt(0)}</label>
-        `;
-        container.appendChild(div);
+    const meses = [
+        'E', 'F', 'M', 'A', 'M', 'J',
+        'J', 'A', 'S', 'O', 'N', 'D'
+    ];
+    
+    meses.forEach((mes, index) => {
+        const mesDiv = document.createElement('div');
+        mesDiv.className = 'mes-cuadrito mes-no-pagado';
+        mesDiv.title = `${obtenerNombreMesCompleto(index + 1)} ${anio}`;
+        mesDiv.dataset.mes = index + 1;
+        mesDiv.dataset.anio = anio;
+        
+        mesDiv.innerHTML = `<small>${mes}</small>`;
+        
+        mesDiv.onclick = function() {
+            if (!isAdmin) return;
+            this.classList.toggle('mes-pagado');
+            this.classList.toggle('mes-no-pagado');
+        };
+        
+        container.appendChild(mesDiv);
     });
 }
 
+// FUNCIÓN AUXILIAR PARA NOMBRE COMPLETO DEL MES
+function obtenerNombreMesCompleto(numero) {
+    const meses = [
+        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+    return meses[numero - 1] || 'Mes ' + numero;
+}
+
+// INICIALIZAR CALENDARIO DE MESES
+function inicializarCalendarioMeses(containerId, anio) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    const meses = [
+        'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+        'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
+    ];
+    
+    meses.forEach((mes, index) => {
+        const mesDiv = document.createElement('div');
+        mesDiv.className = 'mes-calendario mes-no-pagado';
+        mesDiv.textContent = mes;
+        mesDiv.dataset.mes = index + 1;
+        mesDiv.dataset.anio = anio;
+        
+        mesDiv.onclick = function() {
+            this.classList.toggle('mes-pagado');
+            this.classList.toggle('mes-no-pagado');
+        };
+        
+        container.appendChild(mesDiv);
+    });
+}
+
+// CARGAR DATOS DE CASILLERO
+function cargarDatosCasillero() {
+    const numero = parseInt(document.getElementById('numeroCasillero').value);
+    if (!numero) return;
+    
+    const casillero = datos.casilleros[numero] || {
+        numero: numero,
+        estudiante: '',
+        montoMensual: 10.00,
+        mesesPagados2026: [],
+        mesesPagados2027: [],
+        historial: []
+    };
+    
+    document.getElementById('estudianteCasillero').value = casillero.estudiante || '';
+    document.getElementById('montoMensualCasillero').value = casillero.montoMensual || 10.00;
+    
+    // Marcar meses pagados 2026
+    const meses2026 = document.querySelectorAll('#calendario2026 .mes-calendario');
+    meses2026.forEach(mesDiv => {
+        const mesNum = parseInt(mesDiv.dataset.mes);
+        const pagado = casillero.mesesPagados2026.includes(mesNum);
+        
+        if (pagado) {
+            mesDiv.classList.add('mes-pagado');
+            mesDiv.classList.remove('mes-no-pagado');
+        } else {
+            mesDiv.classList.add('mes-no-pagado');
+            mesDiv.classList.remove('mes-pagado');
+        }
+    });
+    
+    // Marcar meses pagados 2027
+    const meses2027 = document.querySelectorAll('#calendario2027 .mes-calendario');
+    meses2027.forEach(mesDiv => {
+        const mesNum = parseInt(mesDiv.dataset.mes);
+        const pagado = casillero.mesesPagados2027.includes(mesNum);
+        
+        if (pagado) {
+            mesDiv.classList.add('mes-pagado');
+            mesDiv.classList.remove('mes-no-pagado');
+        } else {
+            mesDiv.classList.add('mes-no-pagado');
+            mesDiv.classList.remove('mes-pagado');
+        }
+    });
+}
+
+// GUARDAR CASILLERO
+function guardarCasillero() {
+    if (!isAdmin) return;
+    
+    const numero = parseInt(document.getElementById('numeroCasillero').value);
+    const estudiante = document.getElementById('estudianteCasillero').value;
+    const montoMensual = parseFloat(document.getElementById('montoMensualCasillero').value) || 10.00;
+    
+    if (!numero) {
+        mostrarMensaje('Seleccione un casillero', 'error');
+        return;
+    }
+    
+    if (!estudiante.trim()) {
+        mostrarMensaje('Ingrese el nombre del estudiante', 'error');
+        return;
+    }
+    
+    // Obtener meses pagados 2026
+    const mesesPagados2026 = [];
+    const meses2026 = document.querySelectorAll('#calendario2026 .mes-cuadrito.mes-pagado');
+    meses2026.forEach(mesDiv => {
+        mesesPagados2026.push(parseInt(mesDiv.dataset.mes));
+    });
+    
+    // Obtener meses pagados 2027
+    const mesesPagados2027 = [];
+    const meses2027 = document.querySelectorAll('#calendario2027 .mes-cuadrito.mes-pagado');
+    meses2027.forEach(mesDiv => {
+        mesesPagados2027.push(parseInt(mesDiv.dataset.mes));
+    });
+    
+    // Calcular total pagado
+    const totalPagado = (mesesPagados2026.length + mesesPagados2027.length) * montoMensual;
+    
+    // Crear/actualizar historial de pagos
+    const hoy = new Date().toISOString().split('T')[0];
+    let historialPagos = [];
+    
+    // Si ya existe el casillero, mantener su historial anterior
+    if (datos.casilleros[numero] && datos.casilleros[numero].historialPagos) {
+        historialPagos = datos.casilleros[numero].historialPagos;
+    }
+    
+    // Agregar nuevos pagos al historial
+    const fechaActual = new Date();
+    const fechaActualStr = fechaActual.toISOString().split('T')[0];
+    
+    // Agregar pagos 2026 al historial
+    mesesPagados2026.forEach(mes => {
+        const pagoExistente = historialPagos.find(p => 
+            p.anio === 2026 && p.mes === mes
+        );
+        
+        if (!pagoExistente) {
+            historialPagos.push({
+                fecha: fechaActualStr,
+                anio: 2026,
+                mes: mes,
+                nombreMes: obtenerNombreMesCompleto(mes),
+                monto: montoMensual,
+                estudiante: estudiante,
+                tipo: 'pago_mensual',
+                timestamp: Date.now()
+            });
+        }
+    });
+    
+    // Agregar pagos 2027 al historial
+    mesesPagados2027.forEach(mes => {
+        const pagoExistente = historialPagos.find(p => 
+            p.anio === 2027 && p.mes === mes
+        );
+        
+        if (!pagoExistente) {
+            historialPagos.push({
+                fecha: fechaActualStr,
+                anio: 2027,
+                mes: mes,
+                nombreMes: obtenerNombreMesCompleto(mes),
+                monto: montoMensual,
+                estudiante: estudiante,
+                tipo: 'pago_mensual',
+                timestamp: Date.now()
+            });
+        }
+    });
+    
+    // Si es nuevo casillero, agregar registro de asignación
+    if (!datos.casilleros[numero] || !datos.casilleros[numero].estudiante) {
+        historialPagos.push({
+            fecha: fechaActualStr,
+            anio: 2026,
+            mes: 0,
+            nombreMes: 'Asignación',
+            monto: 0,
+            estudiante: estudiante,
+            tipo: 'asignacion',
+            descripcion: `Casillero ${numero} asignado a ${estudiante}`,
+            timestamp: Date.now()
+        });
+    }
+    
+    // Ordenar historial por fecha (más reciente primero)
+    historialPagos.sort((a, b) => b.timestamp - a.timestamp);
+    
+    // Guardar casillero
+    datos.casilleros[numero] = {
+        numero: numero,
+        estudiante: estudiante,
+        montoMensual: montoMensual,
+        mesesPagados2026: mesesPagados2026,
+        mesesPagados2027: mesesPagados2027,
+        historialPagos: historialPagos,
+        totalPagado: totalPagado,
+        fechaAsignacion: datos.casilleros[numero] && datos.casilleros[numero].fechaAsignacion ? 
+                        datos.casilleros[numero].fechaAsignacion : fechaActualStr,
+        estado: estudiante.trim() ? 'ocupado' : 'libre',
+        ultimaActualizacion: fechaActualStr
+    };
+    
+    guardarDatos();
+    actualizarVistaCasilleros();
+    actualizarDetalleCajaFuerte();
+    
+    mostrarMensaje('Casillero guardado exitosamente', 'success');
+}
+
+
 // ACTUALIZAR VISTA DE CASILLEROS MEJORADA
+// ACTUALIZAR VISTA DE CASILLEROS (VISTA ORIGINAL - calendario solo en modal)
 function actualizarVistaCasilleros() {
     const sectorA = document.getElementById('sectorA');
     const sectorB = document.getElementById('sectorB');
@@ -565,85 +850,56 @@ function actualizarVistaCasilleros() {
         const casillero = datos.casilleros[i] || {
             numero: i,
             estudiante: '',
-            pagos: [],
-            historialMeses2026: [],
-            historialMeses2027: [],
+            montoMensual: 10.00,
+            mesesPagados2026: [],
+            mesesPagados2027: [],
+            historial: [],
             totalPagado: 0
         };
         
-        // Calcular total pagado
-        let totalPagadoCasillero = 0;
-        if (casillero.pagos && casillero.pagos.length > 0) {
-            totalPagadoCasillero = casillero.pagos.reduce((sum, pago) => sum + (pago.monto || 0), 0);
+        // Calcular total pagado si no existe
+        if (!casillero.totalPagado) {
+            casillero.totalPagado = (casillero.mesesPagados2026.length + casillero.mesesPagados2027.length) * (casillero.montoMensual || 10.00);
+        }
+        
+        const tieneEstudiante = casillero.estudiante && casillero.estudiante.trim() !== '';
+        const estadoClase = tieneEstudiante ? 'pagado' : 'libre';
+        const estadoTexto = tieneEstudiante ? 'OCUPADO' : 'LIBRE';
+        
+        // Calcular meses pagados para mostrar resumen
+        const totalMesesPagados = casillero.mesesPagados2026.length + casillero.mesesPagados2027.length;
+        let resumenMeses = '';
+        
+        if (tieneEstudiante && totalMesesPagados > 0) {
+            resumenMeses = `<div class="mt-1"><small>${totalMesesPagados} mes(es) pagado(s)</small></div>`;
         }
         
         const casilleroDiv = document.createElement('div');
         casilleroDiv.className = `col-4 col-md-2`;
         
-        const tienePagos = totalPagadoCasillero > 0;
-        const estadoClase = tienePagos ? 'pagado' : 'debe';
-        const estadoTexto = tienePagos ? 'PAGADO' : 'LIBRE';
-        
-        // Generar calendario combinado de 2026 y 2027
-        let calendarioHTML = '';
-        const mesesPagados2026 = casillero.historialMeses2026 || [];
-        const mesesPagados2027 = casillero.historialMeses2027 || [];
-        
-        if (mesesPagados2026.length > 0 || mesesPagados2027.length > 0) {
-            calendarioHTML = '<div class="calendario-meses">';
-            const mesesNombres = ['E', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
-            
-            // 2026
-            calendarioHTML += '<div class="text-center"><small>2026</small></div>';
-            mesesNombres.forEach((mes, index) => {
-                const mesNum = index + 1;
-                const pagado = mesesPagados2026.includes(mesNum);
-                calendarioHTML += `
-                    <div class="mes-calendario ${pagado ? 'mes-pagado' : 'mes-no-pagado'}" 
-                         title="${mes} 2026 - ${pagado ? 'Pagado' : 'No pagado'}">
-                        ${mes}
-                    </div>
-                `;
-            });
-            
-            // 2027
-            calendarioHTML += '<div class="text-center mt-1"><small>2027</small></div>';
-            mesesNombres.forEach((mes, index) => {
-                const mesNum = index + 1;
-                const pagado = mesesPagados2027.includes(mesNum);
-                calendarioHTML += `
-                    <div class="mes-calendario ${pagado ? 'mes-pagado' : 'mes-no-pagado'}" 
-                         title="${mes} 2027 - ${pagado ? 'Pagado' : 'No pagado'}">
-                        ${mes}
-                    </div>
-                `;
-            });
-            
-            calendarioHTML += '</div>';
-        }
-        
-        casilleroDiv.innerHTML = `
-            <div class="casillero ${estadoClase}">
-                <div class="numero">${i}</div>
-                <div class="estudiante">${casillero.estudiante || 'Sin asignar'}</div>
-                ${calendarioHTML}
-                <div class="estado">${estadoTexto}</div>
-                <div class="mt-1"><small>Bs ${totalPagadoCasillero.toFixed(2)}</small></div>
-                <button class="btn-historial mt-1" onclick="verHistorialCasillero(${i})">
-                    <i class="fas fa-history"></i>
-                </button>
-            </div>
-        `;
+        // En la función actualizarVistaCasilleros(), modifica esta línea:
+casilleroDiv.innerHTML = `
+    <div class="casillero ${estadoClase}" onclick="verHistorialCasillero(${i})" style="cursor: pointer;">
+        <div class="numero">${i}</div>
+        <div class="estudiante-casillero">${casillero.estudiante || 'Sin asignar'}</div>
+        ${resumenMeses}
+        <div class="estado">${estadoTexto}</div>
+        <div class="mt-1"><small>Bs ${casillero.totalPagado.toFixed(2)}</small></div>
+        <button class="btn-historial mt-1" onclick="event.stopPropagation(); verHistorialCasillero(${i})">
+            <i class="fas fa-history"></i>
+        </button>
+    </div>
+`;
         
         if (i <= 18) {
             sectorA.appendChild(casilleroDiv);
-            totalSectorA += totalPagadoCasillero;
+            totalSectorA += casillero.totalPagado || 0;
         } else {
             sectorB.appendChild(casilleroDiv);
-            totalSectorB += totalPagadoCasillero;
+            totalSectorB += casillero.totalPagado || 0;
         }
         
-        totalGeneral += totalPagadoCasillero;
+        totalGeneral += casillero.totalPagado || 0;
     }
     
     if (document.getElementById('totalPagadoSectorA')) {
@@ -657,126 +913,322 @@ function actualizarVistaCasilleros() {
     }
 }
 
-// VER HISTORIAL DE CASILLERO MEJORADO
+// VER HISTORIAL DE CASILLERO
+/// VER HISTORIAL DE CASILLERO - SIMPLIFICADA Y FUNCIONAL
+// FUNCIÓN MEJORADA PARA VER HISTORIAL DE CASILLERO
+// VER HISTORIAL DE CASILLERO - COMPLETA CON CONTROLES DE PAGO
+// VER HISTORIAL DE CASILLERO - COMPLETA CON CONTROLES DE PAGO
 function verHistorialCasillero(numero) {
     const casillero = datos.casilleros[numero] || {
         numero: numero,
         estudiante: '',
-        pagos: [],
-        historialMeses2026: [],
-        historialMeses2027: [],
-        totalPagado: 0
+        montoMensual: 10.00,
+        mesesPagados2026: [],
+        mesesPagados2027: [],
+        historialPagos: [],
+        totalPagado: 0,
+        estado: 'libre'
     };
     
-    document.getElementById('numeroCasilleroHistorial').textContent = numero;
-    document.getElementById('estudianteCasilleroHistorial').textContent = casillero.estudiante || 'Sin asignar';
+    // Calcular totales
+    const meses2026 = casillero.mesesPagados2026.length;
+    const meses2027 = casillero.mesesPagados2027.length;
+    const totalMeses = meses2026 + meses2027;
+    const totalPagado = totalMeses * (casillero.montoMensual || 10.00);
     
-    // Calcular total pagado
-    let totalPagado = 0;
-    let mesesPagados2026 = 0;
-    let mesesPagados2027 = 0;
+    // Actualizar el título del modal
+    document.getElementById('numeroCasilleroModal').textContent = numero;
     
-    if (casillero.pagos && casillero.pagos.length > 0) {
-        totalPagado = casillero.pagos.reduce((sum, pago) => sum + (pago.monto || 0), 0);
-        mesesPagados2026 = casillero.historialMeses2026 ? casillero.historialMeses2026.length : 0;
-        mesesPagados2027 = casillero.historialMeses2027 ? casillero.historialMeses2027.length : 0;
-    }
-    
-    document.getElementById('totalPagadoCasillero').textContent = `Bs ${totalPagado.toFixed(2)}`;
-    document.getElementById('mesesPagadosCasillero').textContent = `${mesesPagados2026 + mesesPagados2027} meses`;
-    
-    // Último pago
-    let ultimoPago = 'Sin pagos';
-    if (casillero.pagos && casillero.pagos.length > 0) {
-        const ultimo = casillero.pagos[casillero.pagos.length - 1];
-        ultimoPago = `${ultimo.fecha || 'Sin fecha'} - Bs ${ultimo.monto || 0}`;
-    }
-    document.getElementById('ultimoPagoCasillero').textContent = ultimoPago;
-    
-    // Generar calendario completo
-    const calendarioDiv = document.getElementById('calendarioCasillero');
-    let calendarioHTML = '<div class="text-center mb-2"><strong>Calendario de Pagos 2026-2027</strong></div>';
-    
-    const mesesNombres = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
-                         'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-    
-    // 2026
-    calendarioHTML += '<div class="mb-2"><strong>2026</strong></div><div>';
-    const mesesPagados2026Array = casillero.historialMeses2026 || [];
-    
-    mesesNombres.forEach((mes, index) => {
-        const mesNum = index + 1;
-        const pagado = mesesPagados2026Array.includes(mesNum);
+    // Generar contenido para el modal
+    let contenidoHTML = `
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <p><strong><i class="fas fa-user"></i> Estudiante:</strong> ${casillero.estudiante || 'Sin asignar'}</p>
+                <p><strong><i class="fas fa-money-bill"></i> Monto Mensual:</strong> Bs ${(casillero.montoMensual || 10.00).toFixed(2)}</p>
+            </div>
+            <div class="col-md-6">
+                <p><strong><i class="fas fa-coins"></i> Total Pagado:</strong> Bs ${totalPagado.toFixed(2)}</p>
+                <p><strong><i class="fas fa-calendar-alt"></i> Meses Pagados:</strong> ${totalMeses} meses</p>
+            </div>
+        </div>
         
-        calendarioHTML += `
-            <div class="mes-item ${pagado ? 'mes-pagado' : 'mes-no-pagado'}" 
-                 title="${mes} 2026 - ${pagado ? 'Pagado' : 'No pagado'}">
-                ${mes.charAt(0)}
+        <!-- Calendario compacto CON CONTROLES DE PAGO -->
+        <div class="calendario-compacto mb-4">
+            <h6 class="text-center mb-3 text-info">CALENDARIO DE PAGOS - ADMINISTRACIÓN</h6>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="text-warning mb-0"><small>2026</small></h6>
+                            ${isAdmin ? `
+                            <button class="btn btn-sm btn-outline-warning" onclick="marcarTodosMeses(${numero}, 2026)">
+                                <i class="fas fa-check-double"></i> Todos
+                            </button>
+                            ` : ''}
+                        </div>
+                        <div class="meses-container-compacto">
+    `;
+    
+    // Meses 2026 en cuadritos CON CONTROLES
+    for (let mes = 1; mes <= 12; mes++) {
+        const pagado = casillero.mesesPagados2026.includes(mes);
+        const mesLetra = ['E', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'][mes-1];
+        
+        contenidoHTML += `
+            <div class="mes-cuadrito-vista-con-control ${pagado ? 'mes-pagado' : 'mes-no-pagado'}" 
+                 title="${obtenerNombreMesCompleto(mes)} 2026 - ${pagado ? 'PAGADO' : 'NO PAGADO'}"
+                 ${isAdmin ? `onclick="togglePagoMes(${numero}, 2026, ${mes})"` : ''}
+                 id="mes-${numero}-2026-${mes}">
+                ${mesLetra}
+                <div class="indicador-admin">
+                    ${pagado ? '✓' : '○'}
+                </div>
             </div>
         `;
-    });
-    calendarioHTML += '</div>';
+    }
     
-    // 2027
-    calendarioHTML += '<div class="mb-2 mt-3"><strong>2027</strong></div><div>';
-    const mesesPagados2027Array = casillero.historialMeses2027 || [];
+    contenidoHTML += `
+                        </div>
+                        ${isAdmin ? `
+                        <div class="mt-2 text-center">
+                            <button class="btn btn-sm btn-warning" onclick="registrarPagoMasivo(${numero}, 2026)">
+                                <i class="fas fa-save"></i> Guardar cambios 2026
+                            </button>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="text-info mb-0"><small>2027</small></h6>
+                            ${isAdmin ? `
+                            <button class="btn btn-sm btn-outline-info" onclick="marcarTodosMeses(${numero}, 2027)">
+                                <i class="fas fa-check-double"></i> Todos
+                            </button>
+                            ` : ''}
+                        </div>
+                        <div class="meses-container-compacto">
+    `;
     
-    mesesNombres.forEach((mes, index) => {
-        const mesNum = index + 1;
-        const pagado = mesesPagados2027Array.includes(mesNum);
+    // Meses 2027 en cuadritos CON CONTROLES
+    for (let mes = 1; mes <= 12; mes++) {
+        const pagado = casillero.mesesPagados2027.includes(mes);
+        const mesLetra = ['E', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'][mes-1];
         
-        calendarioHTML += `
-            <div class="mes-item ${pagado ? 'mes-pagado' : 'mes-no-pagado'}" 
-                 title="${mes} 2027 - ${pagado ? 'Pagado' : 'No pagado'}">
-                ${mes.charAt(0)}
+        contenidoHTML += `
+            <div class="mes-cuadrito-vista-con-control ${pagado ? 'mes-pagado' : 'mes-no-pagado'}" 
+                 title="${obtenerNombreMesCompleto(mes)} 2027 - ${pagado ? 'PAGADO' : 'NO PAGADO'}"
+                 ${isAdmin ? `onclick="togglePagoMes(${numero}, 2027, ${mes})"` : ''}
+                 id="mes-${numero}-2027-${mes}">
+                ${mesLetra}
+                <div class="indicador-admin">
+                    ${pagado ? '✓' : '○'}
+                </div>
             </div>
         `;
-    });
-    calendarioHTML += '</div>';
-    calendarioDiv.innerHTML = calendarioHTML;
+    }
     
-    // Mostrar detalle de pagos
-    const detalleDiv = document.getElementById('detallePagosCasillero');
-    if (casillero.pagos && casillero.pagos.length > 0) {
-        let detalleHTML = '<table class="table table-sm table-dark"><thead><tr><th>Fecha</th><th>Año</th><th>Mes</th><th>Monto</th></tr></thead><tbody>';
+    contenidoHTML += `
+                        </div>
+                        ${isAdmin ? `
+                        <div class="mt-2 text-center">
+                            <button class="btn btn-sm btn-info" onclick="registrarPagoMasivo(${numero}, 2027)">
+                                <i class="fas fa-save"></i> Guardar cambios 2027
+                            </button>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- BOTONES DE ACCIÓN RÁPIDA -->
+            ${isAdmin ? `
+            <div class="acciones-rapidas mt-4">
+                <div class="row">
+                    <div class="col-md-4">
+                        <button class="btn btn-success w-100" onclick="registrarPagoMensual(${numero})">
+                            <i class="fas fa-money-bill-wave"></i> Registrar pago actual
+                        </button>
+                    </div>
+                    <div class="col-md-4">
+                        <button class="btn btn-warning w-100" onclick="abrirModalLiberarCasillero(${numero})">
+                            <i class="fas fa-door-open"></i> Liberar casillero
+                        </button>
+                    </div>
+                    <div class="col-md-4">
+                        <button class="btn btn-primary w-100" onclick="abrirModalCambiarEstudiante(${numero})">
+                            <i class="fas fa-exchange-alt"></i> Cambiar estudiante
+                        </button>
+                    </div>
+                </div>
+            </div>
+            ` : ''}
+            
+            <!-- RESUMEN -->
+            <div class="resumen-calendario mt-4">
+                <h6 class="text-center mb-2">RESUMEN</h6>
+                <div class="row text-center">
+                    <div class="col-4">
+                        <div class="resumen-item">
+                            <div class="resumen-titulo">2026</div>
+                            <div class="resumen-valor" id="contador2026">${meses2026}/12</div>
+                            <div class="resumen-monto">Bs ${(meses2026 * (casillero.montoMensual || 10)).toFixed(2)}</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="resumen-item">
+                            <div class="resumen-titulo">2027</div>
+                            <div class="resumen-valor" id="contador2027">${meses2027}/12</div>
+                            <div class="resumen-monto">Bs ${(meses2027 * (casillero.montoMensual || 10)).toFixed(2)}</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="resumen-item">
+                            <div class="resumen-titulo">TOTAL</div>
+                            <div class="resumen-valor" id="contadorTotal">${totalMeses}/24</div>
+                            <div class="resumen-monto">Bs ${totalPagado.toFixed(2)}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
         
-        casillero.pagos.forEach(pago => {
-            detalleHTML += `
+        <!-- HISTORIAL -->
+    `;
+    
+    // Generar historial de pagos si existe
+    if (casillero.historialPagos && casillero.historialPagos.length > 0) {
+        contenidoHTML += `
+            <div class="historial-container">
+                <h6 class="text-info mb-2"><i class="fas fa-history"></i> Historial de Pagos</h6>
+                <table class="table table-sm table-dark">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Descripción</th>
+                            <th>Monto</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        casillero.historialPagos.forEach((registro, index) => {
+            let descripcion = '';
+            let monto = '';
+            
+            if (registro.tipo === 'asignacion') {
+                descripcion = registro.descripcion || 'Asignación de casillero';
+                monto = '-';
+            } else if (registro.tipo === 'pago_mensual') {
+                descripcion = `Pago ${registro.nombreMes} ${registro.anio}`;
+                monto = `Bs ${registro.monto.toFixed(2)}`;
+            } else if (registro.tipo === 'liberacion') {
+                descripcion = registro.descripcion || 'Liberación de casillero';
+                monto = '-';
+            } else if (registro.tipo === 'cambio_estudiante') {
+                descripcion = registro.descripcion || 'Cambio de estudiante';
+                monto = '-';
+            }
+            
+            contenidoHTML += `
                 <tr>
-                    <td>${pago.fecha || 'Sin fecha'}</td>
-                    <td>${pago.anio || '2026'}</td>
-                    <td>${mesesNombres[(pago.mes || 1) - 1] || 'Enero'}</td>
-                    <td>Bs ${(pago.monto || 0).toFixed(2)}</td>
+                    <td>${registro.fecha}</td>
+                    <td>${descripcion}</td>
+                    <td>${monto}</td>
+                    <td>
+                        ${isAdmin && registro.tipo === 'pago_mensual' ? `
+                        <button class="btn btn-danger btn-sm" onclick="eliminarPagoIndividual(${numero}, ${registro.anio}, ${registro.mes})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                        ` : ''}
+                    </td>
                 </tr>
             `;
         });
         
-        detalleHTML += '</tbody></table>';
-        detalleDiv.innerHTML = detalleHTML;
+        contenidoHTML += `
+                    </tbody>
+                </table>
+            </div>
+        `;
     } else {
-        detalleDiv.innerHTML = '<p class="text-muted">No hay pagos registrados para este casillero</p>';
+        contenidoHTML += `
+            <div class="text-center text-muted py-3">
+                <i class="fas fa-history fa-2x"></i>
+                <p>No hay historial registrado</p>
+            </div>
+        `;
     }
     
-    const modal = new bootstrap.Modal(document.getElementById('modalHistorialCasillero'));
+    // Insertar contenido en el modal fijo
+    const contenidoModal = document.getElementById('contenidoHistorialCompacto');
+    if (contenidoModal) {
+        contenidoModal.innerHTML = contenidoHTML;
+    }
+    
+    // Guardar el número del casillero en una variable global
+    window.casilleroActual = numero;
+    
+    // Mostrar el modal fijo
+    const modal = new bootstrap.Modal(document.getElementById('modalHistorialCasilleroCompacto'));
     modal.show();
 }
 
-// EDITAR CASILLERO DESDE HISTORIAL
-function editarCasilleroDesdeHistorial() {
-    const numero = parseInt(document.getElementById('numeroCasilleroHistorial').textContent);
-    abrirModalEditarCasillero(numero);
+// FUNCIÓN PARA EDITAR DESDE EL MODAL
+function editarCasilleroDesdeModal() {
+    // Obtener el número del casillero desde el título del modal
+    const titulo = document.getElementById('numeroCasilleroModal').textContent;
+    const numero = parseInt(titulo);
+    
+    if (numero) {
+        // Cerrar el modal primero
+        const modal = bootstrap.Modal.getInstance(document.getElementById('modalHistorialCasilleroCompacto'));
+        modal.hide();
+        
+        // Cargar datos en el formulario principal
+        setTimeout(() => {
+            document.getElementById('numeroCasillero').value = numero;
+            cargarDatosCasillero();
+            
+            // Hacer scroll al formulario
+            document.querySelector('#casilleros').scrollIntoView({ behavior: 'smooth' });
+            
+            // Enfocar en el campo estudiante
+            document.getElementById('estudianteCasillero').focus();
+        }, 300);
+    }
 }
 
-// LIBERAR CASILLERO DESDE HISTORIAL
-function liberarCasilleroDesdeHistorial() {
-    const numero = parseInt(document.getElementById('numeroCasilleroHistorial').textContent);
+// FUNCIÓN PARA EDITAR DESDE MODAL
+function editarCasilleroDesdeModal(numero) {
+    // Cerrar modal primero
+    const modal = bootstrap.Modal.getInstance(document.getElementById(`modalCasillero${numero}`));
+    modal.hide();
+    
+    // Cargar datos en formulario
+    document.getElementById('numeroCasillero').value = numero;
+    cargarDatosCasillero();
+    
+    // Enfocar en formulario
+    setTimeout(() => {
+        document.getElementById('estudianteCasillero').focus();
+    }, 300);
+}
+
+// FUNCIÓN PARA LIBERAR DESDE MODAL
+function liberarCasilleroDesdeModal(numero) {
     if (confirm(`¿Está seguro de liberar el casillero ${numero}?`)) {
         datos.casilleros[numero] = {
             numero: numero,
             estudiante: '',
-            pagos: [],
-            historialMeses2026: [],
-            historialMeses2027: [],
+            montoMensual: 10.00,
+            mesesPagados2026: [],
+            mesesPagados2027: [],
+            historial: [],
             totalPagado: 0
         };
         
@@ -784,265 +1236,38 @@ function liberarCasilleroDesdeHistorial() {
         actualizarVistaCasilleros();
         actualizarDetalleCajaFuerte();
         
-        const modal = bootstrap.Modal.getInstance(document.getElementById('modalHistorialCasillero'));
+        // Cerrar modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById(`modalCasillero${numero}`));
         modal.hide();
         
         mostrarMensaje('Casillero liberado exitosamente', 'success');
     }
 }
 
-// ABRIR MODAL PARA EDITAR CASILLERO
-function abrirModalEditarCasillero(numero) {
-    const casillero = datos.casilleros[numero] || {
-        numero: numero,
-        estudiante: '',
-        pagos: [],
-        historialMeses2026: [],
-        historialMeses2027: [],
-        totalPagado: 0
-    };
-    
-    document.getElementById('editarNumeroCasillero').value = numero;
-    document.getElementById('editarEstudianteCasillero').value = casillero.estudiante || '';
-    
-    // Generar checkboxes para meses 2026
-    const meses2026Div = document.getElementById('meses2026');
-    meses2026Div.innerHTML = '';
-    const mesesPagados2026 = casillero.historialMeses2026 || [];
-    
-    for (let i = 1; i <= 12; i++) {
-        const pagado = mesesPagados2026.includes(i);
-        const mesDiv = document.createElement('div');
-        mesDiv.className = 'mes-editar-item d-inline-block';
-        mesDiv.innerHTML = `
-            <div class="mes-editar-item ${pagado ? 'mes-editar-pagado' : 'mes-editar-no-pagado'}" 
-                 onclick="toggleMesCasillero(${i}, 2026, this)">
-                ${i}
-            </div>
-        `;
-        meses2026Div.appendChild(mesDiv);
-    }
-    
-    // Generar checkboxes para meses 2027
-    const meses2027Div = document.getElementById('meses2027');
-    meses2027Div.innerHTML = '';
-    const mesesPagados2027 = casillero.historialMeses2027 || [];
-    
-    for (let i = 1; i <= 12; i++) {
-        const pagado = mesesPagados2027.includes(i);
-        const mesDiv = document.createElement('div');
-        mesDiv.className = 'mes-editar-item d-inline-block';
-        mesDiv.innerHTML = `
-            <div class="mes-editar-item ${pagado ? 'mes-editar-pagado' : 'mes-editar-no-pagado'}" 
-                 onclick="toggleMesCasillero(${i}, 2027, this)">
-                ${i}
-            </div>
-        `;
-        meses2027Div.appendChild(mesDiv);
-    }
-    
-    const modal = new bootstrap.Modal(document.getElementById('modalEditarCasillero'));
-    modal.show();
+// FUNCIÓN AUXILIAR PARA NOMBRE MES CORTO
+function obtenerNombreMesCorto(numero) {
+    const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    return meses[numero - 1] || 'Mes ' + numero;
 }
 
-// TOGGLE MES CASILLERO (para edición)
-function toggleMesCasillero(mes, anio, elemento) {
-    elemento.classList.toggle('mes-editar-pagado');
-    elemento.classList.toggle('mes-editar-no-pagado');
+// FUNCIÓN PARA MOSTRAR MODAL DE HISTORIAL DE CASILLERO
+function mostrarModalHistorialCasillero() {
+    // Verificar si el modal existe
+    if (!document.getElementById('modalHistorialCasillero')) {
+        console.error('Modal no encontrado');
+        return false;
+    }
+    return true;
 }
 
-// GUARDAR EDICIÓN DE CASILLERO
-function guardarEdicionCasillero() {
-    const numero = parseInt(document.getElementById('editarNumeroCasillero').value);
-    const estudiante = document.getElementById('editarEstudianteCasillero').value;
-    
-    if (!datos.casilleros[numero]) {
-        datos.casilleros[numero] = {
-            numero: numero,
-            estudiante: '',
-            pagos: [],
-            historialMeses2026: [],
-            historialMeses2027: [],
-            totalPagado: 0
-        };
-    }
-    
-    // Obtener meses pagados 2026
-    const meses2026Div = document.getElementById('meses2026');
-    const mesesPagados2026 = [];
-    meses2026Div.querySelectorAll('.mes-editar-item').forEach((item, index) => {
-        if (item.classList.contains('mes-editar-pagado')) {
-            mesesPagados2026.push(index + 1);
-        }
-    });
-    
-    // Obtener meses pagados 2027
-    const meses2027Div = document.getElementById('meses2027');
-    const mesesPagados2027 = [];
-    meses2027Div.querySelectorAll('.mes-editar-item').forEach((item, index) => {
-        if (item.classList.contains('mes-editar-pagado')) {
-            mesesPagados2027.push(index + 1);
-        }
-    });
-    
-    // Recalcular pagos
-    const pagos = [];
-    let totalPagado = 0;
-    
-    // Agregar pagos para 2026
-    mesesPagados2026.forEach(mes => {
-        pagos.push({
-            fecha: new Date().toISOString().split('T')[0],
-            anio: '2026',
-            mes: mes,
-            monto: 50.00,
-            estudiante: estudiante
-        });
-        totalPagado += 50.00;
-    });
-    
-    // Agregar pagos para 2027
-    mesesPagados2027.forEach(mes => {
-        pagos.push({
-            fecha: new Date().toISOString().split('T')[0],
-            anio: '2027',
-            mes: mes,
-            monto: 50.00,
-            estudiante: estudiante
-        });
-        totalPagado += 50.00;
-    });
-    
-    datos.casilleros[numero] = {
-        numero: numero,
-        estudiante: estudiante,
-        pagos: pagos,
-        historialMeses2026: mesesPagados2026,
-        historialMeses2027: mesesPagados2027,
-        totalPagado: totalPagado
-    };
-    
-    guardarDatos();
-    actualizarVistaCasilleros();
-    actualizarDetalleCajaFuerte();
-    
-    const modal = bootstrap.Modal.getInstance(document.getElementById('modalEditarCasillero'));
-    modal.hide();
-    
-    mostrarMensaje('Casillero actualizado exitosamente', 'success');
-}
 
-// REGISTRAR PAGO DE CASILLERO MEJORADO
-function registrarPagoCasillero(e) {
-    e.preventDefault();
-    
-    if (!isAdmin) return;
-    
-    const numero = parseInt(document.getElementById('numeroCasillero').value);
-    const estudiante = document.getElementById('estudianteCasillero').value;
-    const monto = parseFloat(document.getElementById('montoCasillero').value) || 0;
-    const fecha = document.getElementById('fechaPagoCasillero').value;
-    const mes = parseInt(document.getElementById('mesCasillero').value);
-    const anio = document.getElementById('anioCasillero').value;
-    const multipleMeses = document.getElementById('multipleMeses').checked;
-    
-    if (!numero || !estudiante || !monto || !fecha || !anio) {
-        mostrarMensaje('Complete todos los campos', 'error');
-        return;
-    }
-    
-    if (!datos.casilleros[numero]) {
-        datos.casilleros[numero] = {
-            numero: numero,
-            estudiante: '',
-            pagos: [],
-            historialMeses2026: [],
-            historialMeses2027: [],
-            totalPagado: 0
-        };
-    }
-    
-    // Si es pago múltiple
-    if (multipleMeses) {
-        const mesesSeleccionados = [];
-        document.querySelectorAll('.meses-multiple input[type="checkbox"]:checked').forEach(checkbox => {
-            mesesSeleccionados.push(parseInt(checkbox.value));
-        });
-        
-        if (mesesSeleccionados.length === 0) {
-            mostrarMensaje('Seleccione al menos un mes', 'error');
-            return;
-        }
-        
-        mesesSeleccionados.forEach(mesNum => {
-            const nuevoPago = {
-                fecha: fecha,
-                anio: anio,
-                mes: mesNum,
-                monto: monto,
-                estudiante: estudiante
-            };
-            
-            datos.casilleros[numero].pagos.push(nuevoPago);
-            
-            // Agregar al historial del año correspondiente
-            if (anio === '2026') {
-                if (!datos.casilleros[numero].historialMeses2026.includes(mesNum)) {
-                    datos.casilleros[numero].historialMeses2026.push(mesNum);
-                }
-            } else if (anio === '2027') {
-                if (!datos.casilleros[numero].historialMeses2027.includes(mesNum)) {
-                    datos.casilleros[numero].historialMeses2027.push(mesNum);
-                }
-            }
-            
-            datos.casilleros[numero].totalPagado += monto;
-        });
-        
-    } else {
-        // Pago único
-        if (!mes) {
-            mostrarMensaje('Seleccione un mes', 'error');
-            return;
-        }
-        
-        const nuevoPago = {
-            fecha: fecha,
-            anio: anio,
-            mes: mes,
-            monto: monto,
-            estudiante: estudiante
-        };
-        
-        datos.casilleros[numero].pagos.push(nuevoPago);
-        datos.casilleros[numero].estudiante = estudiante;
-        datos.casilleros[numero].totalPagado += monto;
-        
-        // Agregar al historial del año correspondiente
-        if (anio === '2026') {
-            if (!datos.casilleros[numero].historialMeses2026.includes(mes)) {
-                datos.casilleros[numero].historialMeses2026.push(mes);
-            }
-        } else if (anio === '2027') {
-            if (!datos.casilleros[numero].historialMeses2027.includes(mes)) {
-                datos.casilleros[numero].historialMeses2027.push(mes);
-            }
-        }
-    }
-    
-    guardarDatos();
-    actualizarDashboard();
-    actualizarVistaCasilleros();
-    actualizarDetalleCajaFuerte();
-    actualizarSeguimiento();
-    
-    document.getElementById('formPagoCasillero').reset();
-    const hoy = new Date().toISOString().split('T')[0];
-    document.getElementById('fechaPagoCasillero').value = hoy;
-    document.getElementById('multipleMeses').checked = false;
-    document.getElementById('mesesMultipleContainer').style.display = 'none';
-    
-    mostrarMensaje('Pago de casillero registrado exitosamente', 'success');
+// FUNCIÓN AUXILIAR PARA OBTENER NOMBRE DEL MES
+function obtenerNombreMes(numero) {
+    const meses = [
+        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+    return meses[numero - 1] || 'Mes ' + numero;
 }
 
 // LIBERAR CASILLERO SELECCIONADO
@@ -1059,11 +1284,17 @@ function liberarCasilleroSeleccionado() {
         datos.casilleros[numero] = {
             numero: numero,
             estudiante: '',
-            pagos: [],
-            historialMeses2026: [],
-            historialMeses2027: [],
+            montoMensual: 10.00,
+            mesesPagados2026: [],
+            mesesPagados2027: [],
+            historial: [],
             totalPagado: 0
         };
+        
+        // Limpiar formulario
+        document.getElementById('estudianteCasillero').value = '';
+        inicializarCalendarioMeses('calendario2026', 2026);
+        inicializarCalendarioMeses('calendario2027', 2027);
         
         guardarDatos();
         actualizarVistaCasilleros();
@@ -1073,27 +1304,139 @@ function liberarCasilleroSeleccionado() {
     }
 }
 
-// EDITAR CASILLERO SELECCIONADO
-function editarCasilleroSeleccionado() {
-    if (!isAdmin) return;
-    
+// VER HISTORIAL CASILLERO SELECCIONADO
+function verHistorialCasilleroSeleccionado() {
     const numero = parseInt(document.getElementById('numeroCasillero').value);
     if (!numero) {
         mostrarMensaje('Seleccione un casillero primero', 'error');
         return;
     }
     
-    abrirModalEditarCasillero(numero);
+    verHistorialCasillero(numero);
 }
 
-// FUNCIÓN ACTUALIZAR DASHBOARD
+// EDITAR CASILLERO DESDE HISTORIAL
+function editarCasilleroDesdeHistorial() {
+    const numero = parseInt(document.getElementById('numeroCasilleroHistorial').textContent);
+    
+    // Seleccionar en el formulario
+    document.getElementById('numeroCasillero').value = numero;
+    cargarDatosCasillero();
+    
+    const modal = bootstrap.Modal.getInstance(document.getElementById('modalHistorialCasillero'));
+    modal.hide();
+}
+
+// LIBERAR CASILLERO DESDE HISTORIAL
+function liberarCasilleroDesdeHistorial() {
+    const numero = parseInt(document.getElementById('numeroCasilleroHistorial').textContent);
+    
+    if (confirm(`¿Está seguro de liberar el casillero ${numero}?`)) {
+        datos.casilleros[numero] = {
+            numero: numero,
+            estudiante: '',
+            montoMensual: 10.00,
+            mesesPagados2026: [],
+            mesesPagados2027: [],
+            historial: [],
+            totalPagado: 0
+        };
+        
+        guardarDatos();
+        actualizarVistaCasilleros();
+        actualizarDetalleCajaFuerte();
+        
+        const modal = bootstrap.Modal.getInstance(document.getElementById('modalHistorialCasillero'));
+        modal.hide();
+        
+        mostrarMensaje('Casillero liberado exitosamente', 'success');
+    }
+}
+
+// REGISTRAR GASTO DE CASILLEROS
+function registrarGastoCasillero(e) {
+    e.preventDefault();
+    
+    if (!isAdmin) return;
+    
+    const concepto = document.getElementById('conceptoGastoCasillero').value;
+    const monto = parseFloat(document.getElementById('montoGastoCasillero').value) || 0;
+    const fecha = document.getElementById('fechaGastoCasillero').value;
+    const descripcion = document.getElementById('descripcionGastoCasillero').value;
+    
+    if (!concepto || !monto || !fecha || !descripcion) {
+        mostrarMensaje('Complete todos los campos', 'error');
+        return;
+    }
+    
+    const nuevoGasto = {
+        id: Date.now(),
+        concepto: concepto,
+        monto: monto,
+        fecha: fecha,
+        descripcion: descripcion
+    };
+    
+    datos.gastosCasilleros.push(nuevoGasto);
+    guardarDatos();
+    actualizarTablaGastosCasilleros();
+    
+    document.getElementById('formGastoCasillero').reset();
+    const hoy = new Date().toISOString().split('T')[0];
+    document.getElementById('fechaGastoCasillero').value = hoy;
+    
+    mostrarMensaje('Gasto de casilleros registrado exitosamente', 'success');
+}
+
+// ACTUALIZAR TABLA DE GASTOS DE CASILLEROS
+function actualizarTablaGastosCasilleros() {
+    const tbody = document.getElementById('tablaGastosCasilleros');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    datos.gastosCasilleros.forEach(gasto => {
+        const fila = document.createElement('tr');
+        fila.innerHTML = `
+            <td>${gasto.fecha || 'Sin fecha'}</td>
+            <td>${gasto.concepto || 'Sin concepto'}</td>
+            <td>${gasto.descripcion || 'Sin descripción'}</td>
+            <td class="text-danger">Bs ${(gasto.monto || 0).toFixed(2)}</td>
+            <td>
+                ${isAdmin ? `
+                <button class="btn btn-danger btn-sm" onclick="eliminarGastoCasillero(${gasto.id})">
+                    <i class="fas fa-trash"></i>
+                </button>
+                ` : ''}
+            </td>
+        `;
+        tbody.appendChild(fila);
+    });
+}
+
+// ELIMINAR GASTO DE CASILLEROS
+function eliminarGastoCasillero(id) {
+    if (!isAdmin) return;
+    
+    if (confirm('¿Está seguro de eliminar este gasto?')) {
+        const index = datos.gastosCasilleros.findIndex(gasto => gasto.id === id);
+        if (index !== -1) {
+            datos.gastosCasilleros.splice(index, 1);
+            guardarDatos();
+            actualizarTablaGastosCasilleros();
+            mostrarMensaje('Gasto eliminado', 'success');
+        }
+    }
+}
+
+// FUNCIÓN ACTUALIZAR DASHBOARD MEJORADA
 function actualizarDashboard() {
     // 1. DINERO INICIAL
     if (datos.dineroInicial === 0) {
         datos.dineroInicial = obtenerDineroInicial();
     }
     
-    // 2. TOTAL APORTES ESTUDIANTES
+    // 2. TOTAL APORTES ESTUDIANTES (de la pestaña Cursos)
     let totalAportesEstudiantes = 0;
     for (const curso of Object.values(datos.cursos)) {
         if (curso.estudiantes) {
@@ -1145,9 +1488,15 @@ function actualizarDashboard() {
     if (document.getElementById('totalEgresosCaja')) {
         document.getElementById('totalEgresosCaja').textContent = `Bs ${datos.totalEgresosCaja.toFixed(2)}`;
     }
+    if (document.getElementById('totalAportesCaja')) {
+        document.getElementById('totalAportesCaja').textContent = `Bs ${datos.totalAportesEstudiantes.toFixed(2)}`;
+    }
     if (document.getElementById('saldoCaja')) {
         document.getElementById('saldoCaja').textContent = `Bs ${datos.dineroFinal.toFixed(2)}`;
     }
+    
+    // Actualizar últimos pagos registrados
+    actualizarUltimosPagosDashboard();
 }
 
 // Función para obtener el dinero inicial
@@ -1161,9 +1510,70 @@ function obtenerDineroInicial() {
     return movimientosIngreso.length > 0 ? (movimientosIngreso[0].monto || 0) : 0;
 }
 
-// ACTUALIZAR DETALLE DE CAJA FUERTE
+// ACTUALIZAR ÚLTIMOS PAGOS DASHBOARD (de la pestaña Cursos)
+function actualizarUltimosPagosDashboard() {
+    const tbody = document.getElementById('ultimosPagosRegistrados');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    // Recopilar todos los pagos de estudiantes
+    let todosLosPagos = [];
+    
+    for (const [cursoNombre, datosCurso] of Object.entries(datos.cursos)) {
+        if (datosCurso.estudiantes) {
+            datosCurso.estudiantes.forEach((estudiante, index) => {
+                if (estudiante.pagos) {
+                    ['2026', '2027'].forEach(anio => {
+                        const pago = estudiante.pagos[anio];
+                        if (pago && pago.pagado && pago.fecha && pago.monto > 0) {
+                            todosLosPagos.push({
+                                curso: cursoNombre,
+                                estudiante: estudiante.nombre || `Estudiante ${index + 1}`,
+                                anio: anio,
+                                monto: pago.monto,
+                                fecha: pago.fecha
+                            });
+                        }
+                    });
+                }
+            });
+        }
+    }
+    
+    // Ordenar por fecha (más reciente primero)
+    todosLosPagos.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+    
+    // Tomar los últimos 5
+    const ultimosPagos = todosLosPagos.slice(0, 5);
+    
+    if (ultimosPagos.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="text-center text-muted">
+                    No hay pagos registrados
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    ultimosPagos.forEach(pago => {
+        const fila = document.createElement('tr');
+        fila.innerHTML = `
+            <td>${pago.curso}</td>
+            <td>${pago.estudiante}</td>
+            <td>${pago.anio}</td>
+            <td class="text-success">Bs ${pago.monto.toFixed(2)}</td>
+            <td>${pago.fecha}</td>
+        `;
+        tbody.appendChild(fila);
+    });
+}
+
+// ACTUALIZAR DETALLE DE CAJA FUERTE MEJORADA
 function actualizarDetalleCajaFuerte() {
-    // Calcular ingresos por aportes
+    // Calcular ingresos por aportes (de la pestaña Cursos)
     let ingresosAportes = 0;
     for (const curso of Object.values(datos.cursos)) {
         if (curso.estudiantes) {
@@ -1187,7 +1597,7 @@ function actualizarDetalleCajaFuerte() {
         }
     }
     
-    // Calcular otros ingresos
+    // Calcular otros ingresos (movimientos de caja que no son aportes ni casilleros)
     let otrosIngresos = 0;
     for (const movimiento of datos.movimientosCaja) {
         if (movimiento.tipo === 'ingreso') {
@@ -1200,18 +1610,6 @@ function actualizarDetalleCajaFuerte() {
         }
     }
     
-    // Calcular gastos por categoría
-    let gastosOperativos = 0;
-    let gastosInversiones = 0;
-    
-    for (const gasto of datos.gastos) {
-        if (['viajes', 'compras', 'talleres', 'otros'].includes(gasto.categoria)) {
-            gastosOperativos += gasto.monto || 0;
-        } else if (['cefom', 'inscripciones'].includes(gasto.categoria)) {
-            gastosInversiones += gasto.monto || 0;
-        }
-    }
-    
     if (document.getElementById('ingresosAportes')) {
         document.getElementById('ingresosAportes').textContent = `Bs ${ingresosAportes.toFixed(2)}`;
     }
@@ -1221,98 +1619,148 @@ function actualizarDetalleCajaFuerte() {
     if (document.getElementById('otrosIngresos')) {
         document.getElementById('otrosIngresos').textContent = `Bs ${otrosIngresos.toFixed(2)}`;
     }
-    if (document.getElementById('gastosOperativos')) {
-        document.getElementById('gastosOperativos').textContent = `Bs ${gastosOperativos.toFixed(2)}`;
-    }
-    if (document.getElementById('gastosInversiones')) {
-        document.getElementById('gastosInversiones').textContent = `Bs ${gastosInversiones.toFixed(2)}`;
-    }
 }
 
-// ACTUALIZAR TOTAL DE OTROS COBROS
-function actualizarTotalOtrosCobros() {
-    let total = 0;
-    datos.otrosCobros.forEach(cobro => {
-        total += cobro.monto || 0;
-    });
-    datos.totalOtrosCobros = total;
-    
-    if (document.getElementById('totalOtrosCobros')) {
-        document.getElementById('totalOtrosCobros').textContent = `Bs ${total.toFixed(2)}`;
-    }
-}
-
-// ACTUALIZAR SEGUIMIENTO
+// ACTUALIZAR SEGUIMIENTO MEJORADO
 function actualizarSeguimiento() {
-    if (document.getElementById('totalCajaSeguimiento')) {
-        document.getElementById('totalCajaSeguimiento').textContent = `Bs ${datos.dineroFinal.toFixed(2)}`;
-    }
+    console.log("🔄 Actualizando seguimiento...");
     
-    // Calcular total de aportes
+    // RESETEAR CONTADORES
+    let estudiantesAlDia = 0;
+    let estudiantesConDeuda = 0;
     let totalAportes = 0;
     let totalDeudas = 0;
-    let estudiantesAlDia = 0;
     
-    for (const curso of Object.values(datos.cursos)) {
-        if (curso.estudiantes) {
-            for (const estudiante of curso.estudiantes) {
-                if (estudiante.pagos) {
-                    for (const pago of Object.values(estudiante.pagos)) {
-                        if (pago.pagado && pago.monto > 0) {
-                            totalAportes += pago.monto;
-                        }
-                    }
+    // CONTADORES POR AÑO
+    let estudiantesAlDia2026 = 0;
+    let estudiantesFaltan2026 = 0;
+    let totalDeuda2026 = 0;
+    
+    let estudiantesAlDia2027 = 0;
+    let estudiantesFaltan2027 = 0;
+    let totalDeuda2027 = 0;
+    
+    // RECORRER TODOS LOS CURSOS
+    for (const [cursoNombre, datosCurso] of Object.entries(datos.cursos)) {
+        if (!datosCurso.estudiantes) continue;
+        
+        const montoReq2026 = obtenerMontoCurso(cursoNombre, '2026');
+        const montoReq2027 = obtenerMontoCurso(cursoNombre, '2027');
+        
+        console.log(`Curso: ${cursoNombre} - 2026: Bs ${montoReq2026}, 2027: Bs ${montoReq2027}`);
+        
+        datosCurso.estudiantes.forEach(estudiante => {
+            let estaAlDia = true;
+            let aporteEstudiante = 0;
+            let deudaEstudiante = 0;
+            
+            // PAGO 2026
+            const pago2026 = estudiante.pagos?.['2026'] || { monto: 0, fecha: '', pagado: false };
+            if (pago2026.pagado) {
+                aporteEstudiante += pago2026.monto || 0;
+                totalAportes += pago2026.monto || 0;
+                
+                if (pago2026.monto >= montoReq2026) {
+                    estudiantesAlDia2026++;
+                } else {
+                    estudiantesFaltan2026++;
+                    totalDeuda2026 += (montoReq2026 - pago2026.monto);
+                    deudaEstudiante += (montoReq2026 - pago2026.monto);
+                    estaAlDia = false;
                 }
+            } else {
+                estudiantesFaltan2026++;
+                totalDeuda2026 += montoReq2026;
+                deudaEstudiante += montoReq2026;
+                estaAlDia = false;
             }
-        }
+            
+            // PAGO 2027
+            const pago2027 = estudiante.pagos?.['2027'] || { monto: 0, fecha: '', pagado: false };
+            if (pago2027.pagado) {
+                aporteEstudiante += pago2027.monto || 0;
+                totalAportes += pago2027.monto || 0;
+                
+                if (pago2027.monto >= montoReq2027) {
+                    estudiantesAlDia2027++;
+                } else {
+                    estudiantesFaltan2027++;
+                    totalDeuda2027 += (montoReq2027 - pago2027.monto);
+                    deudaEstudiante += (montoReq2027 - pago2027.monto);
+                    estaAlDia = false;
+                }
+            } else {
+                estudiantesFaltan2027++;
+                totalDeuda2027 += montoReq2027;
+                deudaEstudiante += montoReq2027;
+                estaAlDia = false;
+            }
+            
+            // ESTADO GENERAL
+            if (estaAlDia) {
+                estudiantesAlDia++;
+            } else {
+                estudiantesConDeuda++;
+            }
+            
+            totalDeudas += deudaEstudiante;
+        });
     }
     
+    console.log("📊 RESULTADOS:");
+    console.log(`Estudiantes al día: ${estudiantesAlDia}`);
+    console.log(`Estudiantes con deuda: ${estudiantesConDeuda}`);
+    console.log(`Total aportes: Bs ${totalAportes.toFixed(2)}`);
+    console.log(`Total deudas: Bs ${totalDeudas.toFixed(2)}`);
+    console.log(`2026 - Al día: ${estudiantesAlDia2026}, Faltan: ${estudiantesFaltan2026}, Deuda: Bs ${totalDeuda2026.toFixed(2)}`);
+    console.log(`2027 - Al día: ${estudiantesAlDia2027}, Faltan: ${estudiantesFaltan2027}, Deuda: Bs ${totalDeuda2027.toFixed(2)}`);
+    
+    // ACTUALIZAR LOS 4 CUADROS GRANDES
+    if (document.getElementById('estudiantesAlDia')) {
+        document.getElementById('estudiantesAlDia').textContent = estudiantesAlDia;
+    }
+    if (document.getElementById('estudiantesFaltan')) {
+        document.getElementById('estudiantesFaltan').textContent = estudiantesConDeuda;
+    }
     if (document.getElementById('totalAportesSeguimiento')) {
         document.getElementById('totalAportesSeguimiento').textContent = `Bs ${totalAportes.toFixed(2)}`;
     }
-    
-    // Calcular total de deudas y estudiantes al día
-    for (const [cursoNombre, datosCurso] of Object.entries(datos.cursos)) {
-        if (datosCurso.estudiantes) {
-            datosCurso.estudiantes.forEach(estudiante => {
-                let estaAlDia = true;
-                
-                if (estudiante.pagos) {
-                    ['2026', '2027'].forEach(anio => {
-                        const montoRequerido = obtenerMontoCurso(cursoNombre, anio);
-                        const pago = estudiante.pagos[anio] || { monto: 0, fecha: '', pagado: false };
-                        
-                        if (!pago.pagado || pago.monto < montoRequerido) {
-                            estaAlDia = false;
-                            totalDeudas += (montoRequerido - (pago.pagado ? pago.monto : 0));
-                        }
-                    });
-                } else {
-                    estaAlDia = false;
-                    totalDeudas += obtenerMontoCurso(cursoNombre, '2026') + obtenerMontoCurso(cursoNombre, '2027');
-                }
-                
-                if (estaAlDia) {
-                    estudiantesAlDia++;
-                }
-            });
-        }
-    }
-    
     if (document.getElementById('totalDeudasSeguimiento')) {
         document.getElementById('totalDeudasSeguimiento').textContent = `Bs ${totalDeudas.toFixed(2)}`;
     }
     
-    if (document.getElementById('estudiantesAlDia')) {
-        document.getElementById('estudiantesAlDia').textContent = estudiantesAlDia;
+    // ACTUALIZAR LOS NUEVOS CUADROS POR AÑO (si existen)
+    try {
+        if (document.getElementById('estudiantesAlDia2026')) {
+            document.getElementById('estudiantesAlDia2026').textContent = estudiantesAlDia2026;
+        }
+        if (document.getElementById('estudiantesFaltan2026')) {
+            document.getElementById('estudiantesFaltan2026').textContent = estudiantesFaltan2026;
+        }
+        if (document.getElementById('deudaTotal2026')) {
+            document.getElementById('deudaTotal2026').textContent = `Bs ${totalDeuda2026.toFixed(2)}`;
+        }
+        
+        if (document.getElementById('estudiantesAlDia2027')) {
+            document.getElementById('estudiantesAlDia2027').textContent = estudiantesAlDia2027;
+        }
+        if (document.getElementById('estudiantesFaltan2027')) {
+            document.getElementById('estudiantesFaltan2027').textContent = estudiantesFaltan2027;
+        }
+        if (document.getElementById('deudaTotal2027')) {
+            document.getElementById('deudaTotal2027').textContent = `Bs ${totalDeuda2027.toFixed(2)}`;
+        }
+    } catch (e) {
+        console.log("Algunos elementos por año no existen aún");
     }
     
+    // Actualizar el resto
     actualizarTablaSeguimientoEstudiantes();
     actualizarResumenCursosSeguimiento();
-    actualizarTablasMovimientosSeguimiento();
+    actualizarUltimosPagosSeguimiento();
 }
 
-// ACTUALIZAR TABLA DE SEGUIMIENTO ESTUDIANTES - CORREGIDA
+// ACTUALIZAR TABLA DE SEGUIMIENTO ESTUDIANTES
 function actualizarTablaSeguimientoEstudiantes() {
     const tbody = document.getElementById('tablaSeguimientoEstudiantes');
     if (!tbody) return;
@@ -1320,7 +1768,8 @@ function actualizarTablaSeguimientoEstudiantes() {
     tbody.innerHTML = '';
     
     let contador = 1;
-    for (const [cursoNombre, datosCurso] of Object.entries(datos.cursos)) {
+    for (const cursoNombre of ordenCursos) {
+        const datosCurso = datos.cursos[cursoNombre];
         if (datosCurso.estudiantes) {
             datosCurso.estudiantes.forEach((estudiante, index) => {
                 let totalPagado = 0;
@@ -1347,60 +1796,69 @@ function actualizarTablaSeguimientoEstudiantes() {
                 const estado2027 = determinarEstadoPago(pago2027, montoReq2027);
                 
                 let estadoGeneral = 'al-dia';
-                if (totalDeuda === 0) {
-                    estadoGeneral = 'al-dia';
-                } else if (totalPagado === 0) {
+                if (totalDeuda === (montoReq2026 + montoReq2027)) {
                     estadoGeneral = 'con-deuda';
-                } else {
+                } else if (totalDeuda > 0) {
                     estadoGeneral = 'parcial';
                 }
                 
                 const fila = document.createElement('tr');
-                // AGREGAR DATA-ATTRIBUTES PARA FILTRAR
                 fila.setAttribute('data-curso', cursoNombre);
                 fila.setAttribute('data-estudiante', estudiante.nombre || `Estudiante ${index + 1}`);
                 fila.setAttribute('data-estado', estadoGeneral);
                 
                 fila.innerHTML = `
-                    <td>${contador}</td>
-                    <td><strong>${cursoNombre}</strong></td>
-                    <td>${estudiante.nombre || `Estudiante ${index + 1}`}</td>
-                    <td>Bs ${montoReq2026.toFixed(2)}</td>
-                    <td class="${pago2026.pagado ? 'text-success' : 'text-danger'}">
-                        ${pago2026.pagado ? 'Bs ' + (pago2026.monto || 0).toFixed(2) : 'Bs 0.00'}
-                    </td>
-                    <td>
-                        <span class="estado-${estado2026}">
-                            ${estado2026 === 'pagado' ? 'COMPLETO' : estado2026 === 'deuda' ? 'DEUDA' : 'PARCIAL'}
-                        </span>
-                    </td>
-                    <td>Bs ${montoReq2027.toFixed(2)}</td>
-                    <td class="${pago2027.pagado ? 'text-success' : 'text-danger'}">
-                        ${pago2027.pagado ? 'Bs ' + (pago2027.monto || 0).toFixed(2) : 'Bs 0.00'}
-                    </td>
-                    <td>
-                        <span class="estado-${estado2027}">
-                            ${estado2027 === 'pagado' ? 'COMPLETO' : estado2027 === 'deuda' ? 'DEUDA' : 'PARCIAL'}
-                        </span>
-                    </td>
-                    <td class="text-success">Bs ${totalPagado.toFixed(2)}</td>
-                    <td class="${totalDeuda > 0 ? 'text-danger' : 'text-success'}">Bs ${totalDeuda.toFixed(2)}</td>
-                    <td>
-                        <span class="estado-${estadoGeneral}">
-                            ${estadoGeneral === 'al-dia' ? 'AL DÍA' : estadoGeneral === 'con-deuda' ? 'CON DEUDA' : 'PARCIAL'}
-                        </span>
-                    </td>
-                    <td>
-                        ${isAdmin ? `
-                        <button class="btn btn-pago btn-sm" onclick="abrirModalEditarPagoEspecifico('${cursoNombre}', ${index})">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        ` : ''}
-                        <button class="btn btn-recibo btn-sm" onclick="generarRecibo('${cursoNombre}', ${index})">
-                            <i class="fas fa-receipt"></i>
-                        </button>
-                    </td>
-                `;
+    <td>${contador}</td>
+    <td><strong>${cursoNombre}</strong></td>
+    <td>${estudiante.nombre || `Estudiante ${index + 1}`}</td>
+    ${montoReq2026 > 0 ? `
+    <td>Bs ${montoReq2026.toFixed(2)}</td>
+    <td class="${pago2026.pagado ? 'text-success' : 'text-danger'}">
+        ${pago2026.pagado ? 'Bs ' + (pago2026.monto || 0).toFixed(2) : 'Bs 0.00'}
+    </td>
+    <td>
+        <span class="estado-${estado2026}">
+            ${estado2026 === 'pagado' ? 'COMPLETO' : estado2026 === 'deuda' ? 'DEUDA' : 'PARCIAL'}
+        </span>
+    </td>
+    ` : `
+    <td colspan="3" class="text-center text-muted">
+        <small>NO APLICA</small>
+    </td>
+    `}
+    ${montoReq2027 > 0 ? `
+    <td>Bs ${montoReq2027.toFixed(2)}</td>
+    <td class="${pago2027.pagado ? 'text-success' : 'text-danger'}">
+        ${pago2027.pagado ? 'Bs ' + (pago2027.monto || 0).toFixed(2) : 'Bs 0.00'}
+    </td>
+    <td>
+        <span class="estado-${estado2027}">
+            ${estado2027 === 'pagado' ? 'COMPLETO' : estado2027 === 'deuda' ? 'DEUDA' : 'PARCIAL'}
+        </span>
+    </td>
+    ` : `
+    <td colspan="3" class="text-center text-muted">
+        <small>NO APLICA</small>
+    </td>
+    `}
+    <td class="text-success">Bs ${totalPagado.toFixed(2)}</td>
+    <td class="${totalDeuda > 0 ? 'text-danger' : 'text-success'}">Bs ${totalDeuda.toFixed(2)}</td>
+    <td>
+        <span class="estado-${estadoGeneral}">
+            ${estadoGeneral === 'al-dia' ? 'AL DÍA' : estadoGeneral === 'con-deuda' ? 'CON DEUDA' : 'PARCIAL'}
+        </span>
+    </td>
+    <td>
+        ${isAdmin ? `
+        <button class="btn btn-pago btn-sm" onclick="abrirModalEditarPagoEspecifico('${cursoNombre}', ${index})">
+            <i class="fas fa-edit"></i>
+        </button>
+        ` : ''}
+        <button class="btn btn-recibo btn-sm" onclick="generarRecibo('${cursoNombre}', ${index})">
+            <i class="fas fa-receipt"></i>
+        </button>
+    </td>
+`;
                 tbody.appendChild(fila);
                 contador++;
             });
@@ -1408,44 +1866,265 @@ function actualizarTablaSeguimientoEstudiantes() {
     }
 }
 
-// Función auxiliar para determinar estado de pago
-function determinarEstadoPago(pago, montoRequerido) {
-    if (!pago.pagado && pago.monto === 0) {
-        return 'deuda';
-    } else if (pago.pagado && pago.monto >= montoRequerido) {
-        return 'pagado';
-    } else if (pago.pagado && pago.monto > 0 && pago.monto < montoRequerido) {
-        return 'parcial';
-    } else if (!pago.pagado && pago.monto > 0) {
-        return 'parcial';
+
+// NUEVA FUNCIÓN: Mostrar resumen financiero en seguimiento
+function actualizarResumenFinancieroSeguimiento() {
+    const contenedor = document.getElementById('resumenFinancieroSeguimiento');
+    if (!contenedor) {
+        // Si no existe el contenedor, créalo
+        const tabSeguimiento = document.getElementById('seguimiento');
+        if (tabSeguimiento) {
+            // Buscar dónde insertar (después de la tabla de últimos pagos)
+            const ultimaSeccion = tabSeguimiento.querySelector('#tablaUltimosPagosSeguimiento');
+            if (ultimaSeccion) {
+                const nuevoContenedor = document.createElement('div');
+                nuevoContenedor.id = 'resumenFinancieroSeguimiento';
+                nuevoContenedor.className = 'mt-4';
+                nuevoContenedor.innerHTML = `
+                    <h4 class="neon-text mb-3"><i class="fas fa-chart-line"></i> Resumen Financiero Actual</h4>
+                    <div class="row" id="contenidoResumenFinanciero">
+                        <!-- Aquí se cargará el resumen -->
+                    </div>
+                `;
+                ultimaSeccion.parentNode.insertBefore(nuevoContenedor, ultimaSeccion.nextSibling);
+            }
+        }
+        return;
     }
-    return 'deuda';
+    
+    // Calcular todos los datos financieros
+    const contenidoHTML = `
+        <div class="col-md-4 mb-3">
+            <div class="card-financiero card-ingresos">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-money-bill-wave text-success"></i> INGRESOS</h5>
+                    <div class="card-text">
+                        <div class="d-flex justify-content-between">
+                            <span>Aportes Estudiantes:</span>
+                            <strong class="text-success">Bs ${datos.totalAportesEstudiantes?.toFixed(2) || '0.00'}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Casilleros:</span>
+                            <strong class="text-success">Bs ${calcularTotalCasilleros().toFixed(2)}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Otros Ingresos:</span>
+                            <strong class="text-success">Bs ${calcularOtrosIngresos().toFixed(2)}</strong>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between">
+                            <strong>TOTAL INGRESOS:</strong>
+                            <strong class="text-success">Bs ${(datos.totalAportesEstudiantes + calcularTotalCasilleros() + calcularOtrosIngresos()).toFixed(2)}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-3">
+            <div class="card-financiero card-egresos">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-receipt text-danger"></i> GASTOS</h5>
+                    <div class="card-text">
+                        <div class="d-flex justify-content-between">
+                            <span>Gastos Operativos:</span>
+                            <strong class="text-danger">Bs ${datos.totalGastos?.toFixed(2) || '0.00'}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Egresos de Caja:</span>
+                            <strong class="text-danger">Bs ${datos.totalEgresosCaja?.toFixed(2) || '0.00'}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Gastos Casilleros:</span>
+                            <strong class="text-danger">Bs ${calcularGastosCasilleros().toFixed(2)}</strong>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between">
+                            <strong>TOTAL GASTOS:</strong>
+                            <strong class="text-danger">Bs ${(datos.totalGastos + datos.totalEgresosCaja + calcularGastosCasilleros()).toFixed(2)}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-3">
+            <div class="card-financiero card-saldo">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-piggy-bank text-primary"></i> SALDOS</h5>
+                    <div class="card-text">
+                        <div class="d-flex justify-content-between">
+                            <span>Dinero Inicial:</span>
+                            <strong>Bs ${datos.dineroInicial?.toFixed(2) || '0.00'}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Total Recaudado:</span>
+                            <strong class="text-success">Bs ${(datos.totalAportesEstudiantes + calcularTotalCasilleros() + calcularOtrosIngresos()).toFixed(2)}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Total Gastado:</span>
+                            <strong class="text-danger">Bs ${(datos.totalGastos + datos.totalEgresosCaja + calcularGastosCasilleros()).toFixed(2)}</strong>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between">
+                            <strong>SALDO ACTUAL:</strong>
+                            <strong class="text-primary" style="font-size: 1.2rem;">Bs ${datos.dineroFinal?.toFixed(2) || '0.00'}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    contenedor.querySelector('#contenidoResumenFinanciero').innerHTML = contenidoHTML;
+    
+    // También agregar los últimos gastos
+    actualizarUltimosGastosSeguimiento();
 }
 
-// ACTUALIZAR RESUMEN DE CURSOS EN SEGUIMIENTO - POR AÑO (2026 y 2027)
+// Funciones auxiliares para calcular
+function calcularTotalCasilleros() {
+    let total = 0;
+    for (const casillero of Object.values(datos.casilleros)) {
+        if (casillero && casillero.totalPagado) {
+            total += casillero.totalPagado;
+        }
+    }
+    return total;
+}
+
+function calcularOtrosIngresos() {
+    let total = 0;
+    for (const movimiento of datos.movimientosCaja) {
+        if (movimiento.tipo === 'ingreso') {
+            const concepto = movimiento.concepto ? movimiento.concepto.toLowerCase() : '';
+            if (!concepto.includes('aporte') && 
+                !concepto.includes('casillero') &&
+                !concepto.includes('estudiante')) {
+                total += movimiento.monto || 0;
+            }
+        }
+    }
+    return total;
+}
+
+function calcularGastosCasilleros() {
+    let total = 0;
+    for (const gasto of datos.gastosCasilleros) {
+        total += gasto.monto || 0;
+    }
+    return total;
+}
+
+function actualizarUltimosGastosSeguimiento() {
+    const contenedor = document.getElementById('ultimosGastosSeguimiento');
+    if (!contenedor) {
+        // Crear contenedor si no existe
+        const resumenContainer = document.getElementById('resumenFinancieroSeguimiento');
+        if (resumenContainer) {
+            const nuevoContenedor = document.createElement('div');
+            nuevoContenedor.id = 'ultimosGastosSeguimiento';
+            nuevoContenedor.className = 'col-12 mt-3';
+            nuevoContenedor.innerHTML = `
+                <h5 class="neon-text-red mb-3"><i class="fas fa-history"></i> Últimos Gastos Registrados</h5>
+                <div class="table-responsive" id="tablaUltimosGastos">
+                    <!-- Los gastos se cargarán aquí -->
+                </div>
+            `;
+            resumenContainer.querySelector('.row').appendChild(nuevoContenedor);
+        }
+    }
+    
+    const tablaContainer = document.getElementById('tablaUltimosGastos');
+    if (!tablaContainer) return;
+    
+    // Obtener los últimos 10 gastos
+    const ultimosGastos = [...datos.gastos]
+        .sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
+        .slice(0, 10);
+    
+    if (ultimosGastos.length === 0) {
+        tablaContainer.innerHTML = `
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> No hay gastos registrados
+            </div>
+        `;
+        return;
+    }
+    
+    let html = `
+        <table class="table table-sm table-dark table-hover">
+            <thead>
+                <tr>
+                    <th width="15%">Fecha</th>
+                    <th width="20%">Categoría</th>
+                    <th width="40%">Descripción</th>
+                    <th width="15%" class="text-end">Monto</th>
+                    <th width="10%">Comprobante</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    
+    ultimosGastos.forEach(gasto => {
+        html += `
+            <tr>
+                <td>${gasto.fecha || '-'}</td>
+                <td>${gasto.categoria || '-'}</td>
+                <td>${(gasto.descripcion || '').substring(0, 40)}${(gasto.descripcion || '').length > 40 ? '...' : ''}</td>
+                <td class="text-danger text-end">Bs ${(gasto.monto || 0).toFixed(2)}</td>
+                <td>
+                    ${gasto.comprobante ? 
+                        `<button class="btn btn-sm btn-info" onclick="verComprobante(${gasto.id})">
+                            <i class="fas fa-eye"></i>
+                        </button>` : 
+                        '<span class="badge bg-secondary">No</span>'
+                    }
+                </td>
+            </tr>
+        `;
+    });
+    
+    html += `
+            </tbody>
+            <tfoot>
+                <tr class="table-danger">
+                    <td colspan="3" class="text-end"><strong>Total últimos 10 gastos:</strong></td>
+                    <td class="text-end"><strong>Bs ${ultimosGastos.reduce((sum, gasto) => sum + (gasto.monto || 0), 0).toFixed(2)}</strong></td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    `;
+    
+    tablaContainer.innerHTML = html;
+}
+// ACTUALIZAR RESUMEN DE CURSOS SEGUIMIENTO CON MONTOS FALTANTES
+// ACTUALIZAR RESUMEN DE CURSOS EN SEGUIMIENTO - SEPARADO POR AÑO
 function actualizarResumenCursosSeguimiento() {
     const contenedor = document.getElementById('resumenCursosSeguimiento');
     if (!contenedor) return;
     
     contenedor.innerHTML = '';
     
-    for (const [cursoNombre, datosCurso] of Object.entries(datos.cursos)) {
+    for (const cursoNombre of ordenCursos) {
+        const datosCurso = datos.cursos[cursoNombre];
         if (datosCurso.estudiantes) {
             let totalEstudiantes = datosCurso.estudiantes.length;
             
             // Estadísticas para 2026
-            let estudiantesAlDia2026 = 0;
-            let estudiantesParcial2026 = 0;
-            let estudiantesConDeuda2026 = 0;
+            let estudiantesPagaron2026 = 0;
+            let estudiantesFaltan2026 = 0;
             let totalRecaudado2026 = 0;
             let totalEsperado2026 = 0;
+            let totalFaltante2026 = 0;
             
             // Estadísticas para 2027
-            let estudiantesAlDia2027 = 0;
-            let estudiantesParcial2027 = 0;
-            let estudiantesConDeuda2027 = 0;
+            let estudiantesPagaron2027 = 0;
+            let estudiantesFaltan2027 = 0;
             let totalRecaudado2027 = 0;
             let totalEsperado2027 = 0;
+            let totalFaltante2027 = 0;
             
             const montoReq2026 = obtenerMontoCurso(cursoNombre, '2026');
             const montoReq2027 = obtenerMontoCurso(cursoNombre, '2027');
@@ -1459,217 +2138,217 @@ function actualizarResumenCursosSeguimiento() {
                 
                 // Calcular para 2026
                 if (pago2026.pagado && pago2026.monto >= montoReq2026) {
-                    estudiantesAlDia2026++;
+                    estudiantesPagaron2026++;
                     totalRecaudado2026 += pago2026.monto;
-                } else if (pago2026.pagado && pago2026.monto > 0 && pago2026.monto < montoReq2026) {
-                    estudiantesParcial2026++;
-                    totalRecaudado2026 += pago2026.monto;
-                } else if (!pago2026.pagado || pago2026.monto === 0) {
-                    estudiantesConDeuda2026++;
+                } else {
+                    estudiantesFaltan2026++;
+                    if (pago2026.pagado) {
+                        totalRecaudado2026 += pago2026.monto;
+                        totalFaltante2026 += (montoReq2026 - pago2026.monto);
+                    } else {
+                        totalFaltante2026 += montoReq2026;
+                    }
                 }
                 
                 // Calcular para 2027
                 if (pago2027.pagado && pago2027.monto >= montoReq2027) {
-                    estudiantesAlDia2027++;
+                    estudiantesPagaron2027++;
                     totalRecaudado2027 += pago2027.monto;
-                } else if (pago2027.pagado && pago2027.monto > 0 && pago2027.monto < montoReq2027) {
-                    estudiantesParcial2027++;
-                    totalRecaudado2027 += pago2027.monto;
-                } else if (!pago2027.pagado || pago2027.monto === 0) {
-                    estudiantesConDeuda2027++;
+                } else {
+                    estudiantesFaltan2027++;
+                    if (pago2027.pagado) {
+                        totalRecaudado2027 += pago2027.monto;
+                        totalFaltante2027 += (montoReq2027 - pago2027.monto);
+                    } else {
+                        totalFaltante2027 += montoReq2027;
+                    }
                 }
             });
             
-            const porcentajeAlDia2026 = totalEstudiantes > 0 ? Math.round((estudiantesAlDia2026 / totalEstudiantes) * 100) : 0;
-            const porcentajeAlDia2027 = totalEstudiantes > 0 ? Math.round((estudiantesAlDia2027 / totalEstudiantes) * 100) : 0;
-            
+            // Crear resumen del curso
             const resumenDiv = document.createElement('div');
-            resumenDiv.className = 'col-md-6 mb-4'; // Cambiado a col-md-6 para mostrar más grande
+            resumenDiv.className = 'col-md-6 col-lg-4 mb-4';
             
             resumenDiv.innerHTML = `
-                <div class="resumen-curso" style="border: 2px solid #bc13fe; border-radius: 10px; padding: 15px; background: rgba(10, 8, 35, 0.8); box-shadow: 0 0 15px rgba(188, 19, 254, 0.3);">
-                    <h6 style="color: #ffcc00; font-weight: 700; margin-bottom: 15px; text-align: center;">
-                        ${cursoNombre}
-                    </h6>
+                <div class="resumen-curso-seguimiento">
+                    <div class="curso-header-seguimiento">
+                        <h6 class="text-center mb-2">${cursoNombre}</h6>
+                        <div class="text-center mb-2">
+                            <small class="text-muted">${totalEstudiantes} estudiantes</small>
+                        </div>
+                    </div>
                     
                     <!-- AÑO 2026 -->
-                    <div class="mb-3" style="border: 1px solid #ff5e00; border-radius: 8px; padding: 10px; background: rgba(255, 94, 0, 0.1);">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <h6 style="color: #ff5e00; margin: 0; font-weight: bold;">
-                                <i class="fas fa-calendar"></i> AÑO 2026
+                    <div class="anio-seguimiento anio-2026 mb-3">
+                        <div class="anio-header">
+                            <h6 class="text-warning mb-2">
+                                <i class="fas fa-calendar-alt"></i> 2026
+                                <small class="text-white ms-2">(Bs ${montoReq2026})</small>
                             </h6>
-                            <small style="color: #aaa;">Monto: Bs ${montoReq2026}</small>
                         </div>
-                        
-                        <div class="row text-center">
-                            <div class="col-4">
-                                <div class="numero text-success" style="font-size: 1.5rem; font-weight: bold;">${estudiantesAlDia2026}</div>
-                                <small style="color: #aaa; font-size: 0.7rem;">Al día</small>
+                        <div class="row text-center mb-2">
+                            <div class="col-6">
+                                <div class="numero-seguimiento text-success">${estudiantesPagaron2026}</div>
+                                <small class="text-success">Pagaron</small>
                             </div>
-                            <div class="col-4">
-                                <div class="numero text-warning" style="font-size: 1.5rem; font-weight: bold;">${estudiantesParcial2026}</div>
-                                <small style="color: #aaa; font-size: 0.7rem;">Parcial</small>
-                            </div>
-                            <div class="col-4">
-                                <div class="numero text-danger" style="font-size: 1.5rem; font-weight: bold;">${estudiantesConDeuda2026}</div>
-                                <small style="color: #aaa; font-size: 0.7rem;">Con deuda</small>
+                            <div class="col-6">
+                                <div class="numero-seguimiento text-danger">${estudiantesFaltan2026}</div>
+                                <small class="text-danger">Faltan</small>
                             </div>
                         </div>
-                        
-                        <div class="mt-2">
+                        <div class="info-financiera">
                             <div class="d-flex justify-content-between">
-                                <small style="color: #aaa;">Recaudado:</small>
-                                <strong style="color: #00ff00">Bs ${totalRecaudado2026.toFixed(2)}</strong>
+                                <small>Recaudado:</small>
+                                <strong class="text-success">Bs ${totalRecaudado2026.toFixed(2)}</strong>
                             </div>
                             <div class="d-flex justify-content-between">
-                                <small style="color: #aaa;">Esperado:</small>
-                                <strong style="color: #ffcc00">Bs ${totalEsperado2026.toFixed(2)}</strong>
+                                <small>Faltante:</small>
+                                <strong class="text-danger">Bs ${totalFaltante2026.toFixed(2)}</strong>
                             </div>
                             <div class="d-flex justify-content-between">
-                                <small style="color: #aaa;">% Al día:</small>
-                                <strong style="color: ${porcentajeAlDia2026 > 50 ? '#28a745' : porcentajeAlDia2026 > 25 ? '#ffc107' : '#dc3545'}">
-                                    ${porcentajeAlDia2026}%
+                                <small>% Completado:</small>
+                                <strong class="${(totalRecaudado2026/totalEsperado2026*100) >= 50 ? 'text-success' : 'text-warning'}">
+                                    ${totalEsperado2026 > 0 ? Math.round((totalRecaudado2026/totalEsperado2026*100)) : 0}%
                                 </strong>
-                            </div>
-                        </div>
-                        
-                        <!-- Barra de progreso 2026 -->
-                        <div class="mt-2">
-                            <div class="progress" style="height: 8px; background: rgba(255,255,255,0.1);">
-                                <div class="progress-bar bg-success" style="width: ${(estudiantesAlDia2026/totalEstudiantes*100)}%" 
-                                     title="${estudiantesAlDia2026} al día"></div>
-                                <div class="progress-bar bg-warning" style="width: ${(estudiantesParcial2026/totalEstudiantes*100)}%" 
-                                     title="${estudiantesParcial2026} parcial"></div>
-                                <div class="progress-bar bg-danger" style="width: ${(estudiantesConDeuda2026/totalEstudiantes*100)}%" 
-                                     title="${estudiantesConDeuda2026} con deuda"></div>
                             </div>
                         </div>
                     </div>
                     
                     <!-- AÑO 2027 -->
-                    <div class="mb-2" style="border: 1px solid #00ffff; border-radius: 8px; padding: 10px; background: rgba(0, 255, 255, 0.1);">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <h6 style="color: #00ffff; margin: 0; font-weight: bold;">
-                                <i class="fas fa-calendar"></i> AÑO 2027
+                    <div class="anio-seguimiento anio-2027">
+                        <div class="anio-header">
+                            <h6 class="text-info mb-2">
+                                <i class="fas fa-calendar-alt"></i> 2027
+                                <small class="text-white ms-2">(Bs ${montoReq2027})</small>
                             </h6>
-                            <small style="color: #aaa;">Monto: Bs ${montoReq2027}</small>
                         </div>
-                        
-                        <div class="row text-center">
-                            <div class="col-4">
-                                <div class="numero text-success" style="font-size: 1.5rem; font-weight: bold;">${estudiantesAlDia2027}</div>
-                                <small style="color: #aaa; font-size: 0.7rem;">Al día</small>
+                        <div class="row text-center mb-2">
+                            <div class="col-6">
+                                <div class="numero-seguimiento text-success">${estudiantesPagaron2027}</div>
+                                <small class="text-success">Pagaron</small>
                             </div>
-                            <div class="col-4">
-                                <div class="numero text-warning" style="font-size: 1.5rem; font-weight: bold;">${estudiantesParcial2027}</div>
-                                <small style="color: #aaa; font-size: 0.7rem;">Parcial</small>
-                            </div>
-                            <div class="col-4">
-                                <div class="numero text-danger" style="font-size: 1.5rem; font-weight: bold;">${estudiantesConDeuda2027}</div>
-                                <small style="color: #aaa; font-size: 0.7rem;">Con deuda</small>
+                            <div class="col-6">
+                                <div class="numero-seguimiento text-danger">${estudiantesFaltan2027}</div>
+                                <small class="text-danger">Faltan</small>
                             </div>
                         </div>
-                        
-                        <div class="mt-2">
+                        <div class="info-financiera">
                             <div class="d-flex justify-content-between">
-                                <small style="color: #aaa;">Recaudado:</small>
-                                <strong style="color: #00ff00">Bs ${totalRecaudado2027.toFixed(2)}</strong>
+                                <small>Recaudado:</small>
+                                <strong class="text-success">Bs ${totalRecaudado2027.toFixed(2)}</strong>
                             </div>
                             <div class="d-flex justify-content-between">
-                                <small style="color: #aaa;">Esperado:</small>
-                                <strong style="color: #ffcc00">Bs ${totalEsperado2027.toFixed(2)}</strong>
+                                <small>Faltante:</small>
+                                <strong class="text-danger">Bs ${totalFaltante2027.toFixed(2)}</strong>
                             </div>
                             <div class="d-flex justify-content-between">
-                                <small style="color: #aaa;">% Al día:</small>
-                                <strong style="color: ${porcentajeAlDia2027 > 50 ? '#28a745' : porcentajeAlDia2027 > 25 ? '#ffc107' : '#dc3545'}">
-                                    ${porcentajeAlDia2027}%
+                                <small>% Completado:</small>
+                                <strong class="${(totalRecaudado2027/totalEsperado2027*100) >= 50 ? 'text-success' : 'text-warning'}">
+                                    ${totalEsperado2027 > 0 ? Math.round((totalRecaudado2027/totalEsperado2027*100)) : 0}%
                                 </strong>
-                            </div>
-                        </div>
-                        
-                        <!-- Barra de progreso 2027 -->
-                        <div class="mt-2">
-                            <div class="progress" style="height: 8px; background: rgba(255,255,255,0.1);">
-                                <div class="progress-bar bg-success" style="width: ${(estudiantesAlDia2027/totalEstudiantes*100)}%" 
-                                     title="${estudiantesAlDia2027} al día"></div>
-                                <div class="progress-bar bg-warning" style="width: ${(estudiantesParcial2027/totalEstudiantes*100)}%" 
-                                     title="${estudiantesParcial2027} parcial"></div>
-                                <div class="progress-bar bg-danger" style="width: ${(estudiantesConDeuda2027/totalEstudiantes*100)}%" 
-                                     title="${estudiantesConDeuda2027} con deuda"></div>
                             </div>
                         </div>
                     </div>
                     
                     <!-- RESUMEN TOTAL -->
-                    <div style="background: rgba(255, 255, 255, 0.05); padding: 8px; border-radius: 5px; margin-top: 10px;">
-                        <div class="d-flex justify-content-between">
-                            <small style="color: #aaa;"><strong>Total estudiantes:</strong></small>
-                            <strong style="color: white;">${totalEstudiantes}</strong>
+                    <div class="resumen-total mt-3 p-2 rounded" style="background: rgba(188, 19, 254, 0.1);">
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <div class="numero-seguimiento text-info">${totalEstudiantes}</div>
+                                <small>Total</small>
+                            </div>
+                            <div class="col-4">
+                                <div class="numero-seguimiento text-success">${estudiantesPagaron2026 + estudiantesPagaron2027}</div>
+                                <small>Pagaron</small>
+                            </div>
+                            <div class="col-4">
+                                <div class="numero-seguimiento text-danger">${estudiantesFaltan2026 + estudiantesFaltan2027}</div>
+                                <small>Faltan</small>
+                            </div>
                         </div>
-                        <div class="d-flex justify-content-between">
-                            <small style="color: #aaa;">Total recaudado:</small>
-                            <strong style="color: #00ff00">Bs ${(totalRecaudado2026 + totalRecaudado2027).toFixed(2)}</strong>
-                        </div>
-                        <div class="d-flex justify-content-between">
-                            <small style="color: #aaa;">Total esperado:</small>
-                            <strong style="color: #ffcc00">Bs ${(totalEsperado2026 + totalEsperado2027).toFixed(2)}</strong>
-                        </div>
-                        <div class="d-flex justify-content-between">
-                            <small style="color: #aaa;">Porcentaje total:</small>
-                            <strong style="color: #bc13fe">
-                                ${totalEstudiantes > 0 ? Math.round(((estudiantesAlDia2026 + estudiantesAlDia2027) / (totalEstudiantes * 2) * 100)) : 0}%
-                            </strong>
+                        <div class="mt-2">
+                            <div class="d-flex justify-content-between">
+                                <small>Total recaudado:</small>
+                                <strong class="text-success">Bs ${(totalRecaudado2026 + totalRecaudado2027).toFixed(2)}</strong>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <small>Total faltante:</small>
+                                <strong class="text-danger">Bs ${(totalFaltante2026 + totalFaltante2027).toFixed(2)}</strong>
+                            </div>
                         </div>
                     </div>
                 </div>
             `;
+            
             contenedor.appendChild(resumenDiv);
         }
     }
 }
 
-function actualizarTablasMovimientosSeguimiento() {
-    const tbodyIngresos = document.getElementById('tablaIngresosSeguimiento');
-    if (tbodyIngresos) {
-        tbodyIngresos.innerHTML = '';
-        
-        const ingresosRecientes = datos.movimientosCaja
-            .filter(mov => mov.tipo === 'ingreso')
-            .sort((a, b) => new Date(b.fecha || 0) - new Date(a.fecha || 0))
-            .slice(0, 10);
-        
-        ingresosRecientes.forEach(movimiento => {
-            const fila = document.createElement('tr');
-            fila.innerHTML = `
-                <td>${movimiento.fecha || 'Sin fecha'}</td>
-                <td>${movimiento.concepto || 'Sin concepto'}</td>
-                <td class="text-success">Bs ${(movimiento.monto || 0).toFixed(2)}</td>
-            `;
-            tbodyIngresos.appendChild(fila);
-        });
+// También mejora los estilos para el seguimiento
+
+// ACTUALIZAR ÚLTIMOS PAGOS SEGUIMIENTO
+function actualizarUltimosPagosSeguimiento() {
+    const tbody = document.getElementById('tablaUltimosPagosSeguimiento');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    // Recopilar todos los pagos
+    let todosLosPagos = [];
+    
+    for (const [cursoNombre, datosCurso] of Object.entries(datos.cursos)) {
+        if (datosCurso.estudiantes) {
+            datosCurso.estudiantes.forEach((estudiante, index) => {
+                if (estudiante.pagos) {
+                    ['2026', '2027'].forEach(anio => {
+                        const pago = estudiante.pagos[anio];
+                        if (pago && pago.pagado && pago.fecha && pago.monto > 0) {
+                            todosLosPagos.push({
+                                curso: cursoNombre,
+                                estudiante: estudiante.nombre || `Estudiante ${index + 1}`,
+                                anio: anio,
+                                monto: pago.monto,
+                                fecha: pago.fecha
+                            });
+                        }
+                    });
+                }
+            });
+        }
     }
     
-    const tbodyGastos = document.getElementById('tablaGastosSeguimiento');
-    if (tbodyGastos) {
-        tbodyGastos.innerHTML = '';
-        
-        const gastosRecientes = datos.gastos
-            .sort((a, b) => new Date(b.fecha || 0) - new Date(a.fecha || 0))
-            .slice(0, 10);
-        
-        gastosRecientes.forEach(gasto => {
-            const fila = document.createElement('tr');
-            fila.innerHTML = `
-                <td>${gasto.fecha || 'Sin fecha'}</td>
-                <td>${gasto.categoria || 'Sin categoría'}</td>
-                <td class="text-danger">Bs ${(gasto.monto || 0).toFixed(2)}</td>
-            `;
-            tbodyGastos.appendChild(fila);
-        });
+    // Ordenar por fecha
+    todosLosPagos.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+    
+    // Tomar los últimos 10
+    const ultimosPagos = todosLosPagos.slice(0, 10);
+    
+    if (ultimosPagos.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="text-center text-muted">
+                    No hay pagos registrados
+                </td>
+            </tr>
+        `;
+        return;
     }
+    
+    ultimosPagos.forEach(pago => {
+        const fila = document.createElement('tr');
+        fila.innerHTML = `
+            <td>${pago.fecha}</td>
+            <td>${pago.curso}</td>
+            <td>${pago.estudiante}</td>
+            <td>${pago.anio}</td>
+            <td class="text-success">Bs ${pago.monto.toFixed(2)}</td>
+        `;
+        tbody.appendChild(fila);
+    });
 }
 
-// FILTRAR ESTUDIANTES EN SEGUIMIENTO - CORREGIDA DEFINITIVAMENTE
+// FILTRAR ESTUDIANTES EN SEGUIMIENTO
 function filtrarEstudiantesSeguimiento() {
     const filtroNombre = document.getElementById('filtroEstudiante').value.toLowerCase();
     const filtroCurso = document.getElementById('filtroCursoSeguimiento').value;
@@ -1687,17 +2366,14 @@ function filtrarEstudiantesSeguimiento() {
         
         let mostrar = true;
         
-        // Filtrar por nombre (corregido)
         if (filtroNombre && !estudiante.includes(filtroNombre)) {
             mostrar = false;
         }
         
-        // Filtrar por curso
         if (filtroCurso !== 'todos' && curso !== filtroCurso) {
             mostrar = false;
         }
         
-        // Filtrar por estado
         if (filtroEstado !== 'todos' && estado !== filtroEstado) {
             mostrar = false;
         }
@@ -1714,64 +2390,48 @@ function limpiarFiltrosSeguimiento() {
     filtrarEstudiantesSeguimiento();
 }
 
-// CARGAR ESTUDIANTES PARA LA PESTAÑA DE APORTES
-function cargarEstudiantesParaAportes() {
-    const cursoSeleccionado = document.getElementById('curso').value;
-    const container = document.querySelector('.estudiantes-pagos-container');
-    
-    if (!container) return;
-    
-    if (!cursoSeleccionado) {
-        container.innerHTML = '<p class="text-muted">Seleccione un curso para cargar los estudiantes</p>';
-        return;
-    }
-    
-    const datosCurso = datos.cursos[cursoSeleccionado];
-    container.innerHTML = '';
-    
-    if (!datosCurso || !datosCurso.estudiantes || datosCurso.estudiantes.length === 0) {
-        container.innerHTML = '<p class="text-muted">No hay estudiantes registrados para este curso</p>';
-        return;
-    }
-    
-    datosCurso.estudiantes.forEach((est, index) => {
-        const div = document.createElement('div');
-        div.className = 'form-check';
-        div.innerHTML = `
-            <input class="form-check-input" type="checkbox" value="${index}" id="est${index}" ${!isAdmin ? 'disabled' : ''}>
-            <label class="form-check-label" for="est${index}">
-                ${est.nombre || `Estudiante ${index + 1}`}
-            </label>
-        `;
-        container.appendChild(div);
+// CARGAR ESTUDIANTES PARA OTROS COBROS
+function cargarEstudiantesParaOtrosCobros() {
+   // Configurar eventos para "Otros Cobros"
+const cursoOtroCobro = document.getElementById('cursoOtroCobro');
+const sectorCobroSelect = document.getElementById('sectorCobro');
+
+if (cursoOtroCobro) {
+    cursoOtroCobro.addEventListener('change', function() {
+        // Cargar estudiantes en el select del formulario
+        cargarEstudiantesParaOtrosCobros();
+        
+        // Si hay un sector seleccionado, mostrar la tabla de marcado
+        const sectorId = sectorCobroSelect ? sectorCobroSelect.value : null;
+        if (sectorId && this.value) {
+            setTimeout(() => cargarEstudiantesParaMarcarPagos(), 100);
+        }
     });
 }
 
-// CARGAR ESTUDIANTES PARA OTROS COBROS
-function cargarEstudiantesParaOtrosCobros() {
-    const cursoSeleccionado = document.getElementById('cursoOtroCobro').value;
-    const estudianteSelect = document.getElementById('estudianteOtroCobro');
-    
-    if (!estudianteSelect) return;
-    
-    estudianteSelect.innerHTML = '<option value="">Seleccione estudiante</option>';
-    estudianteSelect.disabled = !cursoSeleccionado;
-    
-    if (!cursoSeleccionado) return;
-    
-    const datosCurso = datos.cursos[cursoSeleccionado];
-    
-    if (datosCurso && datosCurso.estudiantes) {
-        datosCurso.estudiantes.forEach((est, index) => {
-            const option = document.createElement('option');
-            option.value = index;
-            option.textContent = est.nombre || `Estudiante ${index + 1}`;
-            estudianteSelect.appendChild(option);
-        });
-    }
+if (sectorCobroSelect) {
+    sectorCobroSelect.addEventListener('change', function() {
+        // Actualizar monto del sector
+        actualizarMontoSector();
+        
+        // Si hay un curso seleccionado, mostrar la tabla de marcado
+        const cursoSeleccionado = cursoOtroCobro ? cursoOtroCobro.value : null;
+        if (cursoSeleccionado && this.value) {
+            setTimeout(() => cargarEstudiantesParaMarcarPagos(), 100);
+        }
+    });
 }
 
-// CARGAR CURSO SELECCIONADO MEJORADO
+// Event listeners para filtros
+const filtroEstudiante = document.getElementById('filtroEstudiante');
+if (filtroEstudiante) {
+    filtroEstudiante.addEventListener('keyup', function(e) {
+        if (e.key === 'Enter') filtrarEstudiantesSeguimiento();
+    });
+}
+}
+
+// CARGAR CURSO SELECCIONADO
 function cargarCursoSeleccionado() {
     const cursoSeleccionado = document.getElementById('selectorCurso').value;
     
@@ -1784,11 +2444,23 @@ function cargarCursoSeleccionado() {
     const monto2027 = obtenerMontoCurso(cursoSeleccionado, '2027');
     
     document.getElementById('tituloCurso').textContent = `Gestión de Pagos - ${cursoSeleccionado}`;
-    document.getElementById('infoMontosCurso').innerHTML = `
-        <span class="text-info">Monto 2026: <strong>Bs ${monto2026}</strong></span> | 
-        <span class="text-warning">Monto 2027: <strong>Bs ${monto2027}</strong></span>
-    `;
     
+    // Mostrar información de montos (con "NO APLICA" si es 0)
+    let infoMontos = '';
+    if (monto2026 > 0 && monto2027 > 0) {
+        infoMontos = `<span class="text-info">Monto 2026: <strong>Bs ${monto2026}</strong></span> | 
+                      <span class="text-warning">Monto 2027: <strong>Bs ${monto2027}</strong></span>`;
+    } else if (monto2026 > 0) {
+        infoMontos = `<span class="text-info">Monto 2026: <strong>Bs ${monto2026}</strong></span> | 
+                      <span class="text-muted">2027: NO APLICA</span>`;
+    } else if (monto2027 > 0) {
+        infoMontos = `<span class="text-muted">2026: NO APLICA</span> | 
+                      <span class="text-warning">Monto 2027: <strong>Bs ${monto2027}</strong></span>`;
+    } else {
+        infoMontos = `<span class="text-muted">Este curso no tiene cobros programados</span>`;
+    }
+    
+    document.getElementById('infoMontosCurso').innerHTML = infoMontos;
     document.getElementById('contenedorCurso').style.display = 'block';
     
     const datosCurso = datos.cursos[cursoSeleccionado];
@@ -1802,14 +2474,20 @@ function cargarCursoSeleccionado() {
         
         let deudaTotal = 0;
         if (estudiante.pagos) {
-            if (!estudiante.pagos[2026] || !estudiante.pagos[2026].pagado || estudiante.pagos[2026].monto < monto2026) {
-                deudaTotal += (monto2026 - (estudiante.pagos[2026] && estudiante.pagos[2026].pagado ? estudiante.pagos[2026].monto : 0));
+            // Solo calcular deuda si el monto requerido es mayor a 0
+            if (monto2026 > 0) {
+                if (!estudiante.pagos[2026] || !estudiante.pagos[2026].pagado || estudiante.pagos[2026].monto < monto2026) {
+                    deudaTotal += (monto2026 - (estudiante.pagos[2026] && estudiante.pagos[2026].pagado ? estudiante.pagos[2026].monto : 0));
+                }
             }
-            if (!estudiante.pagos[2027] || !estudiante.pagos[2027].pagado || estudiante.pagos[2027].monto < monto2027) {
-                deudaTotal += (monto2027 - (estudiante.pagos[2027] && estudiante.pagos[2027].pagado ? estudiante.pagos[2027].monto : 0));
+            
+            if (monto2027 > 0) {
+                if (!estudiante.pagos[2027] || !estudiante.pagos[2027].pagado || estudiante.pagos[2027].monto < monto2027) {
+                    deudaTotal += (monto2027 - (estudiante.pagos[2027] && estudiante.pagos[2027].pagado ? estudiante.pagos[2027].monto : 0));
+                }
             }
         } else {
-            deudaTotal = monto2026 + monto2027;
+            deudaTotal = (monto2026 > 0 ? monto2026 : 0) + (monto2027 > 0 ? monto2027 : 0);
         }
         
         const estado2026 = determinarEstadoPago(
@@ -1823,13 +2501,20 @@ function cargarCursoSeleccionado() {
         );
         
         let estadoGeneral = 'al-dia';
-        if (deudaTotal === (monto2026 + monto2027)) {
+        const totalRequerido = (monto2026 > 0 ? monto2026 : 0) + (monto2027 > 0 ? monto2027 : 0);
+        
+        if (deudaTotal === totalRequerido) {
             estadoGeneral = 'con-deuda';
         } else if (deudaTotal > 0) {
             estadoGeneral = 'parcial';
         }
         
         const fila = document.createElement('tr');
+        
+        // Determinar qué columnas mostrar
+        const mostrar2026 = monto2026 > 0;
+        const mostrar2027 = monto2027 > 0;
+        
         fila.innerHTML = `
             <td>${index + 1}</td>
             <td>
@@ -1837,6 +2522,7 @@ function cargarCursoSeleccionado() {
                        onchange="${isAdmin ? `actualizarNombreEstudiante('${cursoSeleccionado}', ${index}, this.value)` : ''}"
                        ${!isAdmin ? 'disabled' : ''}>
             </td>
+            ${mostrar2026 ? `
             <td>
                 ${estudiante.pagos && estudiante.pagos[2026] && estudiante.pagos[2026].pagado ? 
                     'Bs ' + (estudiante.pagos[2026].monto || 0).toFixed(2) : 
@@ -1848,6 +2534,12 @@ function cargarCursoSeleccionado() {
                     ${estado2026 === 'pagado' ? 'COMPLETO' : estado2026 === 'deuda' ? 'DEUDA' : 'PARCIAL'}
                 </span>
             </td>
+            ` : `
+            <td colspan="3" class="text-center text-muted">
+                <small>No aplica</small>
+            </td>
+            `}
+            ${mostrar2027 ? `
             <td>
                 ${estudiante.pagos && estudiante.pagos[2027] && estudiante.pagos[2027].pagado ? 
                     'Bs ' + (estudiante.pagos[2027].monto || 0).toFixed(2) : 
@@ -1859,6 +2551,11 @@ function cargarCursoSeleccionado() {
                     ${estado2027 === 'pagado' ? 'COMPLETO' : estado2027 === 'deuda' ? 'DEUDA' : 'PARCIAL'}
                 </span>
             </td>
+            ` : `
+            <td colspan="3" class="text-center text-muted">
+                <small>No aplica</small>
+            </td>
+            `}
             <td class="${totalPagado > 0 ? 'text-success' : 'text-warning'}">Bs ${totalPagado.toFixed(2)}</td>
             <td>
                 <span class="estado-${estadoGeneral}">
@@ -1888,7 +2585,6 @@ function cargarCursoSeleccionado() {
         cuerpoTabla.appendChild(fila);
     });
 }
-
 // ABRIR MODAL PARA REGISTRAR PAGO
 function abrirModalPago(curso, index) {
     if (!isAdmin) return;
@@ -2079,85 +2775,6 @@ function agregarEstudiante() {
     mostrarMensaje('Estudiante agregado', 'success');
 }
 
-// REGISTRAR APORTE
-function registrarAporte(e) {
-    e.preventDefault();
-    
-    if (!isAdmin) return;
-    
-    const curso = document.getElementById('curso').value;
-    const anio = document.getElementById('anio').value;
-    const montoAporte = parseFloat(document.getElementById('montoAporte').value) || 0;
-    
-    if (!curso || !anio || !montoAporte) {
-        mostrarMensaje('Complete todos los campos', 'error');
-        return;
-    }
-    
-    if (isNaN(montoAporte) || montoAporte <= 0) {
-        mostrarMensaje('Ingrese un monto válido', 'error');
-        return;
-    }
-    
-    const montoRequerido = obtenerMontoCurso(curso, anio);
-    if (montoAporte < montoRequerido) {
-        if (!confirm(`El monto ingresado (Bs ${montoAporte}) es menor al requerido para ${curso} en ${anio} (Bs ${montoRequerido}). ¿Desea continuar?`)) {
-            return;
-        }
-    }
-    
-    const estudiantesSeleccionados = [];
-    const checkboxes = document.querySelectorAll('.estudiantes-pagos-container .form-check-input:checked');
-    checkboxes.forEach(checkbox => estudiantesSeleccionados.push(parseInt(checkbox.value)));
-    
-    if (estudiantesSeleccionados.length === 0) {
-        mostrarMensaje('Seleccione al menos un estudiante', 'error');
-        return;
-    }
-    
-    const fecha = new Date().toISOString().split('T')[0];
-    estudiantesSeleccionados.forEach(index => {
-        if (!datos.cursos[curso].estudiantes[index].pagos) {
-            datos.cursos[curso].estudiantes[index].pagos = {
-                2026: { monto: 0, fecha: '', pagado: false },
-                2027: { monto: 0, fecha: '', pagado: false }
-            };
-        }
-        
-        datos.cursos[curso].estudiantes[index].pagos[anio] = {
-            monto: montoAporte,
-            fecha: fecha,
-            pagado: true
-        };
-    });
-    
-    const totalRecaudado = montoAporte * estudiantesSeleccionados.length;
-    
-    const nuevoAporte = {
-        id: Date.now(),
-        monto: totalRecaudado,
-        fecha: fecha,
-        concepto: `Aporte ${curso} - ${estudiantesSeleccionados.length} estudiantes (${anio})`,
-        curso: curso,
-        anio: anio
-    };
-    
-    datos.aportes.push(nuevoAporte);
-    
-    guardarDatos();
-    actualizarDashboard();
-    actualizarTablaAportes();
-    actualizarResumenAportesCursos();
-    actualizarDetalleCajaFuerte();
-    actualizarSeguimiento();
-    
-    document.getElementById('formAporte').reset();
-    document.getElementById('anio').value = new Date().getFullYear();
-    document.querySelector('.estudiantes-pagos-container').innerHTML = '<p class="text-muted">Seleccione un curso para cargar los estudiantes</p>';
-    
-    mostrarMensaje(`Aporte registrado exitosamente. Total recaudado: Bs ${totalRecaudado.toFixed(2)}`, 'success');
-}
-
 // REGISTRAR GASTO
 function registrarGasto(e) {
     e.preventDefault();
@@ -2238,6 +2855,7 @@ function registrarGasto(e) {
 // REGISTRAR MOVIMIENTO DE CAJA
 function registrarMovimientoCaja(e) {
     e.preventDefault();
+    e.stopPropagation(); // ← TAMBIÉN AGREGAR ESTA
     
     if (!isAdmin) return;
     
@@ -2245,6 +2863,8 @@ function registrarMovimientoCaja(e) {
     const montoCaja = parseFloat(document.getElementById('montoCaja').value) || 0;
     const fechaCaja = document.getElementById('fechaCaja').value;
     const conceptoCaja = document.getElementById('conceptoCaja').value;
+    
+
     
     if (!tipoMovimiento || !montoCaja || !fechaCaja || !conceptoCaja) {
         mostrarMensaje('Complete todos los campos', 'error');
@@ -2285,42 +2905,256 @@ function registrarMovimientoCaja(e) {
     mostrarMensaje('Movimiento de caja registrado exitosamente', 'success');
 }
 
+// ABRIR MODAL PARA EDITAR MOVIMIENTO DE CAJA
+function abrirModalEditarCaja(id) {
+    if (!isAdmin) return;
+    
+    const movimiento = datos.movimientosCaja.find(mov => mov.id === id);
+    if (!movimiento) return;
+    
+    document.getElementById('editarIdCaja').value = id;
+    document.getElementById('editarTipoCaja').value = movimiento.tipo;
+    document.getElementById('editarMontoCaja').value = movimiento.monto || 0;
+    document.getElementById('editarFechaCaja').value = movimiento.fecha || '';
+    document.getElementById('editarConceptoCaja').value = movimiento.concepto || '';
+    
+    const modal = new bootstrap.Modal(document.getElementById('modalEditarCaja'));
+    modal.show();
+}
+
+// GUARDAR EDICIÓN DE MOVIMIENTO DE CAJA
+function guardarEdicionCaja() {
+    if (!isAdmin) return;
+    
+    const id = parseInt(document.getElementById('editarIdCaja').value);
+    const tipo = document.getElementById('editarTipoCaja').value;
+    const monto = parseFloat(document.getElementById('editarMontoCaja').value) || 0;
+    const fecha = document.getElementById('editarFechaCaja').value;
+    const concepto = document.getElementById('editarConceptoCaja').value;
+    
+    const movimiento = datos.movimientosCaja.find(mov => mov.id === id);
+    if (!movimiento) return;
+    
+    // Restar el monto anterior de los totales
+    if (movimiento.tipo === 'ingreso') {
+        datos.totalIngresosCaja -= movimiento.monto || 0;
+    } else {
+        datos.totalEgresosCaja -= movimiento.monto || 0;
+    }
+    
+    // Actualizar movimiento
+    movimiento.tipo = tipo;
+    movimiento.monto = monto;
+    movimiento.fecha = fecha;
+    movimiento.concepto = concepto;
+    
+    // Sumar el nuevo monto a los totales
+    if (tipo === 'ingreso') {
+        datos.totalIngresosCaja += monto;
+    } else {
+        datos.totalEgresosCaja += monto;
+    }
+    
+    guardarDatos();
+    actualizarDashboard();
+    actualizarTablaMovimientosCaja();
+    actualizarDetalleCajaFuerte();
+    actualizarSeguimiento();
+    
+    const modal = bootstrap.Modal.getInstance(document.getElementById('modalEditarCaja'));
+    modal.hide();
+    
+    mostrarMensaje('Movimiento actualizado exitosamente', 'success');
+}
+
+// CREAR NUEVO SECTOR DE COBRO
+function crearNuevoSector(e) {
+    e.preventDefault();
+    
+    if (!isAdmin) return;
+    
+    const nombre = document.getElementById('nombreSector').value;
+    const monto = parseFloat(document.getElementById('montoSector').value) || 0;
+    const fechaLimite = document.getElementById('fechaLimiteSector').value;
+    const descripcion = document.getElementById('descripcionSector').value;
+    
+    if (!nombre || !monto || !fechaLimite || !descripcion) {
+        mostrarMensaje('Complete todos los campos', 'error');
+        return;
+    }
+    
+    const nuevoSector = {
+        id: Date.now(),
+        nombre: nombre,
+        monto: monto,
+        fechaLimite: fechaLimite,
+        descripcion: descripcion,
+        cobros: [],
+        fechaCreacion: new Date().toISOString().split('T')[0]
+    };
+    
+    datos.sectoresCobro.push(nuevoSector);
+    guardarDatos();
+    actualizarSectoresCobro();
+    
+    document.getElementById('formNuevoSector').reset();
+    const hoy = new Date().toISOString().split('T')[0];
+    document.getElementById('fechaLimiteSector').value = hoy;
+    
+    mostrarMensaje('Sector de cobro creado exitosamente', 'success');
+}
+
+// ACTUALIZAR SECTORES DE COBRO
+function actualizarSectoresCobro() {
+    const listaSectores = document.getElementById('listaSectoresCobro');
+    const selectSector = document.getElementById('sectorCobro');
+    
+    if (!listaSectores || !selectSector) return;
+    
+    listaSectores.innerHTML = '';
+    selectSector.innerHTML = '<option value="">Seleccione sector</option>';
+    
+    if (datos.sectoresCobro.length === 0) {
+        listaSectores.innerHTML = `
+            <div class="text-center text-muted py-3">
+                <i class="fas fa-inbox fa-2x mb-2"></i>
+                <p>No hay sectores de cobro creados</p>
+                <p class="small">Crea tu primer sector de cobro</p>
+            </div>
+        `;
+        return;
+    }
+    
+    datos.sectoresCobro.forEach(sector => {
+        // Calcular estadísticas del sector
+        const totalCobrado = sector.cobros.reduce((total, cobro) => total + (cobro.monto || 0), 0);
+        const totalEsperado = Object.values(datos.cursos).reduce((total, curso) => total + (curso.estudiantes?.length || 0), 0) * sector.monto;
+        const porcentaje = totalEsperado > 0 ? Math.round((totalCobrado / totalEsperado) * 100) : 0;
+        
+        // Agregar a la lista
+        const sectorDiv = document.createElement('div');
+        sectorDiv.className = 'sector-cobro mb-3 p-3';
+        sectorDiv.style.border = '1px solid #00ffff';
+        sectorDiv.style.borderRadius = '8px';
+        sectorDiv.style.background = 'rgba(0, 255, 255, 0.1)';
+        
+        sectorDiv.innerHTML = `
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h6 class="neon-text">${sector.nombre}</h6>
+                    <p class="mb-1"><small>${sector.descripcion}</small></p>
+                    <p class="mb-1"><small><strong>Monto:</strong> Bs ${sector.monto.toFixed(2)}</small></p>
+                    <p class="mb-1"><small><strong>Fecha límite:</strong> ${sector.fechaLimite}</small></p>
+                    <p class="mb-1"><small><strong>Creado:</strong> ${sector.fechaCreacion}</small></p>
+                </div>
+                <div class="text-end">
+                    <div class="mb-2">
+                        <span class="badge bg-success">Bs ${totalCobrado.toFixed(2)}</span>
+                        <small class="text-muted"> / Bs ${totalEsperado.toFixed(2)}</small>
+                    </div>
+                    <div class="progress" style="height: 5px; width: 100px;">
+                        <div class="progress-bar bg-success" style="width: ${porcentaje}%"></div>
+                    </div>
+                    <small>${porcentaje}% completado</small>
+                </div>
+            </div>
+            <div class="mt-2">
+                <button class="btn btn-sm btn-info" onclick="verReporteSector(${sector.id})">
+                    <i class="fas fa-file-pdf"></i> Reporte
+                </button>
+                ${isAdmin ? `
+                <button class="btn btn-sm btn-warning" onclick="editarSector(${sector.id})">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-sm btn-danger" onclick="eliminarSector(${sector.id})">
+                    <i class="fas fa-trash"></i>
+                </button>
+                ` : ''}
+            </div>
+        `;
+        
+        listaSectores.appendChild(sectorDiv);
+        
+        // Agregar al select
+        const option = document.createElement('option');
+        option.value = sector.id;
+        option.textContent = `${sector.nombre} (Bs ${sector.monto})`;
+        selectSector.appendChild(option);
+    });
+}
+
+// ACTUALIZAR MONTO SECTOR
+function actualizarMontoSector() {
+    const sectorId = parseInt(document.getElementById('sectorCobro').value);
+    if (!sectorId) return;
+    
+    const sector = datos.sectoresCobro.find(s => s.id === sectorId);
+    if (!sector) return;
+    
+    // El monto ya está en el select, no necesita actualización
+}
+
 // REGISTRAR OTRO COBRO
 function registrarOtroCobro(e) {
     e.preventDefault();
     
     if (!isAdmin) return;
     
+    const sectorId = parseInt(document.getElementById('sectorCobro').value);
     const curso = document.getElementById('cursoOtroCobro').value;
     const estudianteIndex = document.getElementById('estudianteOtroCobro').value;
-    const concepto = document.getElementById('conceptoOtroCobro').value;
-    const monto = parseFloat(document.getElementById('montoOtroCobro').value) || 0;
     const fecha = document.getElementById('fechaOtroCobro').value;
     const observaciones = document.getElementById('observacionesOtroCobro').value;
     
-    if (!curso || !estudianteIndex || !concepto || !monto || !fecha) {
+    if (!sectorId || !curso || !estudianteIndex || !fecha) {
         mostrarMensaje('Complete todos los campos', 'error');
+        return;
+    }
+    
+    const sector = datos.sectoresCobro.find(s => s.id === sectorId);
+    if (!sector) {
+        mostrarMensaje('Sector no encontrado', 'error');
         return;
     }
     
     const estudiante = datos.cursos[curso].estudiantes[estudianteIndex];
     
+    // Verificar si ya está pagado
+    const nombreEstudiante = estudiante.nombre || `Estudiante ${parseInt(estudianteIndex) + 1}`;
+    const yaPago = sector.cobros.some(cobro => 
+        cobro.curso === curso && cobro.estudiante === nombreEstudiante
+    );
+    
+    if (yaPago) {
+        mostrarMensaje('Este estudiante ya está registrado como pagado en este sector', 'warning');
+        return;
+    }
+    
     const nuevoCobro = {
         id: Date.now(),
         curso: curso,
-        estudiante: estudiante.nombre || `Estudiante ${parseInt(estudianteIndex) + 1}`,
-        concepto: concepto,
-        monto: monto,
+        estudiante: nombreEstudiante,
+        monto: sector.monto,
         fecha: fecha,
-        observaciones: observaciones
+        observaciones: observaciones,
+        timestamp: Date.now()
     };
     
-    datos.otrosCobros.push(nuevoCobro);
-    datos.totalOtrosCobros += monto;
+    sector.cobros.push(nuevoCobro);
+    datos.totalOtrosCobros += sector.monto;
+
+    if (!datos.otrosCobrosIngresos) datos.otrosCobrosIngresos = 0;
+datos.otrosCobrosIngresos += sector.monto;
     
     guardarDatos();
-    actualizarTablaOtrosCobros();
+    actualizarSectoresCobro();
     actualizarTotalOtrosCobros();
+    
+    // Actualizar la vista de marcado si está activa
+    if (document.getElementById('contenedorMarcarPagos') && 
+        document.getElementById('contenedorMarcarPagos').style.display !== 'none') {
+        cargarEstudiantesParaMarcarPagos();
+    }
     
     document.getElementById('formOtroCobro').reset();
     const hoy = new Date().toISOString().split('T')[0];
@@ -2329,7 +3163,53 @@ function registrarOtroCobro(e) {
     mostrarMensaje('Cobro registrado exitosamente', 'success');
 }
 
-// REGISTRAR EVENTO MEJORADO
+// VER REPORTE SECTOR
+function verReporteSector(sectorId) {
+    const sector = datos.sectoresCobro.find(s => s.id === sectorId);
+    if (!sector) return;
+    
+    // Generar PDF del sector
+    generarReporteSectorPDF(sector);
+}
+
+// EDITAR SECTOR
+function editarSector(sectorId) {
+    if (!isAdmin) return;
+    
+    const sector = datos.sectoresCobro.find(s => s.id === sectorId);
+    if (!sector) return;
+    
+    const nuevoNombre = prompt('Nuevo nombre del sector:', sector.nombre);
+    if (nuevoNombre !== null) {
+        sector.nombre = nuevoNombre;
+        
+        const nuevoMonto = parseFloat(prompt('Nuevo monto por estudiante:', sector.monto));
+        if (!isNaN(nuevoMonto) && nuevoMonto > 0) {
+            sector.monto = nuevoMonto;
+        }
+        
+        guardarDatos();
+        actualizarSectoresCobro();
+        mostrarMensaje('Sector actualizado', 'success');
+    }
+}
+
+// ELIMINAR SECTOR
+function eliminarSector(sectorId) {
+    if (!isAdmin) return;
+    
+    if (confirm('¿Está seguro de eliminar este sector? Todos los cobros asociados se perderán.')) {
+        const index = datos.sectoresCobro.findIndex(s => s.id === sectorId);
+        if (index !== -1) {
+            datos.sectoresCobro.splice(index, 1);
+            guardarDatos();
+            actualizarSectoresCobro();
+            mostrarMensaje('Sector eliminado', 'success');
+        }
+    }
+}
+
+// REGISTRAR EVENTO
 function registrarEvento(e) {
     e.preventDefault();
     
@@ -2430,17 +3310,22 @@ function actualizarEventos() {
         
         let fotosHTML = '';
         if (evento.fotos && evento.fotos.length > 0) {
-            fotosHTML = '<div class="evento-imagenes">';
+            fotosHTML = '<div class="evento-imagenes mt-2">';
             evento.fotos.forEach((foto, index) => {
-                fotosHTML += `
-                    <img src="data:${foto.tipo};base64,${foto.datos}" 
-                         alt="${foto.nombre}" 
-                         class="evento-imagen"
-                         onclick="ampliarImagen('data:${foto.tipo};base64,${foto.datos}')">
-                `;
+                if (index < 3) { // Mostrar máximo 3 fotos
+                    fotosHTML += `
+                        <img src="data:${foto.tipo};base64,${foto.datos}" 
+                             alt="${foto.nombre}" 
+                             class="evento-imagen"
+                             style="width: 100px; height: 100px; object-fit: cover; border-radius: 5px; margin-right: 5px; cursor: pointer;"
+                             onclick="ampliarImagen('data:${foto.tipo};base64,${foto.datos}')">
+                    `;
+                }
             });
             fotosHTML += '</div>';
-            fotosHTML += `<p class="fotos-count"><i class="fas fa-camera"></i> ${evento.fotos.length} foto(s)</p>`;
+            if (evento.fotos.length > 3) {
+                fotosHTML += `<p class="fotos-count mt-1"><i class="fas fa-camera"></i> ${evento.fotos.length} foto(s)</p>`;
+            }
         }
         
         eventoDiv.innerHTML = `
@@ -2465,7 +3350,7 @@ function actualizarEventos() {
     });
 }
 
-// FUNCIONES PARA ELIMINAR REGISTROS (actualizan dashboard)
+// FUNCIONES PARA ELIMINAR REGISTROS
 function eliminarGasto(id) {
     if (!isAdmin) return;
     
@@ -2475,7 +3360,6 @@ function eliminarGasto(id) {
             const gasto = datos.gastos[index];
             datos.gastos.splice(index, 1);
             
-            // Actualizar dashboard
             actualizarDashboard();
             actualizarDetalleCajaFuerte();
             actualizarSeguimiento();
@@ -2503,7 +3387,6 @@ function eliminarMovimientoCaja(id) {
             
             datos.movimientosCaja.splice(index, 1);
             
-            // Actualizar dashboard
             actualizarDashboard();
             actualizarDetalleCajaFuerte();
             actualizarSeguimiento();
@@ -2511,24 +3394,6 @@ function eliminarMovimientoCaja(id) {
             guardarDatos();
             actualizarTablaMovimientosCaja();
             mostrarMensaje('Movimiento eliminado y dashboard actualizado', 'success');
-        }
-    }
-}
-
-function eliminarOtroCobro(id) {
-    if (!isAdmin) return;
-    
-    if (confirm('¿Está seguro de eliminar este cobro?')) {
-        const index = datos.otrosCobros.findIndex(cobro => cobro.id === id);
-        if (index !== -1) {
-            const cobro = datos.otrosCobros[index];
-            datos.totalOtrosCobros -= cobro.monto || 0;
-            datos.otrosCobros.splice(index, 1);
-            
-            guardarDatos();
-            actualizarTablaOtrosCobros();
-            actualizarTotalOtrosCobros();
-            mostrarMensaje('Cobro eliminado', 'success');
         }
     }
 }
@@ -2547,38 +3412,66 @@ function eliminarEvento(id) {
     }
 }
 
+// ACTUALIZAR TOTAL DE OTROS COBROS
+function actualizarTotalOtrosCobros() {
+    let total = 0;
+    datos.sectoresCobro.forEach(sector => {
+        total += sector.cobros.reduce((sum, cobro) => sum + (cobro.monto || 0), 0);
+    });
+    datos.totalOtrosCobros = total;
+    
+    if (document.getElementById('totalOtrosCobros')) {
+        document.getElementById('totalOtrosCobros').textContent = `Bs ${total.toFixed(2)}`;
+    }
+}
+
 // INICIALIZACIÓN DE GRÁFICOS
 let graficoGastos = null;
-let graficoAportes = null;
-let graficoEvolucion = null;
+let graficoComparativo = null;
+let graficoEvolucionAnual = null;
 
 function inicializarGraficos() {
     if (graficoGastos) graficoGastos.destroy();
-    if (graficoAportes) graficoAportes.destroy();
-    if (graficoEvolucion) graficoEvolucion.destroy();
+    if (graficoComparativo) graficoComparativo.destroy();
+    if (graficoEvolucionAnual) graficoEvolucionAnual.destroy();
     
     const ctxGastos = document.getElementById('graficoGastos');
     if (ctxGastos) {
         graficoGastos = new Chart(ctxGastos.getContext('2d'), {
-            type: 'doughnut',
+            type: 'pie',
             data: obtenerDatosGraficoGastos(),
             options: {
                 responsive: true,
                 plugins: {
                     legend: {
-                        position: 'bottom',
-                        labels: { color: '#ffffff', font: { size: 12, weight: 'bold' } }
+                        position: 'right',
+                        labels: { 
+                            color: '#ffffff', 
+                            font: { size: 11, weight: 'bold' },
+                            padding: 15
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = Math.round((value / total) * 100);
+                                return `${label}: Bs ${value.toFixed(2)} (${percentage}%)`;
+                            }
+                        }
                     }
                 }
             }
         });
     }
     
-    const ctxAportes = document.getElementById('graficoAportes');
-    if (ctxAportes) {
-        graficoAportes = new Chart(ctxAportes.getContext('2d'), {
+    const ctxComparativo = document.getElementById('graficoComparativo');
+    if (ctxComparativo) {
+        graficoComparativo = new Chart(ctxComparativo.getContext('2d'), {
             type: 'bar',
-            data: obtenerDatosGraficoAportes(),
+            data: obtenerDatosGraficoComparativo(),
             options: {
                 responsive: true,
                 scales: {
@@ -2601,11 +3494,11 @@ function inicializarGraficos() {
         });
     }
     
-    const ctxEvolucion = document.getElementById('graficoEvolucion');
-    if (ctxEvolucion) {
-        graficoEvolucion = new Chart(ctxEvolucion.getContext('2d'), {
+    const ctxEvolucionAnual = document.getElementById('graficoEvolucionAnual');
+    if (ctxEvolucionAnual) {
+        graficoEvolucionAnual = new Chart(ctxEvolucionAnual.getContext('2d'), {
             type: 'line',
-            data: obtenerDatosGraficoEvolucion(),
+            data: obtenerDatosGraficoEvolucionAnual(),
             options: {
                 responsive: true,
                 scales: {
@@ -2678,37 +3571,44 @@ function obtenerDatosGraficoGastos() {
         labels: categorias.map(cat => nombresCategorias[cat]),
         datasets: [{
             data: categorias.map(cat => datosCategorias[cat]),
-            backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'],
+            backgroundColor: [
+                '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40',
+                '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'
+            ],
             borderColor: '#fff',
             borderWidth: 2
         }]
     };
 }
 
-function obtenerDatosGraficoAportes() {
+function obtenerDatosGraficoComparativo() {
     const filtroAnio = document.getElementById('filtroAnio') ? document.getElementById('filtroAnio').value : 'todos';
     
-    const años = ['2026', '2027'];
-    const datosPorAño = {};
-    años.forEach(año => datosPorAño[año] = 0);
+    const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    const datosAportes = new Array(12).fill(0);
+    const datosGastos = new Array(12).fill(0);
     
-    // Sumar aportes registrados
-    datos.aportes.forEach(aporte => {
-        if (filtroAnio !== 'todos' && aporte.anio !== filtroAnio) return;
-        if (datosPorAño.hasOwnProperty(aporte.anio)) {
-            datosPorAño[aporte.anio] += aporte.monto || 0;
-        }
-    });
-    
-    // Sumar pagos de estudiantes
+    // Calcular aportes por mes (de la pestaña Cursos)
     for (const curso of Object.values(datos.cursos)) {
         if (curso.estudiantes) {
             for (const estudiante of curso.estudiantes) {
                 if (estudiante.pagos) {
-                    años.forEach(año => {
-                        if (filtroAnio !== 'todos' && año !== filtroAnio) return;
-                        if (estudiante.pagos[año] && estudiante.pagos[año].pagado) {
-                            datosPorAño[año] += estudiante.pagos[año].monto || 0;
+                    ['2026', '2027'].forEach(anio => {
+                        const pago = estudiante.pagos[anio];
+                        if (pago && pago.pagado && pago.fecha && pago.monto > 0) {
+                            try {
+                                const fecha = new Date(pago.fecha);
+                                if (!isNaN(fecha)) {
+                                    const anioPago = fecha.getFullYear().toString();
+                                    const mes = fecha.getMonth();
+                                    
+                                    if (filtroAnio === 'todos' || anioPago === filtroAnio) {
+                                        if (mes >= 0 && mes < 12) {
+                                            datosAportes[mes] += pago.monto || 0;
+                                        }
+                                    }
+                                }
+                            } catch (e) {}
                         }
                     });
                 }
@@ -2716,54 +3616,18 @@ function obtenerDatosGraficoAportes() {
         }
     }
     
-    return {
-        labels: años,
-        datasets: [{
-            label: 'Aportes por Año (Bs)',
-            data: años.map(año => datosPorAño[año]),
-            backgroundColor: 'rgba(255, 94, 0, 0.6)',
-            borderColor: 'rgba(255, 94, 0, 1)',
-            borderWidth: 2
-        }]
-    };
-}
-
-function obtenerDatosGraficoEvolucion() {
-    const filtroAnio = document.getElementById('filtroAnio') ? document.getElementById('filtroAnio').value : 'todos';
-    
-    const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-    const datosAportes = new Array(12).fill(0);
-    const datosGastos = new Array(12).fill(0);
-    
-    datos.aportes.forEach(aporte => {
-        try {
-            const fecha = new Date(aporte.fecha);
-            if (!isNaN(fecha)) {
-                const anio = fecha.getFullYear();
-                const mes = fecha.getMonth();
-                
-                // Filtrar por año
-                if (filtroAnio !== 'todos' && anio.toString() !== filtroAnio) return;
-                
-                if (mes >= 0 && mes < 12) {
-                    datosAportes[mes] += aporte.monto || 0;
-                }
-            }
-        } catch (e) {}
-    });
-    
+    // Calcular gastos por mes
     datos.gastos.forEach(gasto => {
         try {
             const fecha = new Date(gasto.fecha);
             if (!isNaN(fecha)) {
-                const anio = fecha.getFullYear();
+                const anio = fecha.getFullYear().toString();
                 const mes = fecha.getMonth();
                 
-                // Filtrar por año
-                if (filtroAnio !== 'todos' && anio.toString() !== filtroAnio) return;
-                
-                if (mes >= 0 && mes < 12) {
-                    datosGastos[mes] += gasto.monto || 0;
+                if (filtroAnio === 'todos' || anio === filtroAnio) {
+                    if (mes >= 0 && mes < 12) {
+                        datosGastos[mes] += gasto.monto || 0;
+                    }
                 }
             }
         } catch (e) {}
@@ -2771,6 +3635,65 @@ function obtenerDatosGraficoEvolucion() {
     
     return {
         labels: meses,
+        datasets: [
+            {
+                label: 'Aportes (Bs)',
+                data: datosAportes,
+                backgroundColor: 'rgba(0, 255, 0, 0.6)',
+                borderColor: 'rgba(0, 255, 0, 1)',
+                borderWidth: 1
+            },
+            {
+                label: 'Gastos (Bs)',
+                data: datosGastos,
+                backgroundColor: 'rgba(255, 0, 0, 0.6)',
+                borderColor: 'rgba(255, 0, 0, 1)',
+                borderWidth: 1
+            }
+        ]
+    };
+}
+
+function obtenerDatosGraficoEvolucionAnual() {
+    const años = ['2025', '2026', '2027'];
+    const datosAportes = [0, 0, 0];
+    const datosGastos = [0, 0, 0];
+    
+    // Calcular aportes por año
+    for (const curso of Object.values(datos.cursos)) {
+        if (curso.estudiantes) {
+            for (const estudiante of curso.estudiantes) {
+                if (estudiante.pagos) {
+                    ['2026', '2027'].forEach(anio => {
+                        const pago = estudiante.pagos[anio];
+                        if (pago && pago.pagado && pago.monto > 0) {
+                            const index = años.indexOf(anio);
+                            if (index !== -1) {
+                                datosAportes[index] += pago.monto || 0;
+                            }
+                        }
+                    });
+                }
+            }
+        }
+    }
+    
+    // Calcular gastos por año
+    datos.gastos.forEach(gasto => {
+        try {
+            const fecha = new Date(gasto.fecha);
+            if (!isNaN(fecha)) {
+                const anio = fecha.getFullYear().toString();
+                const index = años.indexOf(anio);
+                if (index !== -1) {
+                    datosGastos[index] += gasto.monto || 0;
+                }
+            }
+        } catch (e) {}
+    });
+    
+    return {
+        labels: años,
         datasets: [
             {
                 label: 'Aportes (Bs)',
@@ -2798,14 +3721,14 @@ function actualizarGraficos() {
         graficoGastos.update();
     }
     
-    if (graficoAportes) {
-        graficoAportes.data = obtenerDatosGraficoAportes();
-        graficoAportes.update();
+    if (graficoComparativo) {
+        graficoComparativo.data = obtenerDatosGraficoComparativo();
+        graficoComparativo.update();
     }
     
-    if (graficoEvolucion) {
-        graficoEvolucion.data = obtenerDatosGraficoEvolucion();
-        graficoEvolucion.update();
+    if (graficoEvolucionAnual) {
+        graficoEvolucionAnual.data = obtenerDatosGraficoEvolucionAnual();
+        graficoEvolucionAnual.update();
     }
 }
 
@@ -2814,8 +3737,9 @@ function actualizarReportes() {
     actualizarReporteMensual();
 }
 
-// ACTUALIZAR REPORTE MENSUAL SEPARADO POR AÑO
+// ACTUALIZAR REPORTE MENSUAL
 function actualizarReporteMensual() {
+    actualizarReporteMensualPorAnio('2025', 'tablaReporteMensual2025');
     actualizarReporteMensualPorAnio('2026', 'tablaReporteMensual2026');
     actualizarReporteMensualPorAnio('2027', 'tablaReporteMensual2027');
 }
@@ -2829,23 +3753,35 @@ function actualizarReporteMensualPorAnio(anio, tablaId) {
     const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
                   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     
-    let acumulado = 0;
+    let totalAportes = 0;
+    let totalGastos = 0;
     
     meses.forEach((mes, index) => {
         const mesNum = index + 1;
         
         let aportesMes = 0;
-        datos.aportes.forEach(aporte => {
-            try {
-                const fecha = new Date(aporte.fecha);
-                if (!isNaN(fecha)) {
-                    const anioGasto = fecha.getFullYear().toString();
-                    if (anioGasto === anio && fecha.getMonth() + 1 === mesNum) {
-                        aportesMes += aporte.monto || 0;
+        // Calcular aportes del mes (de la pestaña Cursos)
+        for (const curso of Object.values(datos.cursos)) {
+            if (curso.estudiantes) {
+                for (const estudiante of curso.estudiantes) {
+                    if (estudiante.pagos) {
+                        const pago = estudiante.pagos[anio];
+                        if (pago && pago.pagado && pago.fecha && pago.monto > 0) {
+                            try {
+                                const fecha = new Date(pago.fecha);
+                                if (!isNaN(fecha)) {
+                                    const anioPago = fecha.getFullYear().toString();
+                                    const mesPago = fecha.getMonth() + 1;
+                                    if (anioPago === anio && mesPago === mesNum) {
+                                        aportesMes += pago.monto || 0;
+                                    }
+                                }
+                            } catch (e) {}
+                        }
                     }
                 }
-            } catch (e) {}
-        });
+            }
+        }
         
         let gastosMes = 0;
         datos.gastos.forEach(gasto => {
@@ -2853,831 +3789,86 @@ function actualizarReporteMensualPorAnio(anio, tablaId) {
                 const fecha = new Date(gasto.fecha);
                 if (!isNaN(fecha)) {
                     const anioGasto = fecha.getFullYear().toString();
-                    if (anioGasto === anio && fecha.getMonth() + 1 === mesNum) {
+                    const mesGasto = fecha.getMonth() + 1;
+                    if (anioGasto === anio && mesGasto === mesNum) {
                         gastosMes += gasto.monto || 0;
                     }
                 }
             } catch (e) {}
         });
         
-        const balanceMes = aportesMes - gastosMes;
-        acumulado += balanceMes;
+        totalAportes += aportesMes;
+        totalGastos += gastosMes;
         
         const fila = document.createElement('tr');
-        fila.innerHTML = `
-            <td><strong>${mes}</strong></td>
-            <td>Bs ${aportesMes.toFixed(2)}</td>
-            <td>Bs ${gastosMes.toFixed(2)}</td>
-            <td class="${balanceMes >= 0 ? 'text-success' : 'text-danger'}"><strong>Bs ${balanceMes.toFixed(2)}</strong></td>
-        `;
+        
+        if (anio === '2025') {
+            // Solo gastos para 2025
+            fila.innerHTML = `
+                <td><strong>${mes}</strong></td>
+                <td class="text-danger">Bs ${gastosMes.toFixed(2)}</td>
+                <td class="text-danger">Bs ${gastosMes.toFixed(2)}</td>
+            `;
+        } else {
+            // Aportes y gastos para 2026 y 2027
+            const balanceMes = aportesMes - gastosMes;
+            fila.innerHTML = `
+                <td><strong>${mes}</strong></td>
+                <td class="text-success">Bs ${aportesMes.toFixed(2)}</td>
+                <td class="text-danger">Bs ${gastosMes.toFixed(2)}</td>
+                <td class="${balanceMes >= 0 ? 'text-success' : 'text-danger'}"><strong>Bs ${balanceMes.toFixed(2)}</strong></td>
+            `;
+        }
+        
         tabla.appendChild(fila);
     });
     
     // Agregar fila de total
     const filaTotal = document.createElement('tr');
     filaTotal.className = 'table-primary';
-    filaTotal.innerHTML = `
-        <td><strong>TOTAL ${anio}</strong></td>
-        <td><strong>Bs ${acumulado >= 0 ? '+' : ''}${acumulado.toFixed(2)}</strong></td>
-        <td></td>
-        <td></td>
-    `;
+    
+    if (anio === '2025') {
+        filaTotal.innerHTML = `
+            <td><strong>TOTAL ${anio}</strong></td>
+            <td><strong class="text-danger">Bs ${totalGastos.toFixed(2)}</strong></td>
+            <td><strong class="text-danger">Bs ${totalGastos.toFixed(2)}</strong></td>
+        `;
+    } else {
+        const balanceTotal = totalAportes - totalGastos;
+        filaTotal.innerHTML = `
+            <td><strong>TOTAL ${anio}</strong></td>
+            <td><strong class="text-success">Bs ${totalAportes.toFixed(2)}</strong></td>
+            <td><strong class="text-danger">Bs ${totalGastos.toFixed(2)}</strong></td>
+            <td><strong class="${balanceTotal >= 0 ? 'text-success' : 'text-danger'}">Bs ${balanceTotal.toFixed(2)}</strong></td>
+        `;
+    }
+    
     tabla.appendChild(filaTotal);
 }
 
-// GUARDAR PAGOS DEL CURSO
-function guardarPagosCurso() {
-    if (!isAdmin) return;
-    
-    guardarDatos();
-    mostrarMensaje('Cambios guardados exitosamente', 'success');
-}
-
-// EXPORTAR A EXCEL
-function exportarExcel() {
-    const cursoSeleccionado = document.getElementById('selectorCurso').value;
-    
-    if (!cursoSeleccionado) {
-        mostrarMensaje('Seleccione un curso primero', 'error');
-        return;
-    }
-    
-    const datosCurso = datos.cursos[cursoSeleccionado];
-    let csvContent = "data:text/csv;charset=utf-8,";
-    
-    csvContent += "N°;Nombre del Estudiante;2026;Fecha 2026;Estado 2026;2027;Fecha 2027;Estado 2027;Total Pagado;Estado General\n";
-    
-    datosCurso.estudiantes.forEach((estudiante, index) => {
-        const totalPagado = Object.values(estudiante.pagos || {}).reduce((total, pago) => total + (pago.pagado ? (pago.monto || 0) : 0), 0);
-        const tieneDeuda = Object.values(estudiante.pagos || {}).some(pago => !pago.pagado && (pago.monto || 0) > 0);
-        
-        const fila = [
-            index + 1,
-            estudiante.nombre || `Estudiante ${index + 1}`,
-            estudiante.pagos && estudiante.pagos[2026] && estudiante.pagos[2026].pagado ? 'Bs ' + (estudiante.pagos[2026].monto || 0).toFixed(2) : 'Pendiente',
-            estudiante.pagos && estudiante.pagos[2026] ? (estudiante.pagos[2026].fecha || '-') : '-',
-            estudiante.pagos && estudiante.pagos[2026] && estudiante.pagos[2026].pagado ? 'AL DÍA' : 'CON DEUDA',
-            estudiante.pagos && estudiante.pagos[2027] && estudiante.pagos[2027].pagado ? 'Bs ' + (estudiante.pagos[2027].monto || 0).toFixed(2) : 'Pendiente',
-            estudiante.pagos && estudiante.pagos[2027] ? (estudiante.pagos[2027].fecha || '-') : '-',
-            estudiante.pagos && estudiante.pagos[2027] && estudiante.pagos[2027].pagado ? 'AL DÍA' : 'CON DEUDA',
-            'Bs ' + totalPagado.toFixed(2),
-            tieneDeuda ? 'CON DEUDA' : 'AL DÍA'
-        ].join(";");
-        
-        csvContent += fila + "\n";
-    });
-    
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `pagos_${cursoSeleccionado.replace(' ', '_')}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    mostrarMensaje('Archivo Excel generado exitosamente', 'success');
-}
-
-// EXPORTAR EXCEL COMPLETO
-function exportarExcelCompleto() {
-    let csvContent = "data:text/csv;charset=utf-8,";
-    
-    // Encabezados
-    csvContent += "Curso;Estudiante;2026;Fecha 2026;Estado 2026;2027;Fecha 2027;Estado 2027;Total Pagado;Estado\n";
-    
-    // Datos de todos los cursos
-    for (const [cursoNombre, datosCurso] of Object.entries(datos.cursos)) {
-        datosCurso.estudiantes.forEach((estudiante, index) => {
-            const totalPagado = Object.values(estudiante.pagos || {}).reduce((total, pago) => total + (pago.pagado ? (pago.monto || 0) : 0), 0);
-            const tieneDeuda = Object.values(estudiante.pagos || {}).some(pago => !pago.pagado && (pago.monto || 0) > 0);
-            
-            const fila = [
-                cursoNombre,
-                estudiante.nombre || `Estudiante ${index + 1}`,
-                estudiante.pagos && estudiante.pagos[2026] && estudiante.pagos[2026].pagado ? 'Bs ' + (estudiante.pagos[2026].monto || 0).toFixed(2) : 'Pendiente',
-                estudiante.pagos && estudiante.pagos[2026] ? (estudiante.pagos[2026].fecha || '-') : '-',
-                estudiante.pagos && estudiante.pagos[2026] && estudiante.pagos[2026].pagado ? 'AL DÍA' : 'CON DEUDA',
-                estudiante.pagos && estudiante.pagos[2027] && estudiante.pagos[2027].pagado ? 'Bs ' + (estudiante.pagos[2027].monto || 0).toFixed(2) : 'Pendiente',
-                estudiante.pagos && estudiante.pagos[2027] ? (estudiante.pagos[2027].fecha || '-') : '-',
-                estudiante.pagos && estudiante.pagos[2027] && estudiante.pagos[2027].pagado ? 'AL DÍA' : 'CON DEUDA',
-                'Bs ' + totalPagado.toFixed(2),
-                tieneDeuda ? 'CON DEUDA' : 'AL DÍA'
-            ].join(";");
-            
-            csvContent += fila + "\n";
-        });
-    }
-    
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `reporte_completo_${new Date().toISOString().slice(0,10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    mostrarMensaje('Archivo Excel completo generado exitosamente', 'success');
-}
-
-// GENERAR PDF DEL CURSO
-function generarPDFCurso() {
-    const cursoSeleccionado = document.getElementById('selectorCurso').value;
-    
-    if (!cursoSeleccionado) {
-        mostrarMensaje('Seleccione un curso primero', 'error');
-        return;
-    }
-    
-    const datosCurso = datos.cursos[cursoSeleccionado];
-    const montoReq2026 = obtenerMontoCurso(cursoSeleccionado, '2026');
-    const montoReq2027 = obtenerMontoCurso(cursoSeleccionado, '2027');
-    
-    let contenidoPDF = `
-        <html>
-        <head>
-            <title>Listado de Estudiantes - ${cursoSeleccionado}</title>
-            <style>
-                body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; }
-                .reporte { max-width: 800px; margin: 0 auto; }
-                .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
-                .header h2 { color: #333; margin-bottom: 5px; }
-                .header h3 { color: #666; margin-top: 0; }
-                .info-montos { background: #f5f5f5; padding: 10px; border-radius: 5px; margin: 10px 0; text-align: center; }
-                .tabla { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 10px; }
-                .tabla th, .tabla td { border: 1px solid #000; padding: 6px; text-align: left; }
-                .tabla th { background-color: #f2f2f2; font-weight: bold; }
-                .pagado { color: green; font-weight: bold; }
-                .deuda { color: red; font-weight: bold; }
-                .parcial { color: orange; font-weight: bold; }
-                .footer { margin-top: 30px; text-align: center; font-size: 10px; color: #666; border-top: 1px solid #ccc; padding-top: 10px; }
-                @media print {
-                    .no-print { display: none; }
-                    body { margin: 10px; }
-                }
-            </style>
-        </head>
-        <body>
-            <div class="reporte">
-                <div class="header">
-                    <h2>FEDERACIÓN ESTUDIANTIL</h2>
-                    <h3>LISTADO DE ESTUDIANTES - ${cursoSeleccionado}</h3>
-                    <p>Fecha de emisión: ${new Date().toLocaleDateString()}</p>
-                </div>
-                <div class="info-montos">
-                    <strong>Montos Requeridos:</strong> 2026: Bs ${montoReq2026} | 2027: Bs ${montoReq2027}
-                </div>
-                <table class="tabla">
-                    <tr>
-                        <th>N°</th>
-                        <th>Nombre del Estudiante</th>
-                        <th>2026</th>
-                        <th>Fecha 2026</th>
-                        <th>Estado 2026</th>
-                        <th>2027</th>
-                        <th>Fecha 2027</th>
-                        <th>Estado 2027</th>
-                        <th>Total Pagado</th>
-                        <th>Deuda</th>
-                        <th>Estado General</th>
-                    </tr>
-    `;
-    
-    datosCurso.estudiantes.forEach((estudiante, index) => {
-        const totalPagado = Object.values(estudiante.pagos || {}).reduce((total, pago) => total + (pago.pagado ? (pago.monto || 0) : 0), 0);
-        
-        let deudaTotal = 0;
-        if (estudiante.pagos) {
-            if (!estudiante.pagos[2026] || !estudiante.pagos[2026].pagado || estudiante.pagos[2026].monto < montoReq2026) {
-                deudaTotal += (montoReq2026 - (estudiante.pagos[2026] && estudiante.pagos[2026].pagado ? estudiante.pagos[2026].monto : 0));
-            }
-            if (!estudiante.pagos[2027] || !estudiante.pagos[2027].pagado || estudiante.pagos[2027].monto < montoReq2027) {
-                deudaTotal += (montoReq2027 - (estudiante.pagos[2027] && estudiante.pagos[2027].pagado ? estudiante.pagos[2027].monto : 0));
-            }
-        } else {
-            deudaTotal = montoReq2026 + montoReq2027;
-        }
-        
-        const estado2026 = determinarEstadoPago(
-            estudiante.pagos ? estudiante.pagos[2026] || { monto: 0, fecha: '', pagado: false } : { monto: 0, fecha: '', pagado: false },
-            montoReq2026
-        );
-        
-        const estado2027 = determinarEstadoPago(
-            estudiante.pagos ? estudiante.pagos[2027] || { monto: 0, fecha: '', pagado: false } : { monto: 0, fecha: '', pagado: false },
-            montoReq2027
-        );
-        
-        let estadoGeneral = 'al-dia';
-        let estadoGeneralClase = 'pagado';
-        let estadoGeneralTexto = 'AL DÍA';
-        
-        if (deudaTotal === (montoReq2026 + montoReq2027)) {
-            estadoGeneral = 'con-deuda';
-            estadoGeneralClase = 'deuda';
-            estadoGeneralTexto = 'CON DEUDA';
-        } else if (deudaTotal > 0) {
-            estadoGeneral = 'parcial';
-            estadoGeneralClase = 'parcial';
-            estadoGeneralTexto = 'PARCIAL';
-        }
-        
-        contenidoPDF += `
-            <tr>
-                <td>${index + 1}</td>
-                <td>${estudiante.nombre || `Estudiante ${index + 1}`}</td>
-                <td class="${estudiante.pagos && estudiante.pagos[2026] && estudiante.pagos[2026].pagado ? 'pagado' : 'deuda'}">
-                    ${estudiante.pagos && estudiante.pagos[2026] && estudiante.pagos[2026].pagado ? 'Bs ' + (estudiante.pagos[2026].monto || 0).toFixed(2) : 'Bs 0.00'}
-                </td>
-                <td>${estudiante.pagos && estudiante.pagos[2026] ? (estudiante.pagos[2026].fecha || '-') : '-'}</td>
-                <td class="${estado2026}">${estado2026 === 'pagado' ? 'COMPLETO' : estado2026 === 'deuda' ? 'DEUDA' : 'PARCIAL'}</td>
-                <td class="${estudiante.pagos && estudiante.pagos[2027] && estudiante.pagos[2027].pagado ? 'pagado' : 'deuda'}">
-                    ${estudiante.pagos && estudiante.pagos[2027] && estudiante.pagos[2027].pagado ? 'Bs ' + (estudiante.pagos[2027].monto || 0).toFixed(2) : 'Bs 0.00'}
-                </td>
-                <td>${estudiante.pagos && estudiante.pagos[2027] ? (estudiante.pagos[2027].fecha || '-') : '-'}</td>
-                <td class="${estado2027}">${estado2027 === 'pagado' ? 'COMPLETO' : estado2027 === 'deuda' ? 'DEUDA' : 'PARCIAL'}</td>
-                <td><strong>Bs ${totalPagado.toFixed(2)}</strong></td>
-                <td class="${deudaTotal > 0 ? 'deuda' : 'pagado'}"><strong>Bs ${deudaTotal.toFixed(2)}</strong></td>
-                <td class="${estadoGeneralClase}"><strong>${estadoGeneralTexto}</strong></td>
-            </tr>
-        `;
-    });
-    
-    contenidoPDF += `
-                </table>
-                <div class="footer">
-                    <p>Este documento es para control interno de la Federación Estudiantil</p>
-                    <p>Montos 2026: Bs ${montoReq2026} | Montos 2027: Bs ${montoReq2027}</p>
-                </div>
-            </div>
-            <div class="no-print" style="text-align: center; margin-top: 20px;">
-                <button onclick="window.print()" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
-                    <i class="fas fa-print"></i> Imprimir Listado
-                </button>
-            </div>
-        </body>
-        </html>
-    `;
-    
-    const ventanaPDF = window.open('', '_blank');
-    if (ventanaPDF) {
-        ventanaPDF.document.write(contenidoPDF);
-        ventanaPDF.document.close();
-    }
-}
-
-// GENERAR RECIBO
-function generarRecibo(curso, index) {
-    const estudiante = datos.cursos[curso].estudiantes[index];
-    const pagos = estudiante.pagos || {};
-    
-    let contenidoRecibo = `
-        <html>
-        <head>
-            <title>Recibo de Pago - ${estudiante.nombre || `Estudiante ${index + 1}`}</title>
-            <style>
-                body { font-family: Arial, sans-serif; margin: 20px; }
-                .recibo { border: 2px solid #000; padding: 20px; max-width: 600px; margin: 0 auto; }
-                .header { text-align: center; margin-bottom: 20px; }
-                .detalles { margin: 20px 0; }
-                .firma { margin-top: 50px; border-top: 1px solid #000; padding-top: 10px; }
-                table { width: 100%; border-collapse: collapse; margin: 10px 0; }
-                th, td { border: 1px solid #000; padding: 8px; text-align: left; }
-                th { background-color: #f2f2f2; }
-            </style>
-        </head>
-        <body>
-            <div class="recibo">
-                <div class="header">
-                    <h2>FEDERACIÓN ESTUDIANTIL</h2>
-                    <h3>RECIBO DE PAGO DE APORTES</h3>
-                </div>
-                <div class="detalles">
-                    <p><strong>Estudiante:</strong> ${estudiante.nombre || `Estudiante ${index + 1}`}</p>
-                    <p><strong>Curso:</strong> ${curso}</p>
-                    <p><strong>Fecha de Emisión:</strong> ${new Date().toLocaleDateString()}</p>
-                    <h4>Detalle de Pagos:</h4>
-                    <table>
-                        <tr>
-                            <th>Año</th>
-                            <th>Monto</th>
-                            <th>Fecha de Pago</th>
-                            <th>Estado</th>
-                        </tr>
-    `;
-    
-    ['2026', '2027'].forEach(anio => {
-        const pago = pagos[anio] || { monto: 0, fecha: '', pagado: false };
-        contenidoRecibo += `
-            <tr>
-                <td>${anio}</td>
-                <td>${pago.pagado ? 'Bs ' + (pago.monto || 0).toFixed(2) : 'Pendiente'}</td>
-                <td>${pago.fecha || '-'}</td>
-                <td>${pago.pagado ? 'PAGADO' : 'PENDIENTE'}</td>
-            </tr>
-        `;
-    });
-    
-    const totalPagado = Object.values(pagos).reduce((total, pago) => total + (pago.pagado ? (pago.monto || 0) : 0), 0);
-    
-    contenidoRecibo += `
-                    </table>
-                    <p style="margin-top: 10px;"><strong>Total Pagado:</strong> Bs ${totalPagado.toFixed(2)}</p>
-                </div>
-                <div class="firma">
-                    <p>_________________________</p>
-                    <p><strong>Firma del Tesorero</strong></p>
-                </div>
-            </div>
-        </body>
-        </html>
-    `;
-    
-    const ventanaRecibo = window.open('', '_blank');
-    if (ventanaRecibo) {
-        ventanaRecibo.document.write(contenidoRecibo);
-        ventanaRecibo.document.close();
-        
-        setTimeout(() => {
-            ventanaRecibo.print();
-        }, 500);
-    }
-}
-
-// GENERAR PDF DE TODOS LOS ESTUDIANTES
-function generarPDFTodosEstudiantes() {
-    let contenidoPDF = `
-        <html>
-        <head>
-            <title>Reporte Completo de Estudiantes - Federación Estudiantil</title>
-            <style>
-                body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; }
-                .reporte { max-width: 1000px; margin: 0 auto; }
-                .header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #000; padding-bottom: 15px; }
-                .header h1 { color: #333; margin-bottom: 5px; }
-                .header h2 { color: #666; margin-top: 0; }
-                .info { background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0; text-align: center; }
-                .tabla { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 10px; }
-                .tabla th, .tabla td { border: 1px solid #000; padding: 6px; text-align: left; }
-                .tabla th { background-color: #e9ecef; font-weight: bold; }
-                .pagado { color: green; font-weight: bold; }
-                .deuda { color: red; font-weight: bold; }
-                .parcial { color: orange; font-weight: bold; }
-                .resumen { margin-top: 30px; padding: 15px; border: 2px solid #000; border-radius: 10px; }
-                .resumen-item { display: flex; justify-content: space-between; margin: 5px 0; }
-                @media print {
-                    .no-print { display: none; }
-                    body { margin: 10px; }
-                }
-            </style>
-        </head>
-        <body>
-            <div class="reporte">
-                <div class="header">
-                    <h1>FEDERACIÓN ESTUDIANTIL</h1>
-                    <h2>REPORTE COMPLETO DE ESTUDIANTES</h2>
-                    <p>Fecha de emisión: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}</p>
-                </div>
-                
-                <div class="info">
-                    <h3>ESTADO DE PAGOS 2026-2027</h3>
-                    <p>Este reporte incluye todos los estudiantes con su estado de pagos completo</p>
-                </div>
-                
-                <table class="tabla">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Curso</th>
-                            <th>Estudiante</th>
-                            <th>Monto 2026</th>
-                            <th>Pagado 2026</th>
-                            <th>Estado 2026</th>
-                            <th>Monto 2027</th>
-                            <th>Pagado 2027</th>
-                            <th>Estado 2027</th>
-                            <th>Total Pagado</th>
-                            <th>Deuda</th>
-                            <th>Estado General</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-    `;
-    
-    let contador = 1;
-    let totalEstudiantes = 0;
-    let totalPagadoGeneral = 0;
-    let totalDeudaGeneral = 0;
-    let estudiantesAlDia = 0;
-    let estudiantesConDeuda = 0;
-    let estudiantesParcial = 0;
-    
-    for (const [cursoNombre, datosCurso] of Object.entries(datos.cursos)) {
-        if (datosCurso.estudiantes) {
-            datosCurso.estudiantes.forEach((estudiante, index) => {
-                totalEstudiantes++;
-                
-                const montoReq2026 = obtenerMontoCurso(cursoNombre, '2026');
-                const montoReq2027 = obtenerMontoCurso(cursoNombre, '2027');
-                
-                const pago2026 = estudiante.pagos ? estudiante.pagos['2026'] || { monto: 0, fecha: '', pagado: false } : { monto: 0, fecha: '', pagado: false };
-                const pago2027 = estudiante.pagos ? estudiante.pagos['2027'] || { monto: 0, fecha: '', pagado: false } : { monto: 0, fecha: '', pagado: false };
-                
-                const pagado2026 = pago2026.pagado ? pago2026.monto || 0 : 0;
-                const pagado2027 = pago2027.pagado ? pago2027.monto || 0 : 0;
-                const totalPagado = pagado2026 + pagado2027;
-                
-                let deuda2026 = 0;
-                let deuda2027 = 0;
-                
-                if (!pago2026.pagado || pago2026.monto < montoReq2026) {
-                    deuda2026 = montoReq2026 - (pago2026.pagado ? pago2026.monto : 0);
-                }
-                
-                if (!pago2027.pagado || pago2027.monto < montoReq2027) {
-                    deuda2027 = montoReq2027 - (pago2027.pagado ? pago2027.monto : 0);
-                }
-                
-                const totalDeuda = deuda2026 + deuda2027;
-                totalPagadoGeneral += totalPagado;
-                totalDeudaGeneral += totalDeuda;
-                
-                const estado2026 = determinarEstadoPago(pago2026, montoReq2026);
-                const estado2027 = determinarEstadoPago(pago2027, montoReq2027);
-                
-                let estadoGeneral = 'al-dia';
-                let estadoGeneralClase = 'pagado';
-                let estadoGeneralTexto = 'AL DÍA';
-                
-                if (totalDeuda === (montoReq2026 + montoReq2027)) {
-                    estadoGeneral = 'con-deuda';
-                    estadoGeneralClase = 'deuda';
-                    estadoGeneralTexto = 'CON DEUDA';
-                    estudiantesConDeuda++;
-                } else if (totalDeuda > 0) {
-                    estadoGeneral = 'parcial';
-                    estadoGeneralClase = 'parcial';
-                    estadoGeneralTexto = 'PARCIAL';
-                    estudiantesParcial++;
-                } else {
-                    estudiantesAlDia++;
-                }
-                
-                contenidoPDF += `
-                    <tr>
-                        <td>${contador}</td>
-                        <td><strong>${cursoNombre}</strong></td>
-                        <td>${estudiante.nombre || `Estudiante ${index + 1}`}</td>
-                        <td>Bs ${montoReq2026.toFixed(2)}</td>
-                        <td class="${pagado2026 > 0 ? 'pagado' : 'deuda'}">Bs ${pagado2026.toFixed(2)}</td>
-                        <td class="${estado2026}">${estado2026 === 'pagado' ? 'COMPLETO' : estado2026 === 'deuda' ? 'DEUDA' : 'PARCIAL'}</td>
-                        <td>Bs ${montoReq2027.toFixed(2)}</td>
-                        <td class="${pagado2027 > 0 ? 'pagado' : 'deuda'}">Bs ${pagado2027.toFixed(2)}</td>
-                        <td class="${estado2027}">${estado2027 === 'pagado' ? 'COMPLETO' : estado2027 === 'deuda' ? 'DEUDA' : 'PARCIAL'}</td>
-                        <td><strong>Bs ${totalPagado.toFixed(2)}</strong></td>
-                        <td class="${totalDeuda > 0 ? 'deuda' : 'pagado'}"><strong>Bs ${totalDeuda.toFixed(2)}</strong></td>
-                        <td class="${estadoGeneralClase}"><strong>${estadoGeneralTexto}</strong></td>
-                    </tr>
-                `;
-                
-                contador++;
-            });
-        }
-    }
-    
-    contenidoPDF += `
-                    </tbody>
-                </table>
-                
-                <div class="resumen">
-                    <h3>RESUMEN GENERAL</h3>
-                    <div class="resumen-item">
-                        <span>Total Estudiantes:</span>
-                        <span><strong>${totalEstudiantes}</strong></span>
-                    </div>
-                    <div class="resumen-item">
-                        <span>Estudiantes al Día:</span>
-                        <span class="pagado"><strong>${estudiantesAlDia}</strong></span>
-                    </div>
-                    <div class="resumen-item">
-                        <span>Estudiantes con Pagos Parciales:</span>
-                        <span class="parcial"><strong>${estudiantesParcial}</strong></span>
-                    </div>
-                    <div class="resumen-item">
-                        <span>Estudiantes con Deuda:</span>
-                        <span class="deuda"><strong>${estudiantesConDeuda}</strong></span>
-                    </div>
-                    <div class="resumen-item">
-                        <span>Total Pagado por Estudiantes:</span>
-                        <span class="pagado"><strong>Bs ${totalPagadoGeneral.toFixed(2)}</strong></span>
-                    </div>
-                    <div class="resumen-item">
-                        <span>Total Deudas Pendientes:</span>
-                        <span class="deuda"><strong>Bs ${totalDeudaGeneral.toFixed(2)}</strong></span>
-                    </div>
-                </div>
-                
-                <div class="no-print" style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ccc;">
-                    <button onclick="window.print()" style="padding: 12px 25px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold;">
-                        <i class="fas fa-print"></i> Imprimir Reporte
-                    </button>
-                </div>
-            </div>
-        </body>
-        </html>
-    `;
-    
-    const ventanaPDF = window.open('', '_blank');
-    if (ventanaPDF) {
-        ventanaPDF.document.write(contenidoPDF);
-        ventanaPDF.document.close();
-        
-        setTimeout(() => {
-            ventanaPDF.focus();
-        }, 500);
-    }
-}
-
-// GENERAR REPORTE PDF DE CASILLEROS
-function generarReporteCasillerosPDF() {
-    let contenidoPDF = `
-        <html>
-        <head>
-            <title>Reporte de Casilleros - Federación Estudiantil</title>
-            <style>
-                body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; }
-                .reporte { max-width: 1000px; margin: 0 auto; }
-                .header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #000; padding-bottom: 15px; }
-                .header h1 { color: #333; margin-bottom: 5px; }
-                .header h2 { color: #666; margin-top: 0; }
-                .resumen { background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0; }
-                .resumen-item { display: flex; justify-content: space-between; margin: 5px 0; }
-                .tabla { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 10px; }
-                .tabla th, .tabla td { border: 1px solid #000; padding: 6px; text-align: left; }
-                .tabla th { background-color: #e9ecef; font-weight: bold; }
-                .pagado { color: green; font-weight: bold; }
-                .libre { color: #666; font-style: italic; }
-                .sector { margin-top: 30px; padding: 15px; border: 1px solid #000; border-radius: 5px; }
-                .sector h4 { margin-top: 0; }
-                .calendario { display: inline-block; margin-right: 5px; width: 12px; height: 12px; border-radius: 2px; }
-                .calendario.pagado { background: green; }
-                .calendario.no-pagado { background: red; }
-                @media print {
-                    .no-print { display: none; }
-                    body { margin: 10px; }
-                }
-            </style>
-        </head>
-        <body>
-            <div class="reporte">
-                <div class="header">
-                    <h1>FEDERACIÓN ESTUDIANTIL</h1>
-                    <h2>REPORTE DE CASILLEROS 2026-2027</h2>
-                    <p>Fecha de emisión: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}</p>
-                </div>
-                
-                <div class="resumen">
-                    <h3>RESUMEN GENERAL</h3>
-    `;
-    
-    let totalPagado = 0;
-    let casillerosOcupados = 0;
-    let casillerosLibres = 0;
-    let total2026 = 0;
-    let total2027 = 0;
-    
-    // Calcular totales
-    for (let i = 1; i <= 36; i++) {
-        const casillero = datos.casilleros[i] || {
-            numero: i,
-            estudiante: '',
-            pagos: [],
-            historialMeses2026: [],
-            historialMeses2027: [],
-            totalPagado: 0
-        };
-        
-        totalPagado += casillero.totalPagado || 0;
-        
-        if (casillero.estudiante && casillero.estudiante.trim() !== '') {
-            casillerosOcupados++;
-        } else {
-            casillerosLibres++;
-        }
-        
-        // Calcular por año
-        if (casillero.pagos) {
-            casillero.pagos.forEach(pago => {
-                if (pago.anio === '2026') total2026 += pago.monto || 0;
-                if (pago.anio === '2027') total2027 += pago.monto || 0;
-            });
-        }
-    }
-    
-    contenidoPDF += `
-                    <div class="resumen-item">
-                        <span>Total Recaudado:</span>
-                        <span><strong>Bs ${totalPagado.toFixed(2)}</strong></span>
-                    </div>
-                    <div class="resumen-item">
-                        <span>Casilleros Ocupados:</span>
-                        <span><strong>${casillerosOcupados}</strong></span>
-                    </div>
-                    <div class="resumen-item">
-                        <span>Casilleros Libres:</span>
-                        <span><strong>${casillerosLibres}</strong></span>
-                    </div>
-                    <div class="resumen-item">
-                        <span>Recaudado 2026:</span>
-                        <span><strong>Bs ${total2026.toFixed(2)}</strong></span>
-                    </div>
-                    <div class="resumen-item">
-                        <span>Recaudado 2027:</span>
-                        <span><strong>Bs ${total2027.toFixed(2)}</strong></span>
-                    </div>
-                </div>
-                
-                <div class="sector">
-                    <h4>SECTOR A - Casilleros 1-18</h4>
-                    <table class="tabla">
-                        <thead>
-                            <tr>
-                                <th>Casillero</th>
-                                <th>Estudiante</th>
-                                <th>Total Pagado</th>
-                                <th>Meses 2026</th>
-                                <th>Meses 2027</th>
-                                <th>Estado</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-    `;
-    
-    // Sector A
-    for (let i = 1; i <= 18; i++) {
-        const casillero = datos.casilleros[i] || {
-            numero: i,
-            estudiante: '',
-            pagos: [],
-            historialMeses2026: [],
-            historialMeses2027: [],
-            totalPagado: 0
-        };
-        
-        const meses2026 = casillero.historialMeses2026 || [];
-        const meses2027 = casillero.historialMeses2027 || [];
-        
-        let calendario2026 = '';
-        for (let m = 1; m <= 12; m++) {
-            const pagado = meses2026.includes(m);
-            calendario2026 += `<div class="calendario ${pagado ? 'pagado' : 'no-pagado'}" title="Mes ${m}"></div>`;
-        }
-        
-        let calendario2027 = '';
-        for (let m = 1; m <= 12; m++) {
-            const pagado = meses2027.includes(m);
-            calendario2027 += `<div class="calendario ${pagado ? 'pagado' : 'no-pagado'}" title="Mes ${m}"></div>`;
-        }
-        
-        const estado = casillero.estudiante && casillero.estudiante.trim() !== '' ? 'OCUPADO' : 'LIBRE';
-        const estadoClase = casillero.estudiante && casillero.estudiante.trim() !== '' ? 'pagado' : 'libre';
-        
-        contenidoPDF += `
-            <tr>
-                <td><strong>${i}</strong></td>
-                <td>${casillero.estudiante || 'Sin asignar'}</td>
-                <td>Bs ${casillero.totalPagado ? casillero.totalPagado.toFixed(2) : '0.00'}</td>
-                <td>${calendario2026}</td>
-                <td>${calendario2027}</td>
-                <td class="${estadoClase}"><strong>${estado}</strong></td>
-            </tr>
-        `;
-    }
-    
-    contenidoPDF += `
-                        </tbody>
-                    </table>
-                </div>
-                
-                <div class="sector">
-                    <h4>SECTOR B - Casilleros 19-36</h4>
-                    <table class="tabla">
-                        <thead>
-                            <tr>
-                                <th>Casillero</th>
-                                <th>Estudiante</th>
-                                <th>Total Pagado</th>
-                                <th>Meses 2026</th>
-                                <th>Meses 2027</th>
-                                <th>Estado</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-    `;
-    
-    // Sector B
-    for (let i = 19; i <= 36; i++) {
-        const casillero = datos.casilleros[i] || {
-            numero: i,
-            estudiante: '',
-            pagos: [],
-            historialMeses2026: [],
-            historialMeses2027: [],
-            totalPagado: 0
-        };
-        
-        const meses2026 = casillero.historialMeses2026 || [];
-        const meses2027 = casillero.historialMeses2027 || [];
-        
-        let calendario2026 = '';
-        for (let m = 1; m <= 12; m++) {
-            const pagado = meses2026.includes(m);
-            calendario2026 += `<div class="calendario ${pagado ? 'pagado' : 'no-pagado'}" title="Mes ${m}"></div>`;
-        }
-        
-        let calendario2027 = '';
-        for (let m = 1; m <= 12; m++) {
-            const pagado = meses2027.includes(m);
-            calendario2027 += `<div class="calendario ${pagado ? 'pagado' : 'no-pagado'}" title="Mes ${m}"></div>`;
-        }
-        
-        const estado = casillero.estudiante && casillero.estudiante.trim() !== '' ? 'OCUPADO' : 'LIBRE';
-        const estadoClase = casillero.estudiante && casillero.estudiante.trim() !== '' ? 'pagado' : 'libre';
-        
-        contenidoPDF += `
-            <tr>
-                <td><strong>${i}</strong></td>
-                <td>${casillero.estudiante || 'Sin asignar'}</td>
-                <td>Bs ${casillero.totalPagado ? casillero.totalPagado.toFixed(2) : '0.00'}</td>
-                <td>${calendario2026}</td>
-                <td>${calendario2027}</td>
-                <td class="${estadoClase}"><strong>${estado}</strong></td>
-            </tr>
-        `;
-    }
-    
-    contenidoPDF += `
-                        </tbody>
-                    </table>
-                </div>
-                
-                <div class="no-print" style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ccc;">
-                    <button onclick="window.print()" style="padding: 12px 25px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold;">
-                        <i class="fas fa-print"></i> Imprimir Reporte
-                    </button>
-                </div>
-            </div>
-        </body>
-        </html>
-    `;
-    
-    const ventanaPDF = window.open('', '_blank');
-    if (ventanaPDF) {
-        ventanaPDF.document.write(contenidoPDF);
-        ventanaPDF.document.close();
-        
-        setTimeout(() => {
-            ventanaPDF.focus();
-        }, 500);
-    }
-}
-
-// ACTUALIZAR TABLA DE APORTES
-function actualizarTablaAportes() {
-    const tbody = document.getElementById('tablaAportes');
+// ACTUALIZAR TABLA DE MOVIMIENTOS DE CAJA CON BOTÓN EDITAR
+function actualizarTablaMovimientosCaja() {
+    const tbody = document.getElementById('tablaMovimientosCaja');
     if (!tbody) return;
     
     tbody.innerHTML = '';
     
-    const aportesAgrupados = {};
-    
-    datos.aportes.forEach(aporte => {
-        const key = `${aporte.curso}-${aporte.fecha}-${aporte.anio || 'N/A'}`;
-        if (!aportesAgrupados[key]) {
-            aportesAgrupados[key] = {
-                curso: aporte.curso,
-                fecha: aporte.fecha,
-                anio: aporte.anio || 'N/A',
-                total: 0,
-                estudiantes: 0,
-                concepto: aporte.concepto
-            };
-        }
-        aportesAgrupados[key].total += aporte.monto || 0;
-        const match = (aporte.concepto || '').match(/\d+/);
-        aportesAgrupados[key].estudiantes += match ? parseInt(match[0]) : 1;
-    });
-    
-    Object.values(aportesAgrupados).forEach(aporte => {
+    datos.movimientosCaja.forEach(movimiento => {
+        const tipoClase = movimiento.tipo === 'ingreso' ? 'text-success' : 'text-danger';
+        const tipoTexto = movimiento.tipo === 'ingreso' ? 'INGRESO' : 'EGRESO';
+        
         const fila = document.createElement('tr');
         fila.innerHTML = `
-            <td>${aporte.curso}</td>
-            <td>${aporte.anio}</td>
-            <td>${aporte.estudiantes}</td>
-            <td>Bs ${aporte.total.toFixed(2)}</td>
-            <td>${aporte.fecha}</td>
+            <td>${movimiento.fecha || 'Sin fecha'}</td>
+            <td><span class="${tipoClase}">${tipoTexto}</span></td>
+            <td>${movimiento.concepto || 'Sin concepto'}</td>
+            <td class="${tipoClase}">Bs ${(movimiento.monto || 0).toFixed(2)}</td>
             <td>
                 ${isAdmin ? `
-                <button class="btn btn-danger btn-sm" onclick="eliminarAporteGrupo('${aporte.curso}', '${aporte.fecha}', ${aporte.anio})">
+                <button class="btn-editar-caja" onclick="abrirModalEditarCaja(${movimiento.id})">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-danger btn-sm" onclick="eliminarMovimientoCaja(${movimiento.id})">
                     <i class="fas fa-trash"></i>
                 </button>
                 ` : ''}
@@ -3685,33 +3876,6 @@ function actualizarTablaAportes() {
         `;
         tbody.appendChild(fila);
     });
-}
-
-// Función para eliminar grupo de aportes
-function eliminarAporteGrupo(curso, fecha, anio) {
-    if (!isAdmin) return;
-    
-    if (confirm('¿Está seguro de eliminar este grupo de aportes?')) {
-        const aportesAEliminar = datos.aportes.filter(aporte => 
-            aporte.curso === curso && 
-            aporte.fecha === fecha && 
-            (aporte.anio === anio || (!aporte.anio && anio === 'N/A'))
-        );
-        
-        datos.aportes = datos.aportes.filter(aporte => 
-            !(aporte.curso === curso && 
-              aporte.fecha === fecha && 
-              (aporte.anio === anio || (!aporte.anio && anio === 'N/A')))
-        );
-        
-        guardarDatos();
-        actualizarDashboard();
-        actualizarTablaAportes();
-        actualizarResumenAportesCursos();
-        actualizarDetalleCajaFuerte();
-        actualizarSeguimiento();
-        mostrarMensaje('Aportes eliminados', 'success');
-    }
 }
 
 // ACTUALIZAR TABLA DE GASTOS
@@ -3725,7 +3889,7 @@ function actualizarTablaGastos() {
         const fila = document.createElement('tr');
         fila.innerHTML = `
             <td>${gasto.categoria || 'Sin categoría'}</td>
-            <td>${gasto.descripcion || 'Sin descripción'}</td>
+            <td>${(gasto.descripcion || '').substring(0, 30)}${(gasto.descripcion || '').length > 30 ? '...' : ''}</td>
             <td>Bs ${(gasto.monto || 0).toFixed(2)}</td>
             <td>${gasto.fecha || 'Sin fecha'}</td>
             <td>
@@ -3763,7 +3927,6 @@ function verComprobante(id) {
         imagen.style.display = 'none';
         pdfDiv.style.display = 'block';
         
-        // Mostrar PDF (simplificado - en producción usar una librería completa)
         pdfDiv.innerHTML = `
             <div class="alert alert-info">
                 <p>Comprobante PDF: ${gasto.comprobante.nombre}</p>
@@ -3784,84 +3947,8 @@ function verComprobante(id) {
     modal.show();
 }
 
-// ACTUALIZAR TABLA DE MOVIMIENTOS DE CAJA
-function actualizarTablaMovimientosCaja() {
-    const tbody = document.getElementById('tablaMovimientosCaja');
-    if (!tbody) return;
-    
-    tbody.innerHTML = '';
-    
-    datos.movimientosCaja.forEach(movimiento => {
-        const tipoClase = movimiento.tipo === 'ingreso' ? 'text-success' : 'text-danger';
-        const tipoTexto = movimiento.tipo === 'ingreso' ? 'INGRESO' : 'EGRESO';
-        
-        const fila = document.createElement('tr');
-        fila.innerHTML = `
-            <td>${movimiento.fecha || 'Sin fecha'}</td>
-            <td><span class="${tipoClase}">${tipoTexto}</span></td>
-            <td>${movimiento.concepto || 'Sin concepto'}</td>
-            <td class="${tipoClase}">Bs ${(movimiento.monto || 0).toFixed(2)}</td>
-            <td>
-                ${isAdmin ? `
-                <button class="btn btn-danger btn-sm" onclick="eliminarMovimientoCaja(${movimiento.id})">
-                    <i class="fas fa-trash"></i>
-                </button>
-                ` : ''}
-            </td>
-        `;
-        tbody.appendChild(fila);
-    });
-}
-
-// ACTUALIZAR TABLA DE OTROS COBROS
-function actualizarTablaOtrosCobros() {
-    const tbody = document.getElementById('tablaOtrosCobros');
-    if (!tbody) return;
-    
-    tbody.innerHTML = '';
-    
-    datos.otrosCobros.forEach(cobro => {
-        const fila = document.createElement('tr');
-        fila.innerHTML = `
-            <td>${cobro.fecha || 'Sin fecha'}</td>
-            <td>${cobro.curso || 'Sin curso'}</td>
-            <td>${cobro.estudiante || 'Sin estudiante'}</td>
-            <td>${cobro.concepto || 'Sin concepto'}</td>
-            <td>Bs ${(cobro.monto || 0).toFixed(2)}</td>
-            <td>${cobro.observaciones || 'Sin observaciones'}</td>
-            <td>
-                ${isAdmin ? `
-                <button class="btn btn-danger btn-sm" onclick="eliminarOtroCobro(${cobro.id})">
-                    <i class="fas fa-trash"></i>
-                </button>
-                ` : ''}
-            </td>
-        `;
-        tbody.appendChild(fila);
-    });
-}
-
 // ACTUALIZAR ÚLTIMOS REGISTROS
 function actualizarUltimosRegistros() {
-    console.log('Actualizando últimos registros...');
-    
-    const tbodyAportes = document.getElementById('ultimosAportes');
-    if (tbodyAportes) {
-        tbodyAportes.innerHTML = '';
-        const ultimosAportes = datos.aportes.slice(-5).reverse();
-        
-        ultimosAportes.forEach(aporte => {
-            const fila = document.createElement('tr');
-            fila.innerHTML = `
-                <td>${aporte.curso || 'Sin curso'}</td>
-                <td>${aporte.anio || 'N/A'}</td>
-                <td>Bs ${(aporte.monto || 0).toFixed(2)}</td>
-                <td>${aporte.fecha || 'Sin fecha'}</td>
-            `;
-            tbodyAportes.appendChild(fila);
-        });
-    }
-    
     const tbodyGastos = document.getElementById('ultimosGastos');
     if (tbodyGastos) {
         tbodyGastos.innerHTML = '';
@@ -3880,7 +3967,7 @@ function actualizarUltimosRegistros() {
     }
 }
 
-// ACTUALIZAR RESUMEN DE APORTES POR CURSO
+// ACTUALIZAR RESUMEN DE APORTES POR CURSO ORDENADO
 function actualizarResumenAportesCursos() {
     const tabla = document.getElementById('resumenAportesCursos');
     if (!tabla) return;
@@ -3891,34 +3978,36 @@ function actualizarResumenAportesCursos() {
     let total2027 = 0;
     let totalGeneral = 0;
     
-    for (const [cursoNombre, datosCurso] of Object.entries(datos.cursos)) {
-        let aporte2026 = 0;
-        let aporte2027 = 0;
-        
+    // Ordenar cursos según el orden definido
+    ordenCursos.forEach(cursoNombre => {
+        const datosCurso = datos.cursos[cursoNombre];
         if (datosCurso.estudiantes) {
+            let aporte2026 = 0;
+            let aporte2027 = 0;
+            
             datosCurso.estudiantes.forEach(estudiante => {
                 if (estudiante.pagos) {
                     if (estudiante.pagos[2026] && estudiante.pagos[2026].pagado) aporte2026 += estudiante.pagos[2026].monto || 0;
                     if (estudiante.pagos[2027] && estudiante.pagos[2027].pagado) aporte2027 += estudiante.pagos[2027].monto || 0;
                 }
             });
+            
+            const totalCurso = aporte2026 + aporte2027;
+            
+            total2026 += aporte2026;
+            total2027 += aporte2027;
+            totalGeneral += totalCurso;
+            
+            const fila = document.createElement('tr');
+            fila.innerHTML = `
+                <td>${cursoNombre}</td>
+                <td>Bs ${aporte2026.toFixed(2)}</td>
+                <td>Bs ${aporte2027.toFixed(2)}</td>
+                <td>Bs ${totalCurso.toFixed(2)}</td>
+            `;
+            tabla.appendChild(fila);
         }
-        
-        const totalCurso = aporte2026 + aporte2027;
-        
-        total2026 += aporte2026;
-        total2027 += aporte2027;
-        totalGeneral += totalCurso;
-        
-        const fila = document.createElement('tr');
-        fila.innerHTML = `
-            <td>${cursoNombre}</td>
-            <td>Bs ${aporte2026.toFixed(2)}</td>
-            <td>Bs ${aporte2027.toFixed(2)}</td>
-            <td>Bs ${totalCurso.toFixed(2)}</td>
-        `;
-        tabla.appendChild(fila);
-    }
+    });
     
     if (document.getElementById('total2026')) document.getElementById('total2026').textContent = `Bs ${total2026.toFixed(2)}`;
     if (document.getElementById('total2027')) document.getElementById('total2027').textContent = `Bs ${total2027.toFixed(2)}`;
@@ -3938,12 +4027,38 @@ function ampliarImagen(src) {
     imagen.style.zIndex = '9999';
     imagen.style.cursor = 'pointer';
     imagen.style.boxShadow = '0 0 30px rgba(0,0,0,0.5)';
+    imagen.style.borderRadius = '10px';
     
-    imagen.onclick = function() {
-        document.body.removeChild(this);
+    const overlay = document.createElement('div');
+    overlay.style.position = 'fixed';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.width = '100%';
+    overlay.style.height = '100%';
+    overlay.style.backgroundColor = 'rgba(0,0,0,0.8)';
+    overlay.style.zIndex = '9998';
+    
+    overlay.onclick = function() {
+        document.body.removeChild(overlay);
+        document.body.removeChild(imagen);
     };
     
+    document.body.appendChild(overlay);
     document.body.appendChild(imagen);
+}
+
+// FUNCIÓN AUXILIAR PARA DETERMINAR ESTADO DE PAGO
+function determinarEstadoPago(pago, montoRequerido) {
+    if (!pago.pagado && pago.monto === 0) {
+        return 'deuda';
+    } else if (pago.pagado && pago.monto >= montoRequerido) {
+        return 'pagado';
+    } else if (pago.pagado && pago.monto > 0 && pago.monto < montoRequerido) {
+        return 'parcial';
+    } else if (!pago.pagado && pago.monto > 0) {
+        return 'parcial';
+    }
+    return 'deuda';
 }
 
 // RESETEAR DATOS
@@ -3951,7 +4066,10 @@ function resetearDatos() {
     if (!isAdmin) return;
     
     if (confirm('¿Está seguro de que desea resetear todos los datos a 0? Esta acción no se puede deshacer.')) {
-        const cursosEstructura = datos.cursos;
+        const cursosEstructura = {};
+        ordenCursos.forEach(curso => {
+            cursosEstructura[curso] = { estudiantes: [] };
+        });
         
         datos = {
             totalAportesEstudiantes: 0,
@@ -3966,6 +4084,8 @@ function resetearDatos() {
             movimientosCaja: [],
             otrosCobros: [],
             eventos: [],
+            sectoresCobro: [],
+            gastosCasilleros: [],
             casilleros: {},
             cursos: cursosEstructura
         };
@@ -3980,7 +4100,6 @@ function resetearDatos() {
         guardarDatos();
         actualizarDashboard();
         actualizarResumenAportesCursos();
-        actualizarTablaAportes();
         actualizarTablaGastos();
         actualizarTablaMovimientosCaja();
         actualizarUltimosRegistros();
@@ -3990,7 +4109,8 @@ function resetearDatos() {
         actualizarSeguimiento();
         actualizarVistaCasilleros();
         actualizarEventos();
-        actualizarTablaOtrosCobros();
+        actualizarSectoresCobro();
+        actualizarTablaGastosCasilleros();
         
         mostrarMensaje('Todos los datos han sido reseteados a 0', 'success');
     }
@@ -4013,22 +4133,11 @@ function mostrarMensaje(mensaje, tipo) {
     
     const mensajeDiv = document.createElement('div');
     
-    let alertClass = 'alert-info';
     let color = '#00ffff';
-    if (tipo === 'success') {
-        alertClass = 'alert-success';
-        color = '#00ff00';
-    }
-    if (tipo === 'error') {
-        alertClass = 'alert-danger';
-        color = '#ff4444';
-    }
-    if (tipo === 'info') {
-        alertClass = 'alert-info';
-        color = '#00ffff';
-    }
+    if (tipo === 'success') color = '#00ff00';
+    if (tipo === 'error') color = '#ff4444';
+    if (tipo === 'info') color = '#00ffff';
     
-    mensajeDiv.className = `alert ${alertClass}`;
     mensajeDiv.style.minWidth = '300px';
     mensajeDiv.style.marginBottom = '10px';
     mensajeDiv.style.padding = '15px';
@@ -4056,13 +4165,1083 @@ function mostrarMensaje(mensaje, tipo) {
     }, 5000);
 }
 
-// FUNCIONES PARA REPORTES
-function mostrarInfoDineroInicial() {
-    mostrarMensaje('El dinero inicial corresponde al primer ingreso registrado en la caja. Este valor se calcula automáticamente.', 'info');
+// FUNCIONES PARA REPORTES PDF
+
+// GENERAR PDF LISTA VACÍA
+// GENERAR PDF LISTA VACÍA - SOLO NOMBRES
+function generarPDFListaVacia() {
+    const cursoSeleccionado = document.getElementById('selectorCurso').value;
+    
+    if (!cursoSeleccionado) {
+        mostrarMensaje('Seleccione un curso primero', 'error');
+        return;
+    }
+    
+    const datosCurso = datos.cursos[cursoSeleccionado];
+    const montoReq2026 = obtenerMontoCurso(cursoSeleccionado, '2026');
+    const montoReq2027 = obtenerMontoCurso(cursoSeleccionado, '2027');
+    
+    let contenidoPDF = `
+        <html>
+        <head>
+            <title>Lista de Estudiantes Vacía - ${cursoSeleccionado}</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 10px; font-size: 11px; }
+                .reporte { max-width: 700px; margin: 0 auto; }
+                .header { text-align: center; margin-bottom: 15px; border-bottom: 2px solid #000; padding-bottom: 8px; }
+                .header h2 { color: #333; margin-bottom: 3px; font-size: 16px; }
+                .header h3 { color: #666; margin-top: 0; font-size: 14px; }
+                .info-montos { background: #f5f5f5; padding: 8px; border-radius: 4px; margin: 8px 0; text-align: center; font-size: 10px; }
+                .tabla { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 10px; }
+                .tabla th, .tabla td { border: 1px solid #000; padding: 6px; text-align: left; }
+                .tabla th { background-color: #f2f2f2; font-weight: bold; }
+                .instrucciones { margin-top: 15px; padding: 8px; background: #f8f9fa; border-radius: 4px; font-size: 9px; }
+                .footer { margin-top: 15px; text-align: center; font-size: 8px; color: #666; border-top: 1px solid #ccc; padding-top: 8px; }
+                .nombre-col { width: 60%; }
+                .pago-col { width: 20%; text-align: center; }
+                .fecha-col { width: 20%; text-align: center; }
+                @media print {
+                    .no-print { display: none; }
+                    body { margin: 5px; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="reporte">
+                <div class="header">
+                    <h2>FEDERACIÓN ESTUDIANTIL</h2>
+                    <h3>LISTA DE ESTUDIANTES PARA ANOTAR PAGOS - ${cursoSeleccionado}</h3>
+                    <p>Fecha: ${new Date().toLocaleDateString()}</p>
+                </div>
+                <div class="info-montos">
+                    <strong>Montos Requeridos:</strong> 2026: Bs ${montoReq2026} | 2027: Bs ${montoReq2027}
+                </div>
+                
+                <!-- TABLA PARA 2026 -->
+                <h4 style="margin-top: 20px; color: #007bff;">AÑO 2026 - MONTO: Bs ${montoReq2026}</h4>
+                <table class="tabla">
+                    <tr>
+                        <th class="nombre-col">NOMBRE DEL ESTUDIANTE</th>
+                        <th class="pago-col">PAGÓ (✓)</th>
+                        <th class="fecha-col">FECHA</th>
+                    </tr>
+    `;
+    
+    // Mostrar nombres reales de estudiantes para 2026
+    if (datosCurso.estudiantes && datosCurso.estudiantes.length > 0) {
+        datosCurso.estudiantes.forEach((estudiante, index) => {
+            contenidoPDF += `
+                <tr>
+                    <td>${estudiante.nombre || `Estudiante ${index + 1}`}</td>
+                    <td style="text-align: center;">_____</td>
+                    <td style="text-align: center;">_____</td>
+                </tr>
+            `;
+        });
+    } else {
+        // Si no hay estudiantes, crear filas vacías
+        for (let i = 1; i <= 30; i++) {
+            contenidoPDF += `
+                <tr>
+                    <td>___________________________</td>
+                    <td style="text-align: center;">_____</td>
+                    <td style="text-align: center;">_____</td>
+                </tr>
+            `;
+        }
+    }
+    
+    contenidoPDF += `
+                </table>
+                
+                <!-- TABLA PARA 2027 -->
+                <h4 style="margin-top: 30px; color: #28a745;">AÑO 2027 - MONTO: Bs ${montoReq2027}</h4>
+                <table class="tabla">
+                    <tr>
+                        <th class="nombre-col">NOMBRE DEL ESTUDIANTE</th>
+                        <th class="pago-col">PAGÓ (✓)</th>
+                        <th class="fecha-col">FECHA</th>
+                    </tr>
+    `;
+    
+    // Mostrar nombres reales de estudiantes para 2027
+    if (datosCurso.estudiantes && datosCurso.estudiantes.length > 0) {
+        datosCurso.estudiantes.forEach((estudiante, index) => {
+            contenidoPDF += `
+                <tr>
+                    <td>${estudiante.nombre || `Estudiante ${index + 1}`}</td>
+                    <td style="text-align: center;">_____</td>
+                    <td style="text-align: center;">_____</td>
+                </tr>
+            `;
+        });
+    } else {
+        // Si no hay estudiantes, crear filas vacías
+        for (let i = 1; i <= 30; i++) {
+            contenidoPDF += `
+                <tr>
+                    <td>___________________________</td>
+                    <td style="text-align: center;">_____</td>
+                    <td style="text-align: center;">_____</td>
+                </tr>
+            `;
+        }
+    }
+    
+    contenidoPDF += `
+                </table>
+                
+                <div class="instrucciones">
+                    <p><strong>Instrucciones:</strong></p>
+                    <p>1. Anote el nombre del estudiante si no aparece en la lista</p>
+                    <p>2. Marque con ✓ en la columna "PAGÓ" cuando el estudiante pague</p>
+                    <p>3. Anote la fecha de pago en la columna "FECHA"</p>
+                    <p>4. Esta hoja es para registro manual de pagos por año</p>
+                    <p><strong>Nota:</strong> Los nombres mostrados son los registrados en el sistema. Si falta algún estudiante, anótelo manualmente.</p>
+                </div>
+                
+                <div class="footer">
+                    <p>Este documento es para control manual de pagos - Federación Estudiantil</p>
+                    <p>Montos: 2026: Bs ${montoReq2026} | 2027: Bs ${montoReq2027}</p>
+                </div>
+                
+                <div class="no-print" style="text-align: center; margin-top: 15px;">
+                    <button onclick="window.print()" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px;">
+                        <i class="fas fa-print"></i> Imprimir Lista Vacía
+                    </button>
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
+    
+    const ventanaPDF = window.open('', '_blank');
+    if (ventanaPDF) {
+        ventanaPDF.document.write(contenidoPDF);
+        ventanaPDF.document.close();
+    }
 }
 
-// GENERAR REPORTE COMPLETO
-// GENERAR REPORTE PDF COMPLETO FINANCIERO - CON TODOS LOS MOVIMIENTOS Y APORTES POR CURSO
+// GENERAR PDF DEL CURSO (COMPACTO)
+function generarPDFCurso() {
+    const cursoSeleccionado = document.getElementById('selectorCurso').value;
+    
+    if (!cursoSeleccionado) {
+        mostrarMensaje('Seleccione un curso primero', 'error');
+        return;
+    }
+    
+    const datosCurso = datos.cursos[cursoSeleccionado];
+    const montoReq2026 = obtenerMontoCurso(cursoSeleccionado, '2026');
+    const montoReq2027 = obtenerMontoCurso(cursoSeleccionado, '2027');
+    
+    let contenidoPDF = `
+        <html>
+        <head>
+            <title>Lista de Estudiantes - ${cursoSeleccionado}</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 10px; font-size: 10px; }
+                .reporte { max-width: 700px; margin: 0 auto; }
+                .header { text-align: center; margin-bottom: 12px; border-bottom: 1px solid #000; padding-bottom: 6px; }
+                .header h2 { color: #333; margin-bottom: 2px; font-size: 14px; }
+                .header h3 { color: #666; margin-top: 0; font-size: 12px; }
+                .info-montos { background: #f5f5f5; padding: 6px; border-radius: 3px; margin: 6px 0; text-align: center; font-size: 9px; }
+                .tabla { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 8px; }
+                .tabla th, .tabla td { border: 1px solid #000; padding: 4px; text-align: left; }
+                .tabla th { background-color: #f2f2f2; font-weight: bold; font-size: 7px; }
+                .pagado { color: green; }
+                .deuda { color: red; }
+                .parcial { color: orange; }
+                .footer { margin-top: 12px; text-align: center; font-size: 7px; color: #666; border-top: 1px solid #ccc; padding-top: 6px; }
+                @media print {
+                    .no-print { display: none; }
+                    body { margin: 5px; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="reporte">
+                <div class="header">
+                    <h2>FEDERACIÓN ESTUDIANTIL</h2>
+                    <h3>LISTA DE ESTUDIANTES - ${cursoSeleccionado}</h3>
+                    <p>Fecha: ${new Date().toLocaleDateString()}</p>
+                </div>
+                <div class="info-montos">
+                    <strong>Montos:</strong> 2026: Bs ${montoReq2026} | 2027: Bs ${montoReq2027}
+                </div>
+                <table class="tabla">
+                    <tr>
+                        <th width="5%">N°</th>
+                        <th width="25%">Estudiante</th>
+                        <th width="12%">2026</th>
+                        <th width="10%">Fec. 2026</th>
+                        <th width="8%">Est.</th>
+                        <th width="12%">2027</th>
+                        <th width="10%">Fec. 2027</th>
+                        <th width="8%">Est.</th>
+                        <th width="10%">Total</th>
+                    </tr>
+    `;
+    
+    let totalPagado = 0;
+    let estudiantesAlDia = 0;
+    let estudiantesConDeuda = 0;
+    
+    datosCurso.estudiantes.forEach((estudiante, index) => {
+        const pago2026 = estudiante.pagos ? estudiante.pagos['2026'] || { monto: 0, fecha: '', pagado: false } : { monto: 0, fecha: '', pagado: false };
+        const pago2027 = estudiante.pagos ? estudiante.pagos['2027'] || { monto: 0, fecha: '', pagado: false } : { monto: 0, fecha: '', pagado: false };
+        
+        const pagado2026 = pago2026.pagado ? pago2026.monto : 0;
+        const pagado2027 = pago2027.pagado ? pago2027.monto : 0;
+        const totalEstudiante = pagado2026 + pagado2027;
+        totalPagado += totalEstudiante;
+        
+        const estado2026 = determinarEstadoPago(pago2026, montoReq2026);
+        const estado2027 = determinarEstadoPago(pago2027, montoReq2027);
+        
+        let estadoGeneral = 'al-dia';
+        const deudaTotal = (montoReq2026 + montoReq2027) - totalEstudiante;
+        
+        if (deudaTotal === (montoReq2026 + montoReq2027)) {
+            estadoGeneral = 'con-deuda';
+            estudiantesConDeuda++;
+        } else if (deudaTotal > 0) {
+            estadoGeneral = 'parcial';
+            estudiantesConDeuda++;
+        } else {
+            estudiantesAlDia++;
+        }
+        
+        contenidoPDF += `
+            <tr>
+                <td>${index + 1}</td>
+                <td>${estudiante.nombre || `Est. ${index + 1}`}</td>
+                <td class="${pago2026.pagado ? 'pagado' : 'deuda'}">${pago2026.pagado ? 'Bs ' + pagado2026.toFixed(2) : '-'}</td>
+                <td>${pago2026.fecha || '-'}</td>
+                <td class="${estado2026}">${estado2026 === 'pagado' ? 'C' : estado2026 === 'deuda' ? 'D' : 'P'}</td>
+                <td class="${pago2027.pagado ? 'pagado' : 'deuda'}">${pago2027.pagado ? 'Bs ' + pagado2027.toFixed(2) : '-'}</td>
+                <td>${pago2027.fecha || '-'}</td>
+                <td class="${estado2027}">${estado2027 === 'pagado' ? 'C' : estado2027 === 'deuda' ? 'D' : 'P'}</td>
+                <td class="${totalEstudiante > 0 ? 'pagado' : 'deuda'}">Bs ${totalEstudiante.toFixed(2)}</td>
+            </tr>
+        `;
+    });
+    
+    const totalEsperado = datosCurso.estudiantes.length * (montoReq2026 + montoReq2027);
+    const porcentaje = totalEsperado > 0 ? Math.round((totalPagado / totalEsperado) * 100) : 0;
+    
+    contenidoPDF += `
+                </table>
+                
+                <div style="margin-top: 10px; padding: 6px; background: #f8f9fa; border-radius: 3px; font-size: 9px;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <div>
+                            <strong>Resumen:</strong><br>
+                            Estudiantes al día: ${estudiantesAlDia}<br>
+                            Estudiantes con deuda: ${estudiantesConDeuda}<br>
+                            Total estudiantes: ${datosCurso.estudiantes.length}
+                        </div>
+                        <div style="text-align: right;">
+                            <strong>Financiero:</strong><br>
+                            Total pagado: Bs ${totalPagado.toFixed(2)}<br>
+                            Total esperado: Bs ${totalEsperado.toFixed(2)}<br>
+                            Porcentaje: ${porcentaje}%
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="footer">
+                    <p>Federación Estudiantil - Control de Pagos</p>
+                    <p>Legenda: C=Completo, D=Deuda, P=Parcial</p>
+                </div>
+                
+                <div class="no-print" style="text-align: center; margin-top: 10px;">
+                    <button onclick="window.print()" style="padding: 6px 12px; background: #28a745; color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: bold; font-size: 10px;">
+                        <i class="fas fa-print"></i> Imprimir
+                    </button>
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
+    
+    const ventanaPDF = window.open('', '_blank');
+    if (ventanaPDF) {
+        ventanaPDF.document.write(contenidoPDF);
+        ventanaPDF.document.close();
+    }
+}
+
+// EXPORTAR A EXCEL
+function exportarExcel() {
+    const cursoSeleccionado = document.getElementById('selectorCurso').value;
+    
+    if (!cursoSeleccionado) {
+        mostrarMensaje('Seleccione un curso primero', 'error');
+        return;
+    }
+    
+    const datosCurso = datos.cursos[cursoSeleccionado];
+    let csvContent = "data:text/csv;charset=utf-8,";
+    
+    csvContent += "N°;Nombre del Estudiante;2026;Fecha 2026;Estado 2026;2027;Fecha 2027;Estado 2027;Total Pagado;Estado General\n";
+    
+    datosCurso.estudiantes.forEach((estudiante, index) => {
+        const totalPagado = Object.values(estudiante.pagos || {}).reduce((total, pago) => total + (pago.pagado ? (pago.monto || 0) : 0), 0);
+        
+        const fila = [
+            index + 1,
+            estudiante.nombre || `Estudiante ${index + 1}`,
+            estudiante.pagos && estudiante.pagos[2026] && estudiante.pagos[2026].pagado ? 'Bs ' + (estudiante.pagos[2026].monto || 0).toFixed(2) : 'Pendiente',
+            estudiante.pagos && estudiante.pagos[2026] ? (estudiante.pagos[2026].fecha || '-') : '-',
+            estudiante.pagos && estudiante.pagos[2026] && estudiante.pagos[2026].pagado ? 'AL DÍA' : 'CON DEUDA',
+            estudiante.pagos && estudiante.pagos[2027] && estudiante.pagos[2027].pagado ? 'Bs ' + (estudiante.pagos[2027].monto || 0).toFixed(2) : 'Pendiente',
+            estudiante.pagos && estudiante.pagos[2027] ? (estudiante.pagos[2027].fecha || '-') : '-',
+            estudiante.pagos && estudiante.pagos[2027] && estudiante.pagos[2027].pagado ? 'AL DÍA' : 'CON DEUDA',
+            'Bs ' + totalPagado.toFixed(2),
+            totalPagado > 0 ? 'AL DÍA' : 'CON DEUDA'
+        ].join(";");
+        
+        csvContent += fila + "\n";
+    });
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `pagos_${cursoSeleccionado.replace(/[^a-z0-9]/gi, '_')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    mostrarMensaje('Archivo Excel generado exitosamente', 'success');
+}
+
+// EXPORTAR EXCEL COMPLETO (todos los cursos)
+function exportarExcelCompleto() {
+    let csvContent = "data:text/csv;charset=utf-8,";
+    
+    // Encabezados
+    csvContent += "Curso;Estudiante;2026;Fecha 2026;Estado 2026;2027;Fecha 2027;Estado 2027;Total Pagado;Estado\n";
+    
+    // Datos de todos los cursos
+    for (const cursoNombre of ordenCursos) {
+        const datosCurso = datos.cursos[cursoNombre];
+        if (datosCurso.estudiantes) {
+            datosCurso.estudiantes.forEach((estudiante, index) => {
+                const totalPagado = Object.values(estudiante.pagos || {}).reduce((total, pago) => total + (pago.pagado ? (pago.monto || 0) : 0), 0);
+                
+                const fila = [
+                    cursoNombre,
+                    estudiante.nombre || `Estudiante ${index + 1}`,
+                    estudiante.pagos && estudiante.pagos[2026] && estudiante.pagos[2026].pagado ? 'Bs ' + (estudiante.pagos[2026].monto || 0).toFixed(2) : 'Pendiente',
+                    estudiante.pagos && estudiante.pagos[2026] ? (estudiante.pagos[2026].fecha || '-') : '-',
+                    estudiante.pagos && estudiante.pagos[2026] && estudiante.pagos[2026].pagado ? 'AL DÍA' : 'CON DEUDA',
+                    estudiante.pagos && estudiante.pagos[2027] && estudiante.pagos[2027].pagado ? 'Bs ' + (estudiante.pagos[2027].monto || 0).toFixed(2) : 'Pendiente',
+                    estudiante.pagos && estudiante.pagos[2027] ? (estudiante.pagos[2027].fecha || '-') : '-',
+                    estudiante.pagos && estudiante.pagos[2027] && estudiante.pagos[2027].pagado ? 'AL DÍA' : 'CON DEUDA',
+                    'Bs ' + totalPagado.toFixed(2),
+                    totalPagado > 0 ? 'AL DÍA' : 'CON DEUDA'
+                ].join(";");
+                
+                csvContent += fila + "\n";
+            });
+        }
+    }
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `reporte_completo_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    mostrarMensaje('Archivo Excel completo generado exitosamente', 'success');
+}
+
+// GENERAR RECIBO DE PAGO
+function generarRecibo(curso, index) {
+    const estudiante = datos.cursos[curso].estudiantes[index];
+    const pagos = estudiante.pagos || {};
+    
+    let contenidoRecibo = `
+        <html>
+        <head>
+            <title>Recibo de Pago - ${estudiante.nombre || `Estudiante ${index + 1}`}</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 15px; }
+                .recibo { border: 2px solid #000; padding: 15px; max-width: 500px; margin: 0 auto; font-size: 12px; }
+                .header { text-align: center; margin-bottom: 15px; border-bottom: 1px solid #000; padding-bottom: 10px; }
+                .detalles { margin: 15px 0; }
+                .firma { margin-top: 30px; border-top: 1px solid #000; padding-top: 10px; }
+                table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 10px; }
+                th, td { border: 1px solid #000; padding: 5px; text-align: left; }
+                th { background-color: #f2f2f2; }
+                .total { font-weight: bold; background-color: #e9ecef; }
+                @media print {
+                    .no-print { display: none; }
+                    body { margin: 10px; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="recibo">
+                <div class="header">
+                    <h3 style="margin-bottom: 5px;">FEDERACIÓN ESTUDIANTIL</h3>
+                    <h4 style="margin-top: 0; color: #666;">RECIBO DE PAGO DE APORTES</h4>
+                </div>
+                <div class="detalles">
+                    <p><strong>Estudiante:</strong> ${estudiante.nombre || `Estudiante ${index + 1}`}</p>
+                    <p><strong>Curso:</strong> ${curso}</p>
+                    <p><strong>Fecha de Emisión:</strong> ${new Date().toLocaleDateString()}</p>
+                    <h5>Detalle de Pagos:</h5>
+                    <table>
+                        <tr>
+                            <th>Año</th>
+                            <th>Monto</th>
+                            <th>Fecha de Pago</th>
+                            <th>Estado</th>
+                        </tr>
+    `;
+    
+    let totalPagado = 0;
+    ['2026', '2027'].forEach(anio => {
+        const pago = pagos[anio] || { monto: 0, fecha: '', pagado: false };
+        if (pago.pagado) {
+            totalPagado += pago.monto || 0;
+        }
+        
+        contenidoRecibo += `
+            <tr>
+                <td>${anio}</td>
+                <td>${pago.pagado ? 'Bs ' + (pago.monto || 0).toFixed(2) : 'Pendiente'}</td>
+                <td>${pago.fecha || '-'}</td>
+                <td>${pago.pagado ? 'PAGADO' : 'PENDIENTE'}</td>
+            </tr>
+        `;
+    });
+    
+    contenidoRecibo += `
+                        <tr class="total">
+                            <td colspan="3"><strong>Total Pagado:</strong></td>
+                            <td><strong>Bs ${totalPagado.toFixed(2)}</strong></td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="firma">
+                    <div style="text-align: center;">
+                        <p>_________________________</p>
+                        <p><strong>Firma del Tesorero</strong></p>
+                    </div>
+                </div>
+                <div class="no-print" style="text-align: center; margin-top: 15px;">
+                    <button onclick="window.print()" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px;">
+                        <i class="fas fa-print"></i> Imprimir Recibo
+                    </button>
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
+    
+    const ventanaRecibo = window.open('', '_blank');
+    if (ventanaRecibo) {
+        ventanaRecibo.document.write(contenidoRecibo);
+        ventanaRecibo.document.close();
+        
+        setTimeout(() => {
+            ventanaRecibo.print();
+        }, 500);
+    }
+}
+
+// GENERAR PDF DE TODOS LOS ESTUDIANTES (COMPACTO)
+function generarPDFTodosEstudiantes() {
+    let contenidoPDF = `
+        <html>
+        <head>
+            <title>Reporte Completo de Estudiantes</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 10px; font-size: 10px; }
+                .reporte { max-width: 800px; margin: 0 auto; }
+                .header { text-align: center; margin-bottom: 15px; border-bottom: 2px solid #000; padding-bottom: 8px; }
+                .header h1 { color: #333; margin-bottom: 3px; font-size: 16px; }
+                .header h2 { color: #666; margin-top: 0; font-size: 13px; }
+                .tabla { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 8px; }
+                .tabla th, .tabla td { border: 1px solid #000; padding: 4px; text-align: left; }
+                .tabla th { background-color: #e9ecef; font-weight: bold; }
+                .pagado { color: green; }
+                .deuda { color: red; }
+                .parcial { color: orange; }
+                .resumen { margin-top: 15px; padding: 8px; background: #f8f9fa; border-radius: 4px; }
+                .resumen-item { display: flex; justify-content: space-between; margin: 3px 0; }
+                .page-break { page-break-before: always; }
+                @media print {
+                    .no-print { display: none; }
+                    body { margin: 5px; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="reporte">
+                <div class="header">
+                    <h1>FEDERACIÓN ESTUDIANTIL</h1>
+                    <h2>REPORTE COMPLETO DE ESTUDIANTES</h2>
+                    <p>Fecha: ${new Date().toLocaleDateString()}</p>
+                </div>
+                
+                <table class="tabla">
+                    <thead>
+                        <tr>
+                            <th width="4%">#</th>
+                            <th width="20%">Curso</th>
+                            <th width="18%">Estudiante</th>
+                            <th width="8%">Req. 2026</th>
+                            <th width="8%">Pag. 2026</th>
+                            <th width="6%">Est. 2026</th>
+                            <th width="8%">Req. 2027</th>
+                            <th width="8%">Pag. 2027</th>
+                            <th width="6%">Est. 2027</th>
+                            <th width="7%">Total Pag.</th>
+                            <th width="7%">Deuda</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+    `;
+    
+    let contador = 1;
+    let totalEstudiantes = 0;
+    let totalPagadoGeneral = 0;
+    let totalDeudaGeneral = 0;
+    let estudiantesAlDia = 0;
+    let estudiantesConDeuda = 0;
+    let estudiantesParcial = 0;
+    
+    for (const cursoNombre of ordenCursos) {
+        const datosCurso = datos.cursos[cursoNombre];
+        if (datosCurso.estudiantes) {
+            datosCurso.estudiantes.forEach((estudiante, index) => {
+                totalEstudiantes++;
+                
+                const montoReq2026 = obtenerMontoCurso(cursoNombre, '2026');
+                const montoReq2027 = obtenerMontoCurso(cursoNombre, '2027');
+                
+                const pago2026 = estudiante.pagos ? estudiante.pagos['2026'] || { monto: 0, fecha: '', pagado: false } : { monto: 0, fecha: '', pagado: false };
+                const pago2027 = estudiante.pagos ? estudiante.pagos['2027'] || { monto: 0, fecha: '', pagado: false } : { monto: 0, fecha: '', pagado: false };
+                
+                const pagado2026 = pago2026.pagado ? pago2026.monto || 0 : 0;
+                const pagado2027 = pago2027.pagado ? pago2027.monto || 0 : 0;
+                const totalPagado = pagado2026 + pagado2027;
+                
+                let deuda2026 = 0;
+                let deuda2027 = 0;
+                
+                if (!pago2026.pagado || pago2026.monto < montoReq2026) {
+                    deuda2026 = montoReq2026 - (pago2026.pagado ? pago2026.monto : 0);
+                }
+                
+                if (!pago2027.pagado || pago2027.monto < montoReq2027) {
+                    deuda2027 = montoReq2027 - (pago2027.pagado ? pago2027.monto : 0);
+                }
+                
+                const totalDeuda = deuda2026 + deuda2027;
+                totalPagadoGeneral += totalPagado;
+                totalDeudaGeneral += totalDeuda;
+                
+                const estado2026 = determinarEstadoPago(pago2026, montoReq2026);
+                const estado2027 = determinarEstadoPago(pago2027, montoReq2027);
+                
+                let estadoGeneral = 'al-dia';
+                
+                if (totalDeuda === (montoReq2026 + montoReq2027)) {
+                    estadoGeneral = 'con-deuda';
+                    estudiantesConDeuda++;
+                } else if (totalDeuda > 0) {
+                    estadoGeneral = 'parcial';
+                    estudiantesParcial++;
+                } else {
+                    estudiantesAlDia++;
+                }
+                
+                contenidoPDF += `
+                    <tr>
+                        <td>${contador}</td>
+                        <td><strong>${cursoNombre}</strong></td>
+                        <td>${estudiante.nombre || `Est. ${index + 1}`}</td>
+                        <td>${montoReq2026}</td>
+                        <td class="${pagado2026 > 0 ? 'pagado' : 'deuda'}">${pagado2026 > 0 ? pagado2026.toFixed(0) : '0'}</td>
+                        <td class="${estado2026}">${estado2026 === 'pagado' ? 'C' : estado2026 === 'deuda' ? 'D' : 'P'}</td>
+                        <td>${montoReq2027}</td>
+                        <td class="${pagado2027 > 0 ? 'pagado' : 'deuda'}">${pagado2027 > 0 ? pagado2027.toFixed(0) : '0'}</td>
+                        <td class="${estado2027}">${estado2027 === 'pagado' ? 'C' : estado2027 === 'deuda' ? 'D' : 'P'}</td>
+                        <td class="${totalPagado > 0 ? 'pagado' : 'deuda'}">${totalPagado.toFixed(0)}</td>
+                        <td class="${totalDeuda > 0 ? 'deuda' : 'pagado'}">${totalDeuda > 0 ? totalDeuda.toFixed(0) : '0'}</td>
+                    </tr>
+                `;
+                
+                contador++;
+            });
+        }
+    }
+    
+    contenidoPDF += `
+                    </tbody>
+                </table>
+                
+                <div class="resumen">
+                    <h4>RESUMEN GENERAL</h4>
+                    <div class="resumen-item">
+                        <span>Total Estudiantes:</span>
+                        <span><strong>${totalEstudiantes}</strong></span>
+                    </div>
+                    <div class="resumen-item">
+                        <span>Estudiantes al Día:</span>
+                        <span class="pagado"><strong>${estudiantesAlDia}</strong></span>
+                    </div>
+                    <div class="resumen-item">
+                        <span>Estudiantes Parciales:</span>
+                        <span class="parcial"><strong>${estudiantesParcial}</strong></span>
+                    </div>
+                    <div class="resumen-item">
+                        <span>Estudiantes con Deuda:</span>
+                        <span class="deuda"><strong>${estudiantesConDeuda}</strong></span>
+                    </div>
+                    <div class="resumen-item">
+                        <span>Total Pagado:</span>
+                        <span class="pagado"><strong>Bs ${totalPagadoGeneral.toFixed(2)}</strong></span>
+                    </div>
+                    <div class="resumen-item">
+                        <span>Total Deudas:</span>
+                        <span class="deuda"><strong>Bs ${totalDeudaGeneral.toFixed(2)}</strong></span>
+                    </div>
+                </div>
+                
+                <div class="no-print" style="text-align: center; margin-top: 15px;">
+                    <button onclick="window.print()" style="padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px;">
+                        <i class="fas fa-print"></i> Imprimir Reporte
+                    </button>
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
+    
+    const ventanaPDF = window.open('', '_blank');
+    if (ventanaPDF) {
+        ventanaPDF.document.write(contenidoPDF);
+        ventanaPDF.document.close();
+    }
+}
+
+// GENERAR REPORTE PDF DE CASILLEROS (COMPACTO)
+function generarReporteCasillerosPDF() {
+    let contenidoPDF = `
+        <html>
+        <head>
+            <title>Reporte de Casilleros</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 10px; font-size: 10px; }
+                .reporte { max-width: 800px; margin: 0 auto; }
+                .header { text-align: center; margin-bottom: 12px; border-bottom: 2px solid #000; padding-bottom: 6px; }
+                .header h1 { color: #333; margin-bottom: 3px; font-size: 16px; }
+                .resumen { background: #f8f9fa; padding: 8px; border-radius: 4px; margin: 8px 0; }
+                .resumen-item { display: flex; justify-content: space-between; margin: 3px 0; }
+                .tabla { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 8px; }
+                .tabla th, .tabla td { border: 1px solid #000; padding: 4px; text-align: left; }
+                .tabla th { background-color: #e9ecef; font-weight: bold; }
+                .pagado { color: green; }
+                .libre { color: #666; }
+                .sector { margin-top: 15px; padding: 8px; border: 1px solid #000; border-radius: 4px; }
+                @media print {
+                    .no-print { display: none; }
+                    body { margin: 5px; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="reporte">
+                <div class="header">
+                    <h1>FEDERACIÓN ESTUDIANTIL</h1>
+                    <h2>REPORTE DE CASILLEROS 2026-2027</h2>
+                    <p>Fecha: ${new Date().toLocaleDateString()}</p>
+                </div>
+                
+                <div class="resumen">
+                    <h4>RESUMEN GENERAL</h4>
+    `;
+    
+    let totalPagado = 0;
+    let casillerosOcupados = 0;
+    let casillerosLibres = 0;
+    let total2026 = 0;
+    let total2027 = 0;
+    let totalGastosCasilleros = 0;
+    
+    // Calcular totales
+    for (let i = 1; i <= 36; i++) {
+        const casillero = datos.casilleros[i] || {
+            numero: i,
+            estudiante: '',
+            montoMensual: 10.00,
+            mesesPagados2026: [],
+            mesesPagados2027: [],
+            historial: [],
+            totalPagado: 0
+        };
+        
+        totalPagado += casillero.totalPagado || 0;
+        
+        if (casillero.estudiante && casillero.estudiante.trim() !== '') {
+            casillerosOcupados++;
+        } else {
+            casillerosLibres++;
+        }
+        
+        // Calcular por año
+        if (casillero.historial) {
+            casillero.historial.forEach(pago => {
+                if (pago.anio === 2026) total2026 += pago.monto || 0;
+                if (pago.anio === 2027) total2027 += pago.monto || 0;
+            });
+        }
+    }
+    
+    // Calcular gastos de casilleros
+    datos.gastosCasilleros.forEach(gasto => {
+        totalGastosCasilleros += gasto.monto || 0;
+    });
+    
+    contenidoPDF += `
+                    <div class="resumen-item">
+                        <span>Total Recaudado:</span>
+                        <span><strong>Bs ${totalPagado.toFixed(2)}</strong></span>
+                    </div>
+                    <div class="resumen-item">
+                        <span>Casilleros Ocupados:</span>
+                        <span><strong>${casillerosOcupados}</strong></span>
+                    </div>
+                    <div class="resumen-item">
+                        <span>Casilleros Libres:</span>
+                        <span><strong>${casillerosLibres}</strong></span>
+                    </div>
+                    <div class="resumen-item">
+                        <span>Recaudado 2026:</span>
+                        <span><strong>Bs ${total2026.toFixed(2)}</strong></span>
+                    </div>
+                    <div class="resumen-item">
+                        <span>Recaudado 2027:</span>
+                        <span><strong>Bs ${total2027.toFixed(2)}</strong></span>
+                    </div>
+                    <div class="resumen-item">
+                        <span>Gastos Casilleros:</span>
+                        <span class="${totalGastosCasilleros > 0 ? 'deuda' : ''}"><strong>Bs ${totalGastosCasilleros.toFixed(2)}</strong></span>
+                    </div>
+                    <div class="resumen-item">
+                        <span>Saldo Disponible:</span>
+                        <span class="pagado"><strong>Bs ${(totalPagado - totalGastosCasilleros).toFixed(2)}</strong></span>
+                    </div>
+                </div>
+                
+                <div class="sector">
+                    <h4>CASILLEROS OCUPADOS (${casillerosOcupados})</h4>
+                    <table class="tabla">
+                        <thead>
+                            <tr>
+                                <th width="8%">Casillero</th>
+                                <th width="25%">Estudiante</th>
+                                <th width="10%">Mensual</th>
+                                <th width="10%">Meses 2026</th>
+                                <th width="10%">Meses 2027</th>
+                                <th width="12%">Total Pagado</th>
+                                <th width="25%">Último Pago</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+    `;
+    
+    // Solo casilleros ocupados
+    for (let i = 1; i <= 36; i++) {
+        const casillero = datos.casilleros[i] || {
+            numero: i,
+            estudiante: '',
+            montoMensual: 10.00,
+            mesesPagados2026: [],
+            mesesPagados2027: [],
+            historial: [],
+            totalPagado: 0
+        };
+        
+        if (casillero.estudiante && casillero.estudiante.trim() !== '') {
+            const meses2026 = casillero.mesesPagados2026.length;
+            const meses2027 = casillero.mesesPagados2027.length;
+            
+            let ultimoPago = '-';
+            if (casillero.historial && casillero.historial.length > 0) {
+                const ultimo = casillero.historial[casillero.historial.length - 1];
+                ultimoPago = `${ultimo.mes}/${ultimo.anio} - Bs ${ultimo.monto || 0}`;
+            }
+            
+            contenidoPDF += `
+                <tr>
+                    <td><strong>${i}</strong></td>
+                    <td>${casillero.estudiante}</td>
+                    <td>Bs ${casillero.montoMensual ? casillero.montoMensual.toFixed(2) : '10.00'}</td>
+                    <td>${meses2026}</td>
+                    <td>${meses2027}</td>
+                    <td class="pagado">Bs ${casillero.totalPagado ? casillero.totalPagado.toFixed(2) : '0.00'}</td>
+                    <td>${ultimoPago}</td>
+                </tr>
+            `;
+        }
+    }
+    
+    contenidoPDF += `
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="sector">
+                    <h4>GASTOS DE CASILLEROS</h4>
+    `;
+    
+    if (datos.gastosCasilleros.length === 0) {
+        contenidoPDF += `<p>No hay gastos registrados</p>`;
+    } else {
+        contenidoPDF += `
+            <table class="tabla">
+                <thead>
+                    <tr>
+                        <th width="15%">Fecha</th>
+                        <th width="25%">Concepto</th>
+                        <th width="40%">Descripción</th>
+                        <th width="20%">Monto</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+        
+        datos.gastosCasilleros.forEach(gasto => {
+            contenidoPDF += `
+                <tr>
+                    <td>${gasto.fecha || '-'}</td>
+                    <td>${gasto.concepto || '-'}</td>
+                    <td>${gasto.descripcion || '-'}</td>
+                    <td class="deuda">Bs ${(gasto.monto || 0).toFixed(2)}</td>
+                </tr>
+            `;
+        });
+        
+        contenidoPDF += `
+                </tbody>
+            </table>
+        `;
+    }
+    
+    contenidoPDF += `
+                </div>
+                
+                <div class="no-print" style="text-align: center; margin-top: 15px;">
+                    <button onclick="window.print()" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px;">
+                        <i class="fas fa-print"></i> Imprimir Reporte
+                    </button>
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
+    
+    const ventanaPDF = window.open('', '_blank');
+    if (ventanaPDF) {
+        ventanaPDF.document.write(contenidoPDF);
+        ventanaPDF.document.close();
+    }
+}
+
+// GENERAR REPORTE SECTOR DE COBRO PDF
+function generarReporteSectorPDF(sector) {
+    let contenidoPDF = `
+        <html>
+        <head>
+            <title>Reporte de Sector - ${sector.nombre}</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 10px; font-size: 10px; }
+                .reporte { max-width: 800px; margin: 0 auto; }
+                .header { text-align: center; margin-bottom: 12px; border-bottom: 2px solid #000; padding-bottom: 6px; }
+                .header h1 { color: #333; margin-bottom: 3px; font-size: 16px; }
+                .info-sector { background: #f0f8ff; padding: 8px; border-radius: 4px; margin: 8px 0; }
+                .tabla { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 8px; }
+                .tabla th, .tabla td { border: 1px solid #000; padding: 4px; text-align: left; }
+                .tabla th { background-color: #e9ecef; font-weight: bold; }
+                .resumen { margin-top: 15px; padding: 8px; background: #f8f9fa; border-radius: 4px; }
+                .resumen-item { display: flex; justify-content: space-between; margin: 3px 0; }
+                @media print {
+                    .no-print { display: none; }
+                    body { margin: 5px; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="reporte">
+                <div class="header">
+                    <h1>FEDERACIÓN ESTUDIANTIL</h1>
+                    <h2>REPORTE DE SECTOR DE COBRO</h2>
+                    <p>${sector.nombre}</p>
+                </div>
+                
+                <div class="info-sector">
+                    <p><strong>Descripción:</strong> ${sector.descripcion}</p>
+                    <p><strong>Monto por estudiante:</strong> Bs ${sector.monto.toFixed(2)}</p>
+                    <p><strong>Fecha límite:</strong> ${sector.fechaLimite}</p>
+                    <p><strong>Fecha de creación:</strong> ${sector.fechaCreacion}</p>
+                </div>
+    `;
+    
+    // Calcular estadísticas
+    const totalCobrado = sector.cobros.reduce((total, cobro) => total + (cobro.monto || 0), 0);
+    const totalEstudiantes = Object.values(datos.cursos).reduce((total, curso) => total + (curso.estudiantes?.length || 0), 0);
+    const totalEsperado = totalEstudiantes * sector.monto;
+    const porcentaje = totalEsperado > 0 ? Math.round((totalCobrado / totalEsperado) * 100) : 0;
+    
+    contenidoPDF += `
+                <div class="resumen">
+                    <h4>ESTADÍSTICAS DEL SECTOR</h4>
+                    <div class="resumen-item">
+                        <span>Total recaudado:</span>
+                        <span><strong>Bs ${totalCobrado.toFixed(2)}</strong></span>
+                    </div>
+                    <div class="resumen-item">
+                        <span>Total esperado:</span>
+                        <span><strong>Bs ${totalEsperado.toFixed(2)}</strong></span>
+                    </div>
+                    <div class="resumen-item">
+                        <span>Porcentaje completado:</span>
+                        <span><strong>${porcentaje}%</strong></span>
+                    </div>
+                    <div class="resumen-item">
+                        <span>Falta recaudar:</span>
+                        <span><strong>Bs ${(totalEsperado - totalCobrado).toFixed(2)}</strong></span>
+                    </div>
+                </div>
+    `;
+    
+    if (sector.cobros.length === 0) {
+        contenidoPDF += `
+            <div style="text-align: center; padding: 20px;">
+                <p>No hay cobros registrados en este sector</p>
+            </div>
+        `;
+    } else {
+        contenidoPDF += `
+                <h4>COBROS REGISTRADOS (${sector.cobros.length})</h4>
+                <table class="tabla">
+                    <thead>
+                        <tr>
+                            <th width="10%">#</th>
+                            <th width="15%">Fecha</th>
+                            <th width="25%">Curso</th>
+                            <th width="30%">Estudiante</th>
+                            <th width="20%">Monto</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        sector.cobros.forEach((cobro, index) => {
+            contenidoPDF += `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${cobro.fecha}</td>
+                    <td>${cobro.curso}</td>
+                    <td>${cobro.estudiante}</td>
+                    <td>Bs ${cobro.monto.toFixed(2)}</td>
+                </tr>
+            `;
+        });
+        
+        contenidoPDF += `
+                    </tbody>
+                </table>
+        `;
+    }
+    
+    // Lista de estudiantes que NO han pagado (por curso)
+    contenidoPDF += `
+                <div class="page-break">
+                    <h4>ESTUDIANTES PENDIENTES POR CURSO</h4>
+    `;
+    
+    let hayPendientes = false;
+    
+    for (const cursoNombre of ordenCursos) {
+        const datosCurso = datos.cursos[cursoNombre];
+        if (datosCurso.estudiantes) {
+            const estudiantesPendientes = datosCurso.estudiantes.filter(estudiante => {
+                // Verificar si el estudiante ya pagó en este sector
+                const yaPago = sector.cobros.some(cobro => 
+                    cobro.curso === cursoNombre && 
+                    cobro.estudiante === (estudiante.nombre || '')
+                );
+                return !yaPago;
+            });
+            
+            if (estudiantesPendientes.length > 0) {
+                hayPendientes = true;
+                contenidoPDF += `
+                    <div style="margin-top: 10px;">
+                        <h5>${cursoNombre} (${estudiantesPendientes.length} pendientes)</h5>
+                        <table class="tabla">
+                            <thead>
+                                <tr>
+                                    <th width="10%">#</th>
+                                    <th width="90%">Estudiante</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
+                estudiantesPendientes.forEach((estudiante, index) => {
+                    contenidoPDF += `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td>${estudiante.nombre || `Estudiante ${index + 1}`}</td>
+                        </tr>
+                    `;
+                });
+                
+                contenidoPDF += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+        }
+    }
+    
+    if (!hayPendientes) {
+        contenidoPDF += `<p>Todos los estudiantes han pagado en este sector</p>`;
+    }
+    
+    contenidoPDF += `
+                </div>
+                
+                <div class="no-print" style="text-align: center; margin-top: 15px;">
+                    <button onclick="window.print()" style="padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px;">
+                        <i class="fas fa-print"></i> Imprimir Reporte
+                    </button>
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
+    
+    const ventanaPDF = window.open('', '_blank');
+    if (ventanaPDF) {
+        ventanaPDF.document.write(contenidoPDF);
+        ventanaPDF.document.close();
+    }
+}
+
+// GENERAR REPORTE COMPLETO PDF MEJORADO
 function generarReporteCompleto() {
     // Calcular todos los totales
     let totalIngresos = datos.totalIngresosCaja || 0;
@@ -4071,31 +5250,52 @@ function generarReporteCompleto() {
     
     let totalAportesEstudiantes = 0;
     let totalCasilleros = 0;
+    let totalOtrosCobros = datos.totalOtrosCobros || 0;
     
-    // Calcular aportes de estudiantes POR CURSO Y AÑO
+    // Calcular aportes por curso y año
     const aportesPorCurso = {};
     
-    for (const [cursoNombre, datosCurso] of Object.entries(datos.cursos)) {
+    for (const cursoNombre of ordenCursos) {
+        const datosCurso = datos.cursos[cursoNombre];
         if (datosCurso.estudiantes) {
-            // Inicializar estructura para este curso
+            // Inicializar estructura
             if (!aportesPorCurso[cursoNombre]) {
                 aportesPorCurso[cursoNombre] = {
-                    '2026': { total: 0, estudiantes: 0 },
-                    '2027': { total: 0, estudiantes: 0 },
+                    '2026': { total: 0, estudiantes: 0, faltan: 0, deuda: 0 },
+                    '2027': { total: 0, estudiantes: 0, faltan: 0, deuda: 0 },
                     totalGeneral: 0,
-                    estudiantesTotales: datosCurso.estudiantes.length
+                    estudiantesTotales: datosCurso.estudiantes.length,
+                    estudiantesPagaron: 0,
+                    estudiantesFaltan: 0,
+                    totalDeuda: 0
                 };
             }
             
+            const montoReq2026 = obtenerMontoCurso(cursoNombre, '2026');
+            const montoReq2027 = obtenerMontoCurso(cursoNombre, '2027');
+            
             datosCurso.estudiantes.forEach(estudiante => {
+                let pagoCompleto2026 = false;
+                let pagoCompleto2027 = false;
+                
                 if (estudiante.pagos) {
                     // Aporte 2026
                     if (estudiante.pagos['2026'] && estudiante.pagos['2026'].pagado) {
                         const monto2026 = estudiante.pagos['2026'].monto || 0;
                         aportesPorCurso[cursoNombre]['2026'].total += monto2026;
                         aportesPorCurso[cursoNombre]['2026'].estudiantes++;
+                        
+                        if (monto2026 >= montoReq2026) {
+                            pagoCompleto2026 = true;
+                        } else {
+                            aportesPorCurso[cursoNombre]['2026'].deuda += (montoReq2026 - monto2026);
+                        }
+                        
                         totalAportesEstudiantes += monto2026;
                         aportesPorCurso[cursoNombre].totalGeneral += monto2026;
+                    } else {
+                        aportesPorCurso[cursoNombre]['2026'].faltan++;
+                        aportesPorCurso[cursoNombre]['2026'].deuda += montoReq2026;
                     }
                     
                     // Aporte 2027
@@ -4103,11 +5303,38 @@ function generarReporteCompleto() {
                         const monto2027 = estudiante.pagos['2027'].monto || 0;
                         aportesPorCurso[cursoNombre]['2027'].total += monto2027;
                         aportesPorCurso[cursoNombre]['2027'].estudiantes++;
+                        
+                        if (monto2027 >= montoReq2027) {
+                            pagoCompleto2027 = true;
+                        } else {
+                            aportesPorCurso[cursoNombre]['2027'].deuda += (montoReq2027 - monto2027);
+                        }
+                        
                         totalAportesEstudiantes += monto2027;
                         aportesPorCurso[cursoNombre].totalGeneral += monto2027;
+                    } else {
+                        aportesPorCurso[cursoNombre]['2027'].faltan++;
+                        aportesPorCurso[cursoNombre]['2027'].deuda += montoReq2027;
                     }
+                } else {
+                    // No tiene pagos registrados
+                    aportesPorCurso[cursoNombre]['2026'].faltan++;
+                    aportesPorCurso[cursoNombre]['2026'].deuda += montoReq2026;
+                    aportesPorCurso[cursoNombre]['2027'].faltan++;
+                    aportesPorCurso[cursoNombre]['2027'].deuda += montoReq2027;
+                }
+                
+                if (pagoCompleto2026 && pagoCompleto2027) {
+                    aportesPorCurso[cursoNombre].estudiantesPagaron++;
+                } else {
+                    aportesPorCurso[cursoNombre].estudiantesFaltan++;
                 }
             });
+            
+            // Calcular deuda total del curso
+            aportesPorCurso[cursoNombre].totalDeuda = 
+                aportesPorCurso[cursoNombre]['2026'].deuda + 
+                aportesPorCurso[cursoNombre]['2027'].deuda;
         }
     }
     
@@ -4118,49 +5345,62 @@ function generarReporteCompleto() {
         }
     }
     
-    // Organizar movimientos por fecha (más recientes primero)
-    const movimientosOrdenados = [...datos.movimientosCaja].sort((a, b) => 
-        new Date(b.fecha || 0) - new Date(a.fecha || 0)
-    );
+    // Calcular gastos de casilleros
+    let totalGastosCasilleros = 0;
+    datos.gastosCasilleros.forEach(gasto => {
+        totalGastosCasilleros += gasto.monto || 0;
+    });
     
-    // Organizar gastos por fecha (más recientes primero)
-    const gastosOrdenados = [...datos.gastos].sort((a, b) => 
-        new Date(b.fecha || 0) - new Date(a.fecha || 0)
-    );
+    // Calcular otros ingresos (excluyendo dinero inicial)
+    let otrosIngresos = 0;
+    let dineroInicial = 0;
+    let esPrimerIngreso = true;
     
+    for (const movimiento of datos.movimientosCaja) {
+        if (movimiento.tipo === 'ingreso') {
+            if (esPrimerIngreso) {
+                dineroInicial = movimiento.monto || 0;
+                esPrimerIngreso = false;
+            } else {
+                otrosIngresos += movimiento.monto || 0;
+            }
+        }
+    }
+    
+    // Total ingresos reales (sin contar dinero inicial duplicado)
+    const totalIngresosReales = otrosIngresos + totalAportesEstudiantes + totalCasilleros;
+    
+    // Generar contenido PDF
     let contenidoPDF = `
         <html>
         <head>
-            <title>Reporte Financiero Completo - Federación Estudiantil</title>
+            <title>Reporte Financiero Completo</title>
             <style>
-                body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; }
-                .reporte { max-width: 1000px; margin: 0 auto; }
-                .header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #000; padding-bottom: 15px; }
-                .header h1 { color: #333; margin-bottom: 5px; }
-                .header h2 { color: #666; margin-top: 0; }
-                .seccion { margin-top: 30px; padding: 15px; border: 1px solid #000; border-radius: 5px; }
-                .seccion h3 { margin-top: 0; color: #333; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
-                .resumen-item { display: flex; justify-content: space-between; margin: 5px 0; padding: 5px; }
-                .resumen-item.total { background: #f8f9fa; font-weight: bold; border-top: 2px solid #000; }
+                body { font-family: Arial, sans-serif; margin: 10px; font-size: 10px; }
+                .reporte { max-width: 800px; margin: 0 auto; }
+                .header { text-align: center; margin-bottom: 12px; border-bottom: 2px solid #000; padding-bottom: 6px; }
+                .header h1 { color: #333; margin-bottom: 3px; font-size: 16px; }
+                .header h2 { color: #666; margin-top: 0; font-size: 13px; }
+                .seccion { margin-top: 15px; padding: 8px; border: 1px solid #000; border-radius: 4px; }
+                .seccion h3 { margin-top: 0; color: #333; border-bottom: 1px solid #ccc; padding-bottom: 3px; font-size: 12px; }
+                .resumen-item { display: flex; justify-content: space-between; margin: 3px 0; }
+                .resumen-item.total { background: #f8f9fa; font-weight: bold; border-top: 1px solid #000; }
                 .ingreso { color: green; }
                 .egreso { color: red; }
-                .tabla { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 9px; }
-                .tabla th, .tabla td { border: 1px solid #000; padding: 4px; text-align: left; }
-                .tabla th { background-color: #e9ecef; font-weight: bold; font-size: 8px; }
-                .tabla-aportes { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 9px; }
-                .tabla-aportes th, .tabla-aportes td { border: 1px solid #000; padding: 4px; text-align: center; }
-                .tabla-aportes th { background-color: #d4edda; font-weight: bold; }
-                .caja-fuerte { background: #f0f8ff; padding: 15px; border-radius: 10px; border: 2px solid #007bff; }
-                .row { display: flex; justify-content: space-between; margin-bottom: 10px; }
-                .col { width: 48%; }
-                .estado-caja { text-align: center; padding: 20px; background: #28a745; color: white; border-radius: 10px; margin: 20px 0; }
-                .estado-caja h2 { margin: 0; font-size: 2.5rem; }
+                .tabla { width: 100%; border-collapse: collapse; margin: 6px 0; font-size: 8px; }
+                .tabla th, .tabla td { border: 1px solid #000; padding: 3px; text-align: left; }
+                .tabla th { background-color: #e9ecef; font-weight: bold; }
+                .tabla-aportes { width: 100%; border-collapse: collapse; margin: 6px 0; font-size: 8px; }
+                .tabla-aportes th, .tabla-aportes td { border: 1px solid #000; padding: 3px; text-align: center; }
+                .tabla-aportes th { background-color: #d4edda; }
+                .caja-fuerte { background: #f0f8ff; padding: 8px; border-radius: 4px; }
+                .estado-caja { text-align: center; padding: 10px; background: #28a745; color: white; border-radius: 4px; margin: 10px 0; }
+                .estado-caja h2 { margin: 0; font-size: 18px; }
                 .subtotal { background: #f8f9fa; font-weight: bold; }
-                .curso-header { background: #e9ecef; font-weight: bold; }
                 .page-break { page-break-before: always; }
                 @media print {
                     .no-print { display: none; }
-                    body { margin: 10px; }
+                    body { margin: 5px; }
                 }
             </style>
         </head>
@@ -4168,9 +5408,8 @@ function generarReporteCompleto() {
             <div class="reporte">
                 <div class="header">
                     <h1>FEDERACIÓN ESTUDIANTIL</h1>
-                    <h2>REPORTE FINANCIERO COMPLETO - TODOS LOS MOVIMIENTOS</h2>
-                    <p>Fecha de emisión: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}</p>
-                    <p>Total de movimientos registrados: ${movimientosOrdenados.length} | Total de gastos: ${gastosOrdenados.length}</p>
+                    <h2>REPORTE FINANCIERO COMPLETO</h2>
+                    <p>Fecha: ${new Date().toLocaleDateString()}</p>
                 </div>
                 
                 <!-- ESTADO DE CAJA -->
@@ -4186,44 +5425,46 @@ function generarReporteCompleto() {
                     <table class="tabla-aportes">
                         <thead>
                             <tr>
-                                <th>Curso</th>
-                                <th>Total Estudiantes</th>
-                                <th colspan="3">AÑO 2026</th>
-                                <th colspan="3">AÑO 2027</th>
-                                <th>TOTAL CURSO</th>
+                                <th rowspan="2">Curso</th>
+                                <th rowspan="2">Total Est.</th>
+                                <th colspan="4">AÑO 2026</th>
+                                <th colspan="4">AÑO 2027</th>
+                                <th rowspan="2">Total Curso</th>
+                                <th rowspan="2">Deuda</th>
                             </tr>
                             <tr>
-                                <th></th>
-                                <th></th>
-                                <th>Est. Pagaron</th>
-                                <th>Monto Req.</th>
+                                <th>Pagaron</th>
+                                <th>Faltan</th>
                                 <th>Recaudado</th>
-                                <th>Est. Pagaron</th>
-                                <th>Monto Req.</th>
+                                <th>Falta</th>
+                                <th>Pagaron</th>
+                                <th>Faltan</th>
                                 <th>Recaudado</th>
-                                <th></th>
+                                <th>Falta</th>
                             </tr>
                         </thead>
                         <tbody>
     `;
     
-    // Mostrar aportes por curso
     let totalEstudiantesPagaron2026 = 0;
+    let totalEstudiantesFaltan2026 = 0;
     let totalRecaudado2026 = 0;
-    let totalMontoReq2026 = 0;
+    let totalFalta2026 = 0;
     let totalEstudiantesPagaron2027 = 0;
+    let totalEstudiantesFaltan2027 = 0;
     let totalRecaudado2027 = 0;
-    let totalMontoReq2027 = 0;
+    let totalFalta2027 = 0;
     let totalGeneralCursos = 0;
+    let totalDeudaCursos = 0;
     
-    // Ordenar cursos alfabéticamente
+    // Ordenar cursos
     const cursosOrdenados = Object.keys(aportesPorCurso).sort();
     
     if (cursosOrdenados.length === 0) {
         contenidoPDF += `
             <tr>
-                <td colspan="9" style="text-align: center; padding: 20px;">
-                    No hay aportes registrados por curso
+                <td colspan="13" style="text-align: center; padding: 10px;">
+                    No hay aportes registrados
                 </td>
             </tr>
         `;
@@ -4233,54 +5474,51 @@ function generarReporteCompleto() {
             const montoReq2026 = obtenerMontoCurso(cursoNombre, '2026');
             const montoReq2027 = obtenerMontoCurso(cursoNombre, '2027');
             
-            const estudiantesPagaron2026 = curso['2026'].estudiantes;
-            const recaudado2026 = curso['2026'].total;
-            const estudiantesPagaron2027 = curso['2027'].estudiantes;
-            const recaudado2027 = curso['2027'].total;
+            totalEstudiantesPagaron2026 += curso['2026'].estudiantes;
+            totalEstudiantesFaltan2026 += curso['2026'].faltan;
+            totalRecaudado2026 += curso['2026'].total;
+            totalFalta2026 += curso['2026'].deuda;
             
-            totalEstudiantesPagaron2026 += estudiantesPagaron2026;
-            totalRecaudado2026 += recaudado2026;
-            totalMontoReq2026 += (montoReq2026 * curso.estudiantesTotales);
-            
-            totalEstudiantesPagaron2027 += estudiantesPagaron2027;
-            totalRecaudado2027 += recaudado2027;
-            totalMontoReq2027 += (montoReq2027 * curso.estudiantesTotales);
+            totalEstudiantesPagaron2027 += curso['2027'].estudiantes;
+            totalEstudiantesFaltan2027 += curso['2027'].faltan;
+            totalRecaudado2027 += curso['2027'].total;
+            totalFalta2027 += curso['2027'].deuda;
             
             totalGeneralCursos += curso.totalGeneral;
+            totalDeudaCursos += curso.totalDeuda;
             
             contenidoPDF += `
                 <tr>
                     <td><strong>${cursoNombre}</strong></td>
                     <td>${curso.estudiantesTotales}</td>
-                    <td>${estudiantesPagaron2026}</td>
-                    <td>Bs ${montoReq2026.toFixed(2)}</td>
-                    <td class="ingreso">Bs ${recaudado2026.toFixed(2)}</td>
-                    <td>${estudiantesPagaron2027}</td>
-                    <td>Bs ${montoReq2027.toFixed(2)}</td>
-                    <td class="ingreso">Bs ${recaudado2027.toFixed(2)}</td>
-                    <td class="ingreso"><strong>Bs ${curso.totalGeneral.toFixed(2)}</strong></td>
+                    <td>${curso['2026'].estudiantes}</td>
+                    <td>${curso['2026'].faltan}</td>
+                    <td class="ingreso">${curso['2026'].total > 0 ? 'Bs ' + curso['2026'].total.toFixed(0) : '-'}</td>
+                    <td class="${curso['2026'].deuda > 0 ? 'egreso' : ''}">${curso['2026'].deuda > 0 ? 'Bs ' + curso['2026'].deuda.toFixed(0) : '-'}</td>
+                    <td>${curso['2027'].estudiantes}</td>
+                    <td>${curso['2027'].faltan}</td>
+                    <td class="ingreso">${curso['2027'].total > 0 ? 'Bs ' + curso['2027'].total.toFixed(0) : '-'}</td>
+                    <td class="${curso['2027'].deuda > 0 ? 'egreso' : ''}">${curso['2027'].deuda > 0 ? 'Bs ' + curso['2027'].deuda.toFixed(0) : '-'}</td>
+                    <td class="ingreso"><strong>Bs ${curso.totalGeneral.toFixed(0)}</strong></td>
+                    <td class="${curso.totalDeuda > 0 ? 'egreso' : ''}"><strong>${curso.totalDeuda > 0 ? 'Bs ' + curso.totalDeuda.toFixed(0) : '-'}</strong></td>
                 </tr>
             `;
         });
         
-        // Totales de la sección de aportes por curso
+        // Totales
         contenidoPDF += `
             <tr class="subtotal">
                 <td colspan="2"><strong>TOTALES:</strong></td>
                 <td><strong>${totalEstudiantesPagaron2026}</strong></td>
-                <td><strong>Bs ${totalMontoReq2026.toFixed(2)}</strong></td>
-                <td class="ingreso"><strong>Bs ${totalRecaudado2026.toFixed(2)}</strong></td>
+                <td><strong>${totalEstudiantesFaltan2026}</strong></td>
+                <td class="ingreso"><strong>Bs ${totalRecaudado2026.toFixed(0)}</strong></td>
+                <td class="egreso"><strong>Bs ${totalFalta2026.toFixed(0)}</strong></td>
                 <td><strong>${totalEstudiantesPagaron2027}</strong></td>
-                <td><strong>Bs ${totalMontoReq2027.toFixed(2)}</strong></td>
-                <td class="ingreso"><strong>Bs ${totalRecaudado2027.toFixed(2)}</strong></td>
-                <td class="ingreso"><strong>Bs ${totalGeneralCursos.toFixed(2)}</strong></td>
-            </tr>
-            <tr style="background: #f0f8ff;">
-                <td colspan="9" style="padding: 10px;">
-                    <strong>Resumen de Aportes:</strong> 
-                    ${totalEstudiantesPagaron2026 + totalEstudiantesPagaron2027} estudiantes pagaron de ${Object.keys(aportesPorCurso).length} cursos.
-                    Total recaudado en aportes: <strong class="ingreso">Bs ${totalGeneralCursos.toFixed(2)}</strong>
-                </td>
+                <td><strong>${totalEstudiantesFaltan2027}</strong></td>
+                <td class="ingreso"><strong>Bs ${totalRecaudado2027.toFixed(0)}</strong></td>
+                <td class="egreso"><strong>Bs ${totalFalta2027.toFixed(0)}</strong></td>
+                <td class="ingreso"><strong>Bs ${totalGeneralCursos.toFixed(0)}</strong></td>
+                <td class="egreso"><strong>Bs ${totalDeudaCursos.toFixed(0)}</strong></td>
             </tr>
         `;
     }
@@ -4290,59 +5528,65 @@ function generarReporteCompleto() {
                     </table>
                 </div>
                 
-                <div class="row">
-                    <div class="col">
-                        <!-- RESUMEN DE INGRESOS -->
-                        <div class="seccion">
-                            <h3>INGRESOS TOTALES</h3>
-                            <div class="resumen-item">
-                                <span>Ingresos por Aportes Estudiantes:</span>
-                                <span class="ingreso">Bs ${totalAportesEstudiantes.toFixed(2)}</span>
-                            </div>
-                            <div class="resumen-item">
-                                <span>Ingresos por Casilleros:</span>
-                                <span class="ingreso">Bs ${totalCasilleros.toFixed(2)}</span>
-                            </div>
-                            <div class="resumen-item">
-                                <span>Otros Ingresos en Caja:</span>
-                                <span class="ingreso">Bs ${(totalIngresos - totalAportesEstudiantes - totalCasilleros).toFixed(2)}</span>
-                            </div>
-                            <div class="resumen-item total">
-                                <span><strong>TOTAL INGRESOS:</strong></span>
-                                <span class="ingreso"><strong>Bs ${totalIngresos.toFixed(2)}</strong></span>
-                            </div>
-                        </div>
+                <!-- RESUMEN DE INGRESOS -->
+                <div class="seccion">
+                    <h3>INGRESOS TOTALES</h3>
+                    <div class="resumen-item">
+                        <span>Dinero Inicial:</span>
+                        <span>Bs ${dineroInicial.toFixed(2)}</span>
                     </div>
-                    
-                    <div class="col">
-                        <!-- RESUMEN DE EGRESOS -->
-                        <div class="seccion">
-                            <h3>EGRESOS TOTALES</h3>
-                            <div class="resumen-item">
-                                <span>Gastos Operativos:</span>
-                                <span class="egreso">Bs ${datos.totalGastos.toFixed(2)}</span>
-                            </div>
-                            <div class="resumen-item">
-                                <span>Egresos de Caja:</span>
-                                <span class="egreso">Bs ${totalEgresos.toFixed(2)}</span>
-                            </div>
-                            <div class="resumen-item total">
-                                <span><strong>TOTAL EGRESOS:</strong></span>
-                                <span class="egreso"><strong>Bs ${(datos.totalGastos + totalEgresos).toFixed(2)}</strong></span>
-                            </div>
-                        </div>
+                    <div class="resumen-item">
+                        <span>Aportes Estudiantes:</span>
+                        <span class="ingreso">Bs ${totalAportesEstudiantes.toFixed(2)}</span>
+                    </div>
+                    <div class="resumen-item">
+                        <span>Ingresos Casilleros:</span>
+                        <span class="ingreso">Bs ${totalCasilleros.toFixed(2)}</span>
+                    </div>
+                    <div class="resumen-item">
+                        <span>Otros Ingresos:</span>
+                        <span class="ingreso">Bs ${otrosIngresos.toFixed(2)}</span>
+                    </div>
+                    <div class="resumen-item">
+                        <span>Otros Cobros (fuera de caja):</span>
+                        <span class="ingreso">Bs ${totalOtrosCobros.toFixed(2)}</span>
+                    </div>
+                    <div class="resumen-item total">
+                        <span><strong>TOTAL INGRESOS REALES:</strong></span>
+                        <span class="ingreso"><strong>Bs ${totalIngresosReales.toFixed(2)}</strong></span>
+                    </div>
+                </div>
+                
+                <!-- RESUMEN DE EGRESOS -->
+                <div class="seccion">
+                    <h3>EGRESOS TOTALES</h3>
+                    <div class="resumen-item">
+                        <span>Gastos Operativos:</span>
+                        <span class="egreso">Bs ${datos.totalGastos.toFixed(2)}</span>
+                    </div>
+                    <div class="resumen-item">
+                        <span>Egresos de Caja:</span>
+                        <span class="egreso">Bs ${totalEgresos.toFixed(2)}</span>
+                    </div>
+                    <div class="resumen-item">
+                        <span>Gastos de Casilleros:</span>
+                        <span class="egreso">Bs ${totalGastosCasilleros.toFixed(2)}</span>
+                    </div>
+                    <div class="resumen-item total">
+                        <span><strong>TOTAL EGRESOS:</strong></span>
+                        <span class="egreso"><strong>Bs ${(datos.totalGastos + totalEgresos + totalGastosCasilleros).toFixed(2)}</strong></span>
                     </div>
                 </div>
                 
                 <!-- CAJA FUERTE DETALLADA -->
                 <div class="seccion caja-fuerte">
                     <h3>DETALLE DE CAJA FUERTE</h3>
-                    <div class="row">
-                        <div class="col">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div>
                             <h4>ORÍGENES DEL DINERO</h4>
                             <div class="resumen-item">
                                 <span>Dinero Inicial:</span>
-                                <span>Bs ${datos.dineroInicial.toFixed(2)}</span>
+                                <span>Bs ${dineroInicial.toFixed(2)}</span>
                             </div>
                             <div class="resumen-item">
                                 <span>Aportes Estudiantes:</span>
@@ -4354,11 +5598,11 @@ function generarReporteCompleto() {
                             </div>
                             <div class="resumen-item">
                                 <span>Otros Ingresos:</span>
-                                <span class="ingreso">Bs ${(totalIngresos - totalAportesEstudiantes - totalCasilleros).toFixed(2)}</span>
+                                <span class="ingreso">Bs ${otrosIngresos.toFixed(2)}</span>
                             </div>
                         </div>
                         
-                        <div class="col">
+                        <div>
                             <h4>DESTINO DEL DINERO</h4>
                             <div class="resumen-item">
                                 <span>Gastos Operativos:</span>
@@ -4369,6 +5613,10 @@ function generarReporteCompleto() {
                                 <span class="egreso">Bs ${totalEgresos.toFixed(2)}</span>
                             </div>
                             <div class="resumen-item">
+                                <span>Gastos Casilleros:</span>
+                                <span class="egreso">Bs ${totalGastosCasilleros.toFixed(2)}</span>
+                            </div>
+                            <div class="resumen-item">
                                 <span>Dinero Disponible:</span>
                                 <span class="ingreso"><strong>Bs ${saldoCaja.toFixed(2)}</strong></span>
                             </div>
@@ -4376,243 +5624,193 @@ function generarReporteCompleto() {
                     </div>
                     
                     <!-- ECUACIÓN FINANCIERA -->
-                    <div style="text-align: center; margin-top: 20px; padding: 15px; background: #fffacd; border-radius: 5px;">
+                    <div style="text-align: center; margin-top: 10px; padding: 8px; background: #fffacd; border-radius: 3px; font-size: 9px;">
                         <h4>ECUACIÓN FINANCIERA</h4>
                         <p>
-                            <strong>Dinero Inicial (Bs ${datos.dineroInicial.toFixed(2)}) + 
-                            Total Ingresos (Bs ${totalIngresos.toFixed(2)}) - 
-                            Total Egresos (Bs ${(datos.totalGastos + totalEgresos).toFixed(2)}) = 
+                            <strong>Dinero Inicial (Bs ${dineroInicial.toFixed(2)}) + 
+                            Ingresos Reales (Bs ${totalIngresosReales.toFixed(2)}) - 
+                            Total Egresos (Bs ${(datos.totalGastos + totalEgresos + totalGastosCasilleros).toFixed(2)}) = 
                             Saldo Final (Bs ${saldoCaja.toFixed(2)})</strong>
                         </p>
                     </div>
                 </div>
                 
-                <!-- TABLA DE TODOS LOS MOVIMIENTOS DE CAJA -->
-                <div class="seccion page-break">
-                    <h3>TODOS LOS MOVIMIENTOS DE CAJA (${movimientosOrdenados.length} registros)</h3>
-                    <div class="table-responsive">
-                        <table class="tabla">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Fecha</th>
-                                    <th>Tipo</th>
-                                    <th>Concepto</th>
-                                    <th>Monto (Bs)</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-    `;
-    
-    // Mostrar TODOS los movimientos de caja
-    let contadorMovimientos = 1;
-    let subtotalIngresos = 0;
-    let subtotalEgresos = 0;
-    
-    if (movimientosOrdenados.length === 0) {
-        contenidoPDF += `
-            <tr>
-                <td colspan="5" style="text-align: center; padding: 20px;">
-                    No hay movimientos de caja registrados
-                </td>
-            </tr>
-        `;
-    } else {
-        movimientosOrdenados.forEach(mov => {
-            const tipo = mov.tipo === 'ingreso' ? 'INGRESO' : 'EGRESO';
-            const clase = mov.tipo === 'ingreso' ? 'ingreso' : 'egreso';
-            const monto = mov.monto || 0;
-            
-            if (mov.tipo === 'ingreso') subtotalIngresos += monto;
-            if (mov.tipo === 'egreso') subtotalEgresos += monto;
-            
-            contenidoPDF += `
-                <tr>
-                    <td>${contadorMovimientos}</td>
-                    <td>${mov.fecha || 'Sin fecha'}</td>
-                    <td>${tipo}</td>
-                    <td>${mov.concepto || 'Sin concepto'}</td>
-                    <td class="${clase}">Bs ${monto.toFixed(2)}</td>
-                </tr>
-            `;
-            contadorMovimientos++;
-        });
-        
-        // Subtotal al final
-        contenidoPDF += `
-            <tr class="subtotal">
-                <td colspan="4" style="text-align: right;"><strong>Subtotal Ingresos:</strong></td>
-                <td class="ingreso"><strong>Bs ${subtotalIngresos.toFixed(2)}</strong></td>
-            </tr>
-            <tr class="subtotal">
-                <td colspan="4" style="text-align: right;"><strong>Subtotal Egresos:</strong></td>
-                <td class="egreso"><strong>Bs ${subtotalEgresos.toFixed(2)}</strong></td>
-            </tr>
-            <tr class="subtotal">
-                <td colspan="4" style="text-align: right;"><strong>Total Neto Movimientos:</strong></td>
-                <td class="${subtotalIngresos - subtotalEgresos >= 0 ? 'ingreso' : 'egreso'}">
-                    <strong>Bs ${(subtotalIngresos - subtotalEgresos).toFixed(2)}</strong>
-                </td>
-            </tr>
-        `;
-    }
-    
-    contenidoPDF += `
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                
-                <!-- TABLA DE TODOS LOS GASTOS -->
-                <div class="seccion">
-                    <h3>TODOS LOS GASTOS REGISTRADOS (${gastosOrdenados.length} registros)</h3>
-                    <div class="table-responsive">
-                        <table class="tabla">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Fecha</th>
-                                    <th>Categoría</th>
-                                    <th>Descripción</th>
-                                    <th>Monto (Bs)</th>
-                                    <th>Comprobante</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-    `;
-    
-    // Mostrar TODOS los gastos
-    let contadorGastos = 1;
-    let subtotalGastos = 0;
-    
-    if (gastosOrdenados.length === 0) {
-        contenidoPDF += `
-            <tr>
-                <td colspan="6" style="text-align: center; padding: 20px;">
-                    No hay gastos registrados
-                </td>
-            </tr>
-        `;
-    } else {
-        gastosOrdenados.forEach(gasto => {
-            const monto = gasto.monto || 0;
-            subtotalGastos += monto;
-            
-            const descripcion = gasto.descripcion || 'Sin descripción';
-            const descripcionCorta = descripcion.length > 50 ? descripcion.substring(0, 50) + '...' : descripcion;
-            
-            contenidoPDF += `
-                <tr>
-                    <td>${contadorGastos}</td>
-                    <td>${gasto.fecha || 'Sin fecha'}</td>
-                    <td>${gasto.categoria || 'Sin categoría'}</td>
-                    <td title="${descripcion}">${descripcionCorta}</td>
-                    <td class="egreso">Bs ${monto.toFixed(2)}</td>
-                    <td>${gasto.comprobante ? 'SÍ' : 'NO'}</td>
-                </tr>
-            `;
-            contadorGastos++;
-        });
-        
-        // Subtotal de gastos
-        contenidoPDF += `
-            <tr class="subtotal">
-                <td colspan="4" style="text-align: right;"><strong>Total Gastos:</strong></td>
-                <td class="egreso" colspan="2"><strong>Bs ${subtotalGastos.toFixed(2)}</strong></td>
-            </tr>
-        `;
-    }
-    
-    contenidoPDF += `
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                
-                <!-- RESUMEN GENERAL -->
+                <!-- RESUMEN EJECUTIVO -->
                 <div class="seccion page-break">
                     <h3 style="color: #0056b3;">RESUMEN EJECUTIVO COMPLETO</h3>
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
-                        <div style="text-align: center; padding: 10px; background: white; border-radius: 5px; border: 1px solid #28a745;">
-                            <h4 style="color: #28a745;">DINERO INICIAL</h4>
-                            <h2>Bs ${datos.dineroInicial.toFixed(2)}</h2>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 15px;">
+                        <div style="text-align: center; padding: 8px; background: white; border-radius: 3px; border: 1px solid #28a745;">
+                            <h4 style="color: #28a745; font-size: 11px;">DINERO INICIAL</h4>
+                            <h3 style="margin: 5px 0;">Bs ${dineroInicial.toFixed(2)}</h3>
                             <small>Fondo inicial en caja</small>
                         </div>
-                        <div style="text-align: center; padding: 10px; background: white; border-radius: 5px; border: 1px solid #17a2b8;">
-                            <h4 style="color: #17a2b8;">TOTAL RECAUDADO</h4>
-                            <h2>Bs ${totalIngresos.toFixed(2)}</h2>
-                            <small>${movimientosOrdenados.length} movimientos</small>
+                        <div style="text-align: center; padding: 8px; background: white; border-radius: 3px; border: 1px solid #17a2b8;">
+                            <h4 style="color: #17a2b8; font-size: 11px;">TOTAL RECAUDADO</h4>
+                            <h3 style="margin: 5px 0;">Bs ${totalIngresosReales.toFixed(2)}</h3>
+                            <small>Ingresos reales</small>
                         </div>
-                        <div style="text-align: center; padding: 10px; background: white; border-radius: 5px; border: 1px solid #dc3545;">
-                            <h4 style="color: #dc3545;">TOTAL GASTADO</h4>
-                            <h2>Bs ${(datos.totalGastos + totalEgresos).toFixed(2)}</h2>
-                            <small>${gastosOrdenados.length} gastos</small>
+                        <div style="text-align: center; padding: 8px; background: white; border-radius: 3px; border: 1px solid #dc3545;">
+                            <h4 style="color: #dc3545; font-size: 11px;">TOTAL GASTADO</h4>
+                            <h3 style="margin: 5px 0;">Bs ${(datos.totalGastos + totalEgresos + totalGastosCasilleros).toFixed(2)}</h3>
+                            <small>Todos los gastos</small>
                         </div>
                     </div>
                     
-                    <div style="text-align: center; margin-top: 20px; padding: 20px; background: #28a745; color: white; border-radius: 10px;">
-                        <h2>SALDO FINAL DISPONIBLE</h2>
-                        <h1 style="font-size: 3rem; margin: 10px 0;">Bs ${saldoCaja.toFixed(2)}</h1>
-                        <p>Este es el dinero actualmente disponible en caja para la Federación Estudiantil</p>
+                    <div style="text-align: center; padding: 12px; background: #28a745; color: white; border-radius: 4px;">
+                        <h2 style="margin: 5px 0; font-size: 14px;">SALDO FINAL DISPONIBLE</h2>
+                        <h1 style="font-size: 24px; margin: 5px 0;">Bs ${saldoCaja.toFixed(2)}</h1>
+                        <p style="margin: 5px 0; font-size: 9px;">Este es el dinero actualmente disponible en caja para la Federación Estudiantil</p>
+                    </div>
+                </div>
+                
+                <!-- DETALLE POR CONCEPTO -->
+                <div class="seccion">
+                    <h4>DETALLE POR CONCEPTO:</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div>
+                            <strong>Ingresos:</strong>
+                            <ul style="margin: 5px 0; padding-left: 15px; font-size: 9px;">
+                                <li>Aportes Estudiantes: Bs ${totalAportesEstudiantes.toFixed(2)}</li>
+                                <li>Casilleros: Bs ${totalCasilleros.toFixed(2)}</li>
+                                <li>Otros Ingresos: Bs ${otrosIngresos.toFixed(2)}</li>
+                                <li>Dinero Inicial: Bs ${dineroInicial.toFixed(2)}</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <strong>Egresos:</strong>
+                            <ul style="margin: 5px 0; padding-left: 15px; font-size: 9px;">
+                                <li>Gastos Operativos: Bs ${datos.totalGastos.toFixed(2)}</li>
+                                <li>Egresos Caja: Bs ${totalEgresos.toFixed(2)}</li>
+                                <li>Gastos Casilleros: Bs ${totalGastosCasilleros.toFixed(2)}</li>
+                            </ul>
+                        </div>
                     </div>
                     
-                    <!-- RESUMEN DETALLADO -->
-                    <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 20px;">
-                        <h4 style="color: #333;">DETALLE POR CONCEPTO:</h4>
-                        <div class="row" style="display: flex; justify-content: space-between;">
-                            <div style="width: 48%;">
-                                <strong>Ingresos:</strong>
-                                <ul style="margin: 5px 0; padding-left: 20px;">
-                                    <li>Aportes Estudiantes: Bs ${totalAportesEstudiantes.toFixed(2)}</li>
-                                    <li>Casilleros: Bs ${totalCasilleros.toFixed(2)}</li>
-                                    <li>Otros: Bs ${(totalIngresos - totalAportesEstudiantes - totalCasilleros).toFixed(2)}</li>
+                    <!-- RESUMEN APORTES POR CURSO -->
+                    <div style="margin-top: 10px; padding: 6px; background: #d4edda; border-radius: 3px;">
+                        <h5 style="color: #155724; margin-bottom: 5px; font-size: 10px;">APORTES POR CURSO - RESUMEN</h5>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                            <div>
+                                <strong>Año 2026:</strong>
+                                <ul style="margin: 3px 0; padding-left: 15px; font-size: 9px;">
+                                    <li>Estudiantes que pagaron: ${totalEstudiantesPagaron2026}</li>
+                                    <li>Estudiantes que faltan: ${totalEstudiantesFaltan2026}</li>
+                                    <li>Recaudado: <strong class="ingreso">Bs ${totalRecaudado2026.toFixed(2)}</strong></li>
+                                    <li>Falta recaudar: <strong class="egreso">Bs ${totalFalta2026.toFixed(2)}</strong></li>
                                 </ul>
                             </div>
-                            <div style="width: 48%;">
-                                <strong>Egresos:</strong>
-                                <ul style="margin: 5px 0; padding-left: 20px;">
-                                    <li>Gastos Operativos: Bs ${datos.totalGastos.toFixed(2)}</li>
-                                    <li>Egresos Caja: Bs ${totalEgresos.toFixed(2)}</li>
+                            <div>
+                                <strong>Año 2027:</strong>
+                                <ul style="margin: 3px 0; padding-left: 15px; font-size: 9px;">
+                                    <li>Estudiantes que pagaron: ${totalEstudiantesPagaron2027}</li>
+                                    <li>Estudiantes que faltan: ${totalEstudiantesFaltan2027}</li>
+                                    <li>Recaudado: <strong class="ingreso">Bs ${totalRecaudado2027.toFixed(2)}</strong></li>
+                                    <li>Falta recaudar: <strong class="egreso">Bs ${totalFalta2027.toFixed(2)}</strong></li>
                                 </ul>
                             </div>
                         </div>
-                        
-                        <!-- RESUMEN APORTES POR CURSO -->
-                        <div style="margin-top: 15px; padding: 10px; background: #d4edda; border-radius: 5px;">
-                            <h5 style="color: #155724; margin-bottom: 10px;">APORTES POR CURSO - RESUMEN</h5>
-                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
-                                <div>
-                                    <strong>Año 2026:</strong>
-                                    <ul style="margin: 5px 0; padding-left: 20px;">
-                                        <li>Estudiantes que pagaron: ${totalEstudiantesPagaron2026}</li>
-                                        <li>Monto requerido total: Bs ${totalMontoReq2026.toFixed(2)}</li>
-                                        <li>Recaudado: <strong class="ingreso">Bs ${totalRecaudado2026.toFixed(2)}</strong></li>
-                                    </ul>
-                                </div>
-                                <div>
-                                    <strong>Año 2027:</strong>
-                                    <ul style="margin: 5px 0; padding-left: 20px;">
-                                        <li>Estudiantes que pagaron: ${totalEstudiantesPagaron2027}</li>
-                                        <li>Monto requerido total: Bs ${totalMontoReq2027.toFixed(2)}</li>
-                                        <li>Recaudado: <strong class="ingreso">Bs ${totalRecaudado2027.toFixed(2)}</strong></li>
-                                    </ul>
-                                </div>
-                            </div>
-                            <div style="text-align: center; margin-top: 10px; padding: 10px; background: #c3e6cb; border-radius: 3px;">
-                                <strong>TOTAL APORTES ESTUDIANTES: <span class="ingreso">Bs ${totalGeneralCursos.toFixed(2)}</span></strong>
-                            </div>
+                        <div style="text-align: center; margin-top: 5px; padding: 5px; background: #c3e6cb; border-radius: 2px; font-size: 9px;">
+                            <strong>TOTAL APORTES ESTUDIANTES: <span class="ingreso">Bs ${totalGeneralCursos.toFixed(2)}</span> | 
+                            DEUDA TOTAL: <span class="egreso">Bs ${totalDeudaCursos.toFixed(2)}</span></strong>
                         </div>
                     </div>
                 </div>
                 
-                <div class="no-print" style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ccc;">
-                    <button onclick="window.print()" style="padding: 12px 25px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold;">
-                        <i class="fas fa-print"></i> Imprimir Reporte Financiero Completo
+                                <!-- NUEVA SECCIÓN: RESUMEN POR AÑO -->
+                <div class="seccion page-break">
+                    <h3 style="color: #0056b3;">RESUMEN FINANCIERO POR AÑO</h3>
+                    
+                    <!-- TABLA POR AÑO - SIMPLIFICADA -->
+                    <h5 style="color: #28a745;">TOTALES POR AÑO</h5>
+                    <table class="tabla" style="margin-bottom: 20px;">
+                        <thead>
+                            <tr>
+                                <th>Año</th>
+                                <th>Ingresos</th>
+                                <th>Egresos</th>
+                                <th>Gastos Varios</th>
+                                <th>Total Egresos</th>
+                                <th>Balance</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>2025</strong></td>
+                                <td class="ingreso">Bs ${datos.totalIngresosCaja ? datos.totalIngresosCaja.toFixed(2) : '0.00'}</td>
+                                <td class="egreso">Bs ${datos.totalEgresosCaja ? datos.totalEgresosCaja.toFixed(2) : '0.00'}</td>
+                                <td class="egreso">Bs ${datos.totalGastos ? datos.totalGastos.toFixed(2) : '0.00'}</td>
+                                <td class="egreso"><strong>Bs ${((datos.totalEgresosCaja || 0) + (datos.totalGastos || 0)).toFixed(2)}</strong></td>
+                                <td class="${((datos.totalIngresosCaja || 0) - ((datos.totalEgresosCaja || 0) + (datos.totalGastos || 0))) >= 0 ? 'ingreso' : 'egreso'}">
+                                    <strong>Bs ${((datos.totalIngresosCaja || 0) - ((datos.totalEgresosCaja || 0) + (datos.totalGastos || 0))).toFixed(2)}</strong>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>2026</strong></td>
+                                <td class="ingreso">Bs ${(datos.totalAportesEstudiantes || 0).toFixed(2)}</td>
+                                <td class="egreso">Bs ${(datos.totalEgresosCaja || 0).toFixed(2)}</td>
+                                <td class="egreso">Bs ${(datos.totalGastos || 0).toFixed(2)}</td>
+                                <td class="egreso"><strong>Bs ${((datos.totalEgresosCaja || 0) + (datos.totalGastos || 0)).toFixed(2)}</strong></td>
+                                <td class="${((datos.totalAportesEstudiantes || 0) - ((datos.totalEgresosCaja || 0) + (datos.totalGastos || 0))) >= 0 ? 'ingreso' : 'egreso'}">
+                                    <strong>Bs ${((datos.totalAportesEstudiantes || 0) - ((datos.totalEgresosCaja || 0) + (datos.totalGastos || 0))).toFixed(2)}</strong>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>2027</strong></td>
+                                <td class="ingreso">Bs ${(datos.totalAportesEstudiantes || 0).toFixed(2)}</td>
+                                <td class="egreso">Bs ${(datos.totalEgresosCaja || 0).toFixed(2)}</td>
+                                <td class="egreso">Bs ${(datos.totalGastos || 0).toFixed(2)}</td>
+                                <td class="egreso"><strong>Bs ${((datos.totalEgresosCaja || 0) + (datos.totalGastos || 0)).toFixed(2)}</strong></td>
+                                <td class="${((datos.totalAportesEstudiantes || 0) - ((datos.totalEgresosCaja || 0) + (datos.totalGastos || 0))) >= 0 ? 'ingreso' : 'egreso'}">
+                                    <strong>Bs ${((datos.totalAportesEstudiantes || 0) - ((datos.totalEgresosCaja || 0) + (datos.totalGastos || 0))).toFixed(2)}</strong>
+                                </td>
+                            </tr>
+                            <tr class="subtotal">
+                                <td><strong>TOTAL GENERAL</strong></td>
+                                <td class="ingreso"><strong>Bs ${((datos.totalIngresosCaja || 0) + (datos.totalAportesEstudiantes || 0) * 2).toFixed(2)}</strong></td>
+                                <td class="egreso"><strong>Bs ${((datos.totalEgresosCaja || 0) * 3).toFixed(2)}</strong></td>
+                                <td class="egreso"><strong>Bs ${((datos.totalGastos || 0) * 3).toFixed(2)}</strong></td>
+                                <td class="egreso"><strong>Bs ${(((datos.totalEgresosCaja || 0) + (datos.totalGastos || 0)) * 3).toFixed(2)}</strong></td>
+                                <td class="${(((datos.totalIngresosCaja || 0) + (datos.totalAportesEstudiantes || 0) * 2) - (((datos.totalEgresosCaja || 0) + (datos.totalGastos || 0)) * 3)) >= 0 ? 'ingreso' : 'egreso'}">
+                                    <strong>Bs ${(((datos.totalIngresosCaja || 0) + (datos.totalAportesEstudiantes || 0) * 2) - (((datos.totalEgresosCaja || 0) + (datos.totalGastos || 0)) * 3)).toFixed(2)}</strong>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- RESUMEN POR MESES -->
+                    <h5 style="color: #28a745; margin-top: 20px;">RESUMEN MENSUAL</h5>
+                    <div style="font-size: 9px; color: #666;">
+                        <p><strong>Registros más recientes:</strong></p>
+                        <ul>
+                            <li><strong>Ingresos totales 2026-2027:</strong> Bs ${(datos.totalAportesEstudiantes || 0).toFixed(2)}</li>
+                            <li><strong>Gastos totales:</strong> Bs ${(datos.totalGastos || 0).toFixed(2)}</li>
+                            <li><strong>Egresos de caja:</strong> Bs ${(datos.totalEgresosCaja || 0).toFixed(2)}</li>
+                            <li><strong>Gastos de casilleros:</strong> Bs ${calcularGastosCasilleros ? calcularGastosCasilleros().toFixed(2) : '0.00'}</li>
+                            <li><strong>Gastos otros cobros:</strong> Bs ${(datos.otrosCobrosGastos || 0).toFixed(2)}</li>
+                        </ul>
+                        <p style="margin-top: 10px; padding: 8px; background: #f8f9fa; border-radius: 4px;">
+                            <strong>Informe generado el:</strong> ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}<br>
+                            <strong>Total registros en sistema:</strong> ${datos.gastos.length + datos.movimientosCaja.length + (datos.gastosCasilleros ? datos.gastosCasilleros.length : 0)} movimientos
+                        </p>
+                    </div>
+                </div>
+
+
+
+
+
+
+
+
+
+                
+
+                <div class="no-print" style="text-align: center; margin-top: 15px; padding-top: 10px; border-top: 1px solid #ccc;">
+                    <button onclick="window.print()" style="padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px;">
+                        <i class="fas fa-print"></i> Imprimir Reporte Completo
                     </button>
-                    <p style="margin-top: 10px; color: #666; font-size: 11px;">
+                    <p style="margin-top: 8px; color: #666; font-size: 9px;">
                         <strong>Nota:</strong> Este reporte incluye TODA la información financiera de la Federación Estudiantil<br>
-                        Total movimientos: ${movimientosOrdenados.length} | Total gastos: ${gastosOrdenados.length}<br>
-                        Aportes de ${Object.keys(aportesPorCurso).length} cursos analizados<br>
                         Generado automáticamente por el Sistema de Gestión Financiera
                     </p>
                 </div>
@@ -4625,14 +5823,10 @@ function generarReporteCompleto() {
     if (ventanaPDF) {
         ventanaPDF.document.write(contenidoPDF);
         ventanaPDF.document.close();
-        
-        setTimeout(() => {
-            ventanaPDF.focus();
-        }, 500);
     }
 }
 
-// Función para probar sincronización
+// FUNCIÓN PARA PROBAR SINCRONIZACIÓN
 function probarSincronizacion() {
     console.log('🧪 Probando sincronización...');
     
@@ -4664,7 +5858,7 @@ function probarSincronizacion() {
         });
 }
 
-// Agregar botón de prueba en el navbar
+// AGREGAR BOTÓN DE PRUEBA EN EL NAVBAR
 function agregarBotonPrueba() {
     const navbar = document.querySelector('nav');
     if (!navbar) return;
@@ -4678,10 +5872,7 @@ function agregarBotonPrueba() {
     navbar.appendChild(boton);
 }
 
-// Llamar después de cargar
-setTimeout(agregarBotonPrueba, 2000);
-
-// Función para guardar datos automáticamente
+// GUARDAR DATOS AUTOMÁTICAMENTE
 setInterval(() => {
     if (isAdmin || isViewer) {
         guardarDatos();
@@ -4689,4 +5880,2463 @@ setInterval(() => {
     }
 }, 30000);
 
-console.log('Script cargado completamente con todas las mejoras');
+// LLAMAR DESPUÉS DE CARGAR
+setTimeout(agregarBotonPrueba, 2000);
+
+// INICIALIZAR SELECTOR DE CURSOS
+function inicializarSelectorCursos() {
+    const selectorCurso = document.getElementById('selectorCurso');
+    if (selectorCurso) {
+        selectorCurso.innerHTML = '<option value="">Seleccione un curso</option>';
+        ordenCursos.forEach(curso => {
+            const option = document.createElement('option');
+            option.value = curso;
+            option.textContent = curso;
+            selectorCurso.appendChild(option);
+        });
+    }
+    
+    // Inicializar también filtros de seguimiento
+    const filtroCursoSeguimiento = document.getElementById('filtroCursoSeguimiento');
+    if (filtroCursoSeguimiento) {
+        filtroCursoSeguimiento.innerHTML = '<option value="todos">Todos los cursos</option>';
+        ordenCursos.forEach(curso => {
+            const option = document.createElement('option');
+            option.value = curso;
+            option.textContent = curso;
+            filtroCursoSeguimiento.appendChild(option);
+        });
+    }
+    
+    // Inicializar también selector de curso para otros cobros
+    const cursoOtroCobro = document.getElementById('cursoOtroCobro');
+    if (cursoOtroCobro) {
+        cursoOtroCobro.innerHTML = '<option value="">Seleccione curso</option>';
+        ordenCursos.forEach(curso => {
+            const option = document.createElement('option');
+            option.value = curso;
+            option.textContent = curso;
+            cursoOtroCobro.appendChild(option);
+        });
+    }
+}
+
+
+function actualizarSeguimiento() {
+    console.log("🔄 Actualizando seguimiento...");
+    
+    // ============================================
+    // 1. CONTADORES PARA AMBAS GESTIONES JUNTAS (los 4 cuadros grandes)
+    // ============================================
+    let totalPagosCompletos = 0;        // Pagos completos (ambos años)
+    let totalPagosFaltantes = 0;        // Pagos que faltan (ambos años)
+    let totalAportes = 0;               // Dinero recaudado (ambos años)
+    let totalDeudas = 0;                // Dinero faltante (ambos años)
+    
+    // ============================================
+    // 2. CONTADORES POR AÑO SEPARADO (para los cuadros pequeños)
+    // ============================================
+    let pagos2026Completos = 0;         // 2026 completos
+    let pagos2026Faltantes = 0;         // 2026 que faltan
+    let aportes2026 = 0;                // Dinero 2026
+    let deudas2026 = 0;                 // Deuda 2026
+    
+    let pagos2027Completos = 0;         // 2027 completos
+    let pagos2027Faltantes = 0;         // 2027 que faltan
+    let aportes2027 = 0;                // Dinero 2027
+    let deudas2027 = 0;                 // Deuda 2027
+    
+    // ============================================
+    // 3. RECORRER TODOS LOS ESTUDIANTES
+    // ============================================
+    for (const [cursoNombre, datosCurso] of Object.entries(datos.cursos)) {
+        if (!datosCurso.estudiantes) continue;
+        
+        const montoReq2026 = obtenerMontoCurso(cursoNombre, '2026');
+        const montoReq2027 = obtenerMontoCurso(cursoNombre, '2027');
+        
+        datosCurso.estudiantes.forEach(estudiante => {
+            const pago2026 = estudiante.pagos?.['2026'] || { monto: 0, pagado: false };
+            const pago2027 = estudiante.pagos?.['2027'] || { monto: 0, pagado: false };
+            
+            // ====== PARA 2026 (AÑO ESPECÍFICO) ======
+            if (pago2026.pagado) {
+                aportes2026 += pago2026.monto || 0;
+                totalAportes += pago2026.monto || 0;
+                
+                if (pago2026.monto >= montoReq2026) {
+                    pagos2026Completos++;
+                    totalPagosCompletos++;
+                } else {
+                    pagos2026Faltantes++;
+                    totalPagosFaltantes++;
+                    const deuda2026 = montoReq2026 - pago2026.monto;
+                    deudas2026 += deuda2026;
+                    totalDeudas += deuda2026;
+                }
+            } else {
+                pagos2026Faltantes++;
+                totalPagosFaltantes++;
+                deudas2026 += montoReq2026;
+                totalDeudas += montoReq2026;
+            }
+            
+            // ====== PARA 2027 (AÑO ESPECÍFICO) ======
+            if (pago2027.pagado) {
+                aportes2027 += pago2027.monto || 0;
+                totalAportes += pago2027.monto || 0;
+                
+                if (pago2027.monto >= montoReq2027) {
+                    pagos2027Completos++;
+                    totalPagosCompletos++;
+                } else {
+                    pagos2027Faltantes++;
+                    totalPagosFaltantes++;
+                    const deuda2027 = montoReq2027 - pago2027.monto;
+                    deudas2027 += deuda2027;
+                    totalDeudas += deuda2027;
+                }
+            } else {
+                pagos2027Faltantes++;
+                totalPagosFaltantes++;
+                deudas2027 += montoReq2027;
+                totalDeudas += montoReq2027;
+            }
+        });
+    }
+    
+    console.log("📊 RESULTADOS CALCULADOS:");
+    console.log(`AMBOS AÑOS: ${totalPagosCompletos} completos, ${totalPagosFaltantes} faltantes`);
+    console.log(`AMBOS AÑOS: Bs ${totalAportes.toFixed(2)} recaudado, Bs ${totalDeudas.toFixed(2)} faltante`);
+    console.log(`2026: ${pagos2026Completos} completos, ${pagos2026Faltantes} faltantes, Bs ${aportes2026.toFixed(2)} recaudado, Bs ${deudas2026.toFixed(2)} faltante`);
+    console.log(`2027: ${pagos2027Completos} completos, ${pagos2027Faltantes} faltantes, Bs ${aportes2027.toFixed(2)} recaudado, Bs ${deudas2027.toFixed(2)} faltante`);
+    
+    // ============================================
+    // 4. ACTUALIZAR LOS 4 CUADROS GRANDES (AMBOS AÑOS)
+    // ============================================
+    
+    // CUADRO 1: "Estudiantes al Día" → Pagos completos (2026 + 2027)
+    const cuadro1 = document.getElementById('estudiantesAlDia');
+    if (cuadro1) {
+        cuadro1.textContent = totalPagosCompletos;
+        console.log(`✅ estudiantesAlDia: ${totalPagosCompletos} pagos completos (2026 + 2027)`);
+    }
+    
+    // CUADRO 2: "Estudiantes que Faltan" → Pagos faltantes (2026 + 2027)
+    const cuadro2 = document.getElementById('estudiantesFaltan');
+    if (cuadro2) {
+        cuadro2.textContent = totalPagosFaltantes;
+        console.log(`✅ estudiantesFaltan: ${totalPagosFaltantes} pagos faltantes (2026 + 2027)`);
+    }
+    
+    // CUADRO 3: "Total Aportes" → Dinero recaudado (2026 + 2027)
+    const cuadro3 = document.getElementById('totalAportesSeguimiento');
+    if (cuadro3) {
+        cuadro3.textContent = `Bs ${totalAportes.toFixed(2)}`;
+        console.log(`✅ totalAportesSeguimiento: Bs ${totalAportes.toFixed(2)} (2026 + 2027)`);
+    }
+    
+    // CUADRO 4: "Total Deudas" → Dinero faltante (2026 + 2027)
+    const cuadro4 = document.getElementById('totalDeudasSeguimiento');
+    if (cuadro4) {
+        cuadro4.textContent = `Bs ${totalDeudas.toFixed(2)}`;
+        console.log(`✅ totalDeudasSeguimiento: Bs ${totalDeudas.toFixed(2)} (2026 + 2027)`);
+    }
+    
+    // ============================================
+    // 5. ACTUALIZAR CUADROS POR AÑO (si existen)
+    // ============================================
+    
+    // Para 2026
+    try {
+        if (document.getElementById('estudiantesAlDia2026')) {
+            document.getElementById('estudiantesAlDia2026').textContent = pagos2026Completos;
+            console.log(`✅ estudiantesAlDia2026: ${pagos2026Completos}`);
+        }
+        if (document.getElementById('estudiantesFaltan2026')) {
+            document.getElementById('estudiantesFaltan2026').textContent = pagos2026Faltantes;
+            console.log(`✅ estudiantesFaltan2026: ${pagos2026Faltantes}`);
+        }
+        if (document.getElementById('deudaTotal2026')) {
+            document.getElementById('deudaTotal2026').textContent = `Bs ${deudas2026.toFixed(2)}`;
+            console.log(`✅ deudaTotal2026: Bs ${deudas2026.toFixed(2)}`);
+        }
+    } catch (e) {
+        console.log("Elementos 2026 no disponibles");
+    }
+    
+    // Para 2027
+    try {
+        if (document.getElementById('estudiantesAlDia2027')) {
+            document.getElementById('estudiantesAlDia2027').textContent = pagos2027Completos;
+            console.log(`✅ estudiantesAlDia2027: ${pagos2027Completos}`);
+        }
+        if (document.getElementById('estudiantesFaltan2027')) {
+            document.getElementById('estudiantesFaltan2027').textContent = pagos2027Faltantes;
+            console.log(`✅ estudiantesFaltan2027: ${pagos2027Faltantes}`);
+        }
+        if (document.getElementById('deudaTotal2027')) {
+            document.getElementById('deudaTotal2027').textContent = `Bs ${deudas2027.toFixed(2)}`;
+            console.log(`✅ deudaTotal2027: Bs ${deudas2027.toFixed(2)}`);
+        }
+    } catch (e) {
+        console.log("Elementos 2027 no disponibles");
+    }
+    
+    // ============================================
+    // 6. ACTUALIZAR EL RESTO DE LA PÁGINA
+    // ============================================
+    actualizarTablaSeguimientoEstudiantes();
+    actualizarUltimosGastosSeguimiento();
+actualizarHistorialGeneral();
+    
+    console.log("✅ Seguimiento actualizado completamente");
+    
+    // Actualizar dashboards adicionales (gastos e historial)
+    actualizarDashboardsAdicionales();
+}
+// NUEVA FUNCIÓN: Mostrar gastos en el seguimiento
+function actualizarGastosEnSeguimiento() {
+    const contenedorGastos = document.getElementById('gastosEnSeguimiento');
+    if (!contenedorGastos) return;
+    
+    contenedorGastos.innerHTML = '';
+    
+    // Tomar los últimos 10 gastos
+    const ultimosGastos = [...datos.gastos]
+        .sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
+        .slice(0, 10);
+    
+    if (ultimosGastos.length === 0) {
+        contenedorGastos.innerHTML = `
+            <div class="text-center text-muted py-3">
+                <i class="fas fa-receipt fa-2x"></i>
+                <p>No hay gastos registrados</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const tabla = document.createElement('table');
+    tabla.className = 'table table-sm table-dark table-hover';
+    tabla.innerHTML = `
+        <thead>
+            <tr>
+                <th width="20%">Fecha</th>
+                <th width="25%">Categoría</th>
+                <th width="35%">Descripción</th>
+                <th width="20%" class="text-end">Monto</th>
+            </tr>
+        </thead>
+        <tbody>
+    `;
+    
+    let totalGastos = 0;
+    
+    ultimosGastos.forEach(gasto => {
+        totalGastos += gasto.monto || 0;
+        
+        tabla.innerHTML += `
+            <tr>
+                <td>${gasto.fecha || '-'}</td>
+                <td>${gasto.categoria || '-'}</td>
+                <td>${(gasto.descripcion || '').substring(0, 30)}${(gasto.descripcion || '').length > 30 ? '...' : ''}</td>
+                <td class="text-danger text-end">Bs ${(gasto.monto || 0).toFixed(2)}</td>
+            </tr>
+        `;
+    });
+    
+    // Fila de total
+    tabla.innerHTML += `
+        <tr class="table-danger">
+            <td colspan="3" class="text-end"><strong>Total últimos 10 gastos:</strong></td>
+            <td class="text-end"><strong>Bs ${totalGastos.toFixed(2)}</strong></td>
+        </tr>
+    `;
+    
+    contenedorGastos.appendChild(tabla);
+}
+
+// NUEVA FUNCIÓN: Resumen mensual de ingresos y egresos
+function actualizarResumenMensualSeguimiento() {
+    const contenedorResumen = document.getElementById('resumenMensualSeguimiento');
+    if (!contenedorResumen) return;
+    
+    contenedorResumen.innerHTML = '';
+    
+    // Obtener el año actual
+    const añoActual = new Date().getFullYear();
+    const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    
+    // Crear estructura para los meses
+    const resumenMeses = {};
+    meses.forEach((mes, index) => {
+        resumenMeses[index + 1] = {
+            mes: mes,
+            ingresos: 0,
+            egresos: 0,
+            balance: 0
+        };
+    });
+    
+    // Calcular ingresos por mes (aportes estudiantes)
+    for (const curso of Object.values(datos.cursos)) {
+        if (curso.estudiantes) {
+            for (const estudiante of curso.estudiantes) {
+                if (estudiante.pagos) {
+                    ['2026', '2027'].forEach(anio => {
+                        const pago = estudiante.pagos[anio];
+                        if (pago && pago.pagado && pago.fecha && pago.monto > 0) {
+                            try {
+                                const fecha = new Date(pago.fecha);
+                                if (fecha.getFullYear() === añoActual) {
+                                    const mes = fecha.getMonth() + 1;
+                                    resumenMeses[mes].ingresos += pago.monto || 0;
+                                }
+                            } catch (e) {}
+                        }
+                    });
+                }
+            }
+        }
+    }
+    
+    // Calcular ingresos por casilleros
+    for (const casillero of Object.values(datos.casilleros)) {
+        if (casillero.historialPagos) {
+            casillero.historialPagos.forEach(pago => {
+                if (pago.tipo === 'pago_mensual' && pago.fecha) {
+                    try {
+                        const fecha = new Date(pago.fecha);
+                        if (fecha.getFullYear() === añoActual) {
+                            const mes = fecha.getMonth() + 1;
+                            resumenMeses[mes].ingresos += pago.monto || 0;
+                        }
+                    } catch (e) {}
+                }
+            });
+        }
+    }
+    
+    // Calcular egresos por mes (gastos)
+    datos.gastos.forEach(gasto => {
+        try {
+            const fecha = new Date(gasto.fecha);
+            if (fecha.getFullYear() === añoActual) {
+                const mes = fecha.getMonth() + 1;
+                resumenMeses[mes].egresos += gasto.monto || 0;
+            }
+        } catch (e) {}
+    });
+    
+    // Calcular balance por mes
+    Object.keys(resumenMeses).forEach(mesNum => {
+        const mes = resumenMeses[mesNum];
+        mes.balance = mes.ingresos - mes.egresos;
+    });
+    
+    // Crear tabla de resumen
+    const tabla = document.createElement('table');
+    tabla.className = 'table table-sm table-dark table-hover';
+    tabla.innerHTML = `
+        <thead>
+            <tr>
+                <th width="15%">Mes</th>
+                <th width="25%" class="text-end text-success">Ingresos</th>
+                <th width="25%" class="text-end text-danger">Egresos</th>
+                <th width="25%" class="text-end">Balance</th>
+                <th width="10%">Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+    `;
+    
+    let totalIngresos = 0;
+    let totalEgresos = 0;
+    let totalBalance = 0;
+    
+    Object.keys(resumenMeses).forEach(mesNum => {
+        const mes = resumenMeses[mesNum];
+        totalIngresos += mes.ingresos;
+        totalEgresos += mes.egresos;
+        totalBalance += mes.balance;
+        
+        const estado = mes.balance > 0 ? 'positivo' : mes.balance < 0 ? 'negativo' : 'neutral';
+        const icono = mes.balance > 0 ? '📈' : mes.balance < 0 ? '📉' : '➖';
+        
+        tabla.innerHTML += `
+            <tr>
+                <td><strong>${mes.mes}</strong></td>
+                <td class="text-success text-end">Bs ${mes.ingresos.toFixed(2)}</td>
+                <td class="text-danger text-end">Bs ${mes.egresos.toFixed(2)}</td>
+                <td class="${mes.balance > 0 ? 'text-success' : mes.balance < 0 ? 'text-danger' : 'text-muted'} text-end">
+                    <strong>Bs ${mes.balance.toFixed(2)}</strong>
+                </td>
+                <td class="text-center">${icono}</td>
+            </tr>
+        `;
+    });
+    
+    // Fila de totales
+    const estadoTotal = totalBalance > 0 ? 'positivo' : totalBalance < 0 ? 'negativo' : 'neutral';
+    const iconoTotal = totalBalance > 0 ? '📈' : totalBalance < 0 ? '📉' : '➖';
+    
+    tabla.innerHTML += `
+        <tr class="table-primary">
+            <td><strong>TOTAL ${añoActual}</strong></td>
+            <td class="text-success text-end"><strong>Bs ${totalIngresos.toFixed(2)}</strong></td>
+            <td class="text-danger text-end"><strong>Bs ${totalEgresos.toFixed(2)}</strong></td>
+            <td class="${totalBalance > 0 ? 'text-success' : totalBalance < 0 ? 'text-danger' : 'text-muted'} text-end">
+                <strong>Bs ${totalBalance.toFixed(2)}</strong>
+            </td>
+            <td class="text-center"><strong>${iconoTotal}</strong></td>
+        </tr>
+    `;
+    
+    contenedorResumen.appendChild(tabla);
+}
+
+
+
+// NUEVA FUNCIÓN: Cargar estudiantes para marcar pagos en otros cobros
+function cargarEstudiantesParaMarcarPagos() {
+    const cursoSeleccionado = document.getElementById('cursoOtroCobro').value;
+    const sectorId = parseInt(document.getElementById('sectorCobro').value);
+    
+    if (!cursoSeleccionado || !sectorId) {
+        mostrarMensaje('Seleccione curso y sector primero', 'error');
+        return;
+    }
+    
+    const sector = datos.sectoresCobro.find(s => s.id === sectorId);
+    if (!sector) {
+        mostrarMensaje('Sector no encontrado', 'error');
+        return;
+    }
+    
+    const datosCurso = datos.cursos[cursoSeleccionado];
+    const contenedor = document.getElementById('contenedorMarcarPagos');
+    
+    if (!contenedor) {
+        // Crear contenedor si no existe
+        const form = document.getElementById('formOtroCobro');
+        const nuevoContenedor = document.createElement('div');
+        nuevoContenedor.id = 'contenedorMarcarPagos';
+        nuevoContenedor.className = 'contenedor-marcar-pagos mt-3';
+        form.parentNode.insertBefore(nuevoContenedor, form.nextSibling);
+    }
+    
+    const contenedorActual = document.getElementById('contenedorMarcarPagos');
+    contenedorActual.style.display = 'block';
+    contenedorActual.innerHTML = `
+        <h5 class="neon-text-blue mb-3">
+            <i class="fas fa-check-circle"></i> Marcar Pagos - ${cursoSeleccionado}
+            <small class="text-white">(Sector: ${sector.nombre})</small>
+        </h5>
+        <div class="table-responsive">
+            <table class="table tabla-marcar-pagos">
+                <thead>
+                    <tr>
+                        <th width="5%">#</th>
+                        <th width="40%">Estudiante</th>
+                        <th width="20%">Estado</th>
+                        <th width="15%">Monto</th>
+                        <th width="20%">Acción</th>
+                    </tr>
+                </thead>
+                <tbody id="listaEstudiantesMarcar">
+                </tbody>
+                <tfoot>
+                    <tr class="table-primary">
+                        <td colspan="3" class="text-end"><strong>Total del curso:</strong></td>
+                        <td><strong class="monto-importante">Bs ${(datosCurso.estudiantes.length * sector.monto).toFixed(2)}</strong></td>
+                        <td>
+                            <button class="btn-marcar-todos" onclick="marcarTodosComoPagados('${cursoSeleccionado}', ${sectorId})">
+                                <i class="fas fa-check-double"></i> Marcar todos
+                            </button>
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    `;
+    
+    const tbody = document.getElementById('listaEstudiantesMarcar');
+    
+        datosCurso.estudiantes.forEach((estudiante, index) => {
+        // Verificar si ya pagó en este sector - CORREGIDO
+        const nombreEstudiante = estudiante.nombre || `Estudiante ${index + 1}`;
+        const cobroExistente = sector.cobros.find(cobro => 
+            cobro.curso === cursoSeleccionado && 
+            cobro.estudiante === nombreEstudiante
+        );
+        
+        const yaPago = !!cobroExistente; // Si existe el cobro, está pagado
+        
+        const fila = document.createElement('tr');
+        fila.innerHTML = `
+            <td>${index + 1}</td>
+            <td>${nombreEstudiante}</td>
+            <td>
+                <span class="${yaPago ? 'badge-estado-tabla badge-pagado' : 'badge-estado-tabla badge-deuda'}">
+                    ${yaPago ? '<i class="fas fa-check-circle"></i> PAGADO' : '<i class="fas fa-times-circle"></i> PENDIENTE'}
+                </span>
+                ${yaPago ? `<br><small>Fecha: ${cobroExistente.fecha || 'No registrada'}</small>` : ''}
+            </td>
+            <td><strong>Bs ${sector.monto.toFixed(2)}</strong></td>
+            <td>
+                ${yaPago ? `
+                <button class="btn-desmarcar" onclick="desmarcarPago('${cursoSeleccionado}', ${index}, ${sectorId})">
+                    <i class="fas fa-times"></i> Eliminar
+                </button>
+                ` : `
+                <button class="btn-marcar" onclick="marcarComoPagado('${cursoSeleccionado}', ${index}, ${sectorId})">
+                    <i class="fas fa-check"></i> Marcar
+                </button>
+                `}
+            </td>
+        `;
+        tbody.appendChild(fila);
+    });
+    
+    // Agregar botones de exportación después de la tabla
+    agregarBotonesExportacion(cursoSeleccionado, sectorId);
+}
+
+
+// NUEVA FUNCIÓN: Marcar estudiante como pagado
+function marcarComoPagado(curso, indexEstudiante, sectorId) {
+    if (!isAdmin) return;
+    
+    const sector = datos.sectoresCobro.find(s => s.id === sectorId);
+    const estudiante = datos.cursos[curso].estudiantes[indexEstudiante];
+    const hoy = new Date().toISOString().split('T')[0];
+    
+    // Verificar si ya está pagado
+    const nombreEstudiante = estudiante.nombre || `Estudiante ${indexEstudiante + 1}`;
+    const yaPago = sector.cobros.some(cobro => 
+        cobro.curso === curso && cobro.estudiante === nombreEstudiante
+    );
+    
+    if (yaPago) {
+        mostrarMensaje('Este estudiante ya está marcado como pagado', 'info');
+        return;
+    }
+    
+    const nuevoCobro = {
+        id: Date.now(),
+        curso: curso,
+        estudiante: nombreEstudiante,
+        monto: sector.monto,
+        fecha: hoy,
+        observaciones: 'Marcado desde sistema',
+        timestamp: Date.now()
+    };
+    
+    sector.cobros.push(nuevoCobro);
+    datos.totalOtrosCobros += sector.monto;
+    
+    guardarDatos();
+    actualizarSectoresCobro();
+    actualizarTotalOtrosCobros();
+    
+    // Actualizar la vista inmediatamente
+    cargarEstudiantesParaMarcarPagos();
+    
+    mostrarMensaje('Estudiante marcado como pagado', 'success');
+}
+
+// NUEVA FUNCIÓN: Desmarcar pago
+function desmarcarPago(curso, indexEstudiante, sectorId) {
+    if (!isAdmin) return;
+    
+    const sector = datos.sectoresCobro.find(s => s.id === sectorId);
+    const estudiante = datos.cursos[curso].estudiantes[indexEstudiante];
+    const nombreEstudiante = estudiante.nombre || `Estudiante ${indexEstudiante + 1}`;
+    
+    // Encontrar y eliminar el cobro
+    const indexCobro = sector.cobros.findIndex(cobro => 
+        cobro.curso === curso && cobro.estudiante === nombreEstudiante
+    );
+    
+    if (indexCobro !== -1) {
+        const montoEliminado = sector.cobros[indexCobro].monto || 0;
+        sector.cobros.splice(indexCobro, 1);
+        datos.totalOtrosCobros -= montoEliminado;
+        
+        guardarDatos();
+        actualizarSectoresCobro();
+        actualizarTotalOtrosCobros();
+        
+        // Actualizar la vista inmediatamente
+        cargarEstudiantesParaMarcarPagos();
+        
+        mostrarMensaje('Pago desmarcado', 'success');
+    } else {
+        mostrarMensaje('No se encontró el pago', 'error');
+    }
+}
+
+// NUEVA FUNCIÓN: Marcar todos como pagados
+function marcarTodosComoPagados(curso, sectorId) {
+    if (!isAdmin) return;
+    
+    if (!confirm(`¿Marcar a TODOS los estudiantes de ${curso} como pagados en este sector?\n\nEsta acción no se puede deshacer fácilmente.`)) {
+        return;
+    }
+    
+    const sector = datos.sectoresCobro.find(s => s.id === sectorId);
+    const datosCurso = datos.cursos[curso];
+    const hoy = new Date().toISOString().split('T')[0];
+    
+    let estudiantesMarcados = 0;
+    let estudiantesYaPagados = 0;
+    
+    datosCurso.estudiantes.forEach((estudiante, index) => {
+        const nombreEstudiante = estudiante.nombre || `Estudiante ${index + 1}`;
+        
+        // Verificar si ya está pagado
+        const yaPago = sector.cobros.some(cobro => 
+            cobro.curso === curso && cobro.estudiante === nombreEstudiante
+        );
+        
+        if (!yaPago) {
+            sector.cobros.push({
+                id: Date.now() + index,
+                curso: curso,
+                estudiante: nombreEstudiante,
+                monto: sector.monto,
+                fecha: hoy,
+                observaciones: 'Marcado masivamente desde sistema',
+                timestamp: Date.now() + index
+            });
+            
+            datos.totalOtrosCobros += sector.monto;
+            estudiantesMarcados++;
+        } else {
+            estudiantesYaPagados++;
+        }
+    });
+    
+    guardarDatos();
+    actualizarSectoresCobro();
+    actualizarTotalOtrosCobros();
+    
+    // Actualizar la vista inmediatamente
+    cargarEstudiantesParaMarcarPagos();
+    
+    mostrarMensaje(`${estudiantesMarcados} estudiantes marcados como pagados (${estudiantesYaPagados} ya estaban pagados)`, 'success');
+}
+
+// NUEVA FUNCIÓN: Limpiar todos los pagos de un curso
+function limpiarTodosLosPagos(curso, sectorId) {
+    if (!isAdmin) return;
+    
+    if (!confirm(`¿Eliminar TODOS los pagos de ${curso} en este sector?\n\nEsta acción eliminará permanentemente todos los registros de pago de este curso en el sector seleccionado.`)) {
+        return;
+    }
+    
+    const sector = datos.sectoresCobro.find(s => s.id === sectorId);
+    
+    // Filtrar solo los cobros de este curso
+    const cobrosAEliminar = sector.cobros.filter(cobro => cobro.curso === curso);
+    const totalEliminado = cobrosAEliminar.reduce((sum, cobro) => sum + (cobro.monto || 0), 0);
+    
+    // Mantener solo los cobros de otros cursos
+    sector.cobros = sector.cobros.filter(cobro => cobro.curso !== curso);
+    datos.totalOtrosCobros -= totalEliminado;
+    
+    guardarDatos();
+    actualizarSectoresCobro();
+    actualizarTotalOtrosCobros();
+    
+    // Actualizar la vista inmediatamente
+    cargarEstudiantesParaMarcarPagos();
+    
+    mostrarMensaje(`Se eliminaron ${cobrosAEliminar.length} pagos del curso (Total: Bs ${totalEliminado.toFixed(2)})`, 'success');
+}
+
+// NUEVA FUNCIÓN: Auto-marcar cuando se seleccione curso (Event Listener)
+function configurarAutoMarcado() {
+    const cursoSelect = document.getElementById('cursoOtroCobro');
+    const sectorSelect = document.getElementById('sectorCobro');
+    
+    if (cursoSelect && sectorSelect) {
+        // Auto-cargar cuando ambos estén seleccionados
+        cursoSelect.addEventListener('change', function() {
+            if (sectorSelect.value) {
+                setTimeout(() => cargarEstudiantesParaMarcarPagos(), 100);
+            }
+        });
+        
+        sectorSelect.addEventListener('change', function() {
+            if (cursoSelect.value) {
+                setTimeout(() => cargarEstudiantesParaMarcarPagos(), 100);
+            }
+        });
+    }
+}
+
+// NUEVA FUNCIÓN: Exportar lista de pagos del sector
+function exportarPagosSector(sectorId, curso = null) {
+    const sector = datos.sectoresCobro.find(s => s.id === sectorId);
+    if (!sector) return;
+    
+    let csvContent = "data:text/csv;charset=utf-8,";
+    let cobrosFiltrados = sector.cobros;
+    
+    // Filtrar por curso si se especifica
+    if (curso) {
+        cobrosFiltrados = cobrosFiltrados.filter(cobro => cobro.curso === curso);
+        csvContent += `Lista de Pagos - ${sector.nombre} - ${curso}\n\n`;
+    } else {
+        csvContent += `Lista de Pagos - ${sector.nombre}\n\n`;
+    }
+    
+    csvContent += "Curso;Estudiante;Monto;Fecha;Observaciones\n";
+    
+    cobrosFiltrados.forEach(cobro => {
+        const fila = [
+            cobro.curso,
+            cobro.estudiante,
+            `Bs ${(cobro.monto || 0).toFixed(2)}`,
+            cobro.fecha || '-',
+            cobro.observaciones || '-'
+        ].join(";");
+        
+        csvContent += fila + "\n";
+    });
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    
+    const nombreArchivo = curso ? 
+        `pagos_${sector.nombre.replace(/[^a-z0-9]/gi, '_')}_${curso.replace(/[^a-z0-9]/gi, '_')}.csv` :
+        `pagos_${sector.nombre.replace(/[^a-z0-9]/gi, '_')}.csv`;
+    
+    link.setAttribute("download", nombreArchivo);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    mostrarMensaje('Archivo CSV exportado exitosamente', 'success');
+}
+
+// NUEVA FUNCIÓN: Agregar botón de exportación al contenedor de marcado
+function agregarBotonesExportacion(cursoSeleccionado, sectorId) {
+    const contenedorActual = document.getElementById('contenedorMarcarPagos');
+    if (!contenedorActual) return;
+    
+    const botonesDiv = document.createElement('div');
+    botonesDiv.className = 'mt-3 text-center';
+    botonesDiv.innerHTML = `
+        <div class="btn-group" role="group">
+            <button class="btn btn-info btn-sm" onclick="exportarPagosSector(${sectorId}, '${cursoSeleccionado}')">
+                <i class="fas fa-file-export"></i> Exportar curso
+            </button>
+            <button class="btn btn-warning btn-sm" onclick="exportarPagosSector(${sectorId})">
+                <i class="fas fa-file-export"></i> Exportar todo
+            </button>
+            ${isAdmin ? `
+            <button class="btn btn-danger btn-sm" onclick="limpiarTodosLosPagos('${cursoSeleccionado}', ${sectorId})">
+                <i class="fas fa-trash"></i> Limpiar curso
+            </button>
+            ` : ''}
+        </div>
+    `;
+    
+    // Agregar después de la tabla
+    const tabla = contenedorActual.querySelector('table');
+    if (tabla) {
+        tabla.parentNode.appendChild(botonesDiv);
+    }
+}
+
+// LLAMAR AL CARGAR
+document.addEventListener('DOMContentLoaded', function() {
+    inicializarSelectorCursos();
+    configurarAutoMarcado();
+});
+
+// ================================================
+// FUNCIONES NUEVAS PARA PAGOS DE CASILLEROS
+// ================================================
+
+// TOGGLE PAGO POR MES (marcar/desmarcar)
+function togglePagoMes(numeroCasillero, anio, mes) {
+    if (!isAdmin) return;
+    
+    const casillero = datos.casilleros[numeroCasillero];
+    if (!casillero) return;
+    
+    const mesDiv = document.getElementById(`mes-${numeroCasillero}-${anio}-${mes}`);
+    if (!mesDiv) return;
+    
+    const estaPagado = mesDiv.classList.contains('mes-pagado');
+    
+    if (estaPagado) {
+        // Desmarcar pago
+        mesDiv.classList.remove('mes-pagado');
+        mesDiv.classList.add('mes-no-pagado');
+        
+        // Actualizar indicador
+        const indicador = mesDiv.querySelector('.indicador-admin');
+        if (indicador) indicador.textContent = '○';
+        
+        // Quitar del array de meses pagados
+        if (anio === 2026) {
+            const index = casillero.mesesPagados2026.indexOf(mes);
+            if (index > -1) casillero.mesesPagados2026.splice(index, 1);
+        } else if (anio === 2027) {
+            const index = casillero.mesesPagados2027.indexOf(mes);
+            if (index > -1) casillero.mesesPagados2027.splice(index, 1);
+        }
+    } else {
+        // Marcar como pagado
+        mesDiv.classList.remove('mes-no-pagado');
+        mesDiv.classList.add('mes-pagado');
+        
+        // Actualizar indicador
+        const indicador = mesDiv.querySelector('.indicador-admin');
+        if (indicador) indicador.textContent = '✓';
+        
+        // Agregar al array de meses pagados
+        if (anio === 2026) {
+            if (!casillero.mesesPagados2026.includes(mes)) {
+                casillero.mesesPagados2026.push(mes);
+            }
+        } else if (anio === 2027) {
+            if (!casillero.mesesPagados2027.includes(mes)) {
+                casillero.mesesPagados2027.push(mes);
+            }
+        }
+    }
+    
+    // Actualizar contadores
+    actualizarContadoresCasillero(numeroCasillero);
+}
+
+// MARCAR TODOS LOS MESES DE UN AÑO
+function marcarTodosMeses(numeroCasillero, anio) {
+    if (!isAdmin) return;
+    
+    const casillero = datos.casilleros[numeroCasillero];
+    if (!casillero) return;
+    
+    // Resetear arrays
+    if (anio === 2026) {
+        casillero.mesesPagados2026 = [];
+    } else if (anio === 2027) {
+        casillero.mesesPagados2027 = [];
+    }
+    
+    // Marcar todos los meses como pagados
+    for (let mes = 1; mes <= 12; mes++) {
+        const mesDiv = document.getElementById(`mes-${numeroCasillero}-${anio}-${mes}`);
+        if (mesDiv) {
+            mesDiv.classList.remove('mes-no-pagado');
+            mesDiv.classList.add('mes-pagado');
+            
+            const indicador = mesDiv.querySelector('.indicador-admin');
+            if (indicador) indicador.textContent = '✓';
+            
+            // Agregar al array
+            if (anio === 2026) {
+                if (!casillero.mesesPagados2026.includes(mes)) {
+                    casillero.mesesPagados2026.push(mes);
+                }
+            } else if (anio === 2027) {
+                if (!casillero.mesesPagados2027.includes(mes)) {
+                    casillero.mesesPagados2027.push(mes);
+                }
+            }
+        }
+    }
+    
+    // Actualizar contadores
+    actualizarContadoresCasillero(numeroCasillero);
+}
+
+// REGISTRAR PAGO MASIVO (guardar cambios de un año)
+function registrarPagoMasivo(numeroCasillero, anio) {
+    if (!isAdmin) return;
+    
+    const casillero = datos.casilleros[numeroCasillero];
+    if (!casillero) return;
+    
+    const mesesPagados = anio === 2026 ? casillero.mesesPagados2026 : casillero.mesesPagados2027;
+    const fechaActual = new Date().toISOString().split('T')[0];
+    
+    // Verificar si ya existe historial
+    if (!casillero.historialPagos) {
+        casillero.historialPagos = [];
+    }
+    
+    // Eliminar pagos antiguos de este año
+    casillero.historialPagos = casillero.historialPagos.filter(pago => 
+        !(pago.anio === anio && pago.tipo === 'pago_mensual')
+    );
+    
+    // Crear nuevos registros para cada mes pagado
+    mesesPagados.forEach(mes => {
+        casillero.historialPagos.push({
+            fecha: fechaActual,
+            anio: anio,
+            mes: mes,
+            nombreMes: obtenerNombreMesCompleto(mes),
+            monto: casillero.montoMensual || 10.00,
+            estudiante: casillero.estudiante,
+            tipo: 'pago_mensual',
+            timestamp: Date.now()
+        });
+    });
+    
+    // Calcular total pagado
+    const totalMesesPagados = casillero.mesesPagados2026.length + casillero.mesesPagados2027.length;
+    casillero.totalPagado = totalMesesPagados * (casillero.montoMensual || 10.00);
+    
+    // Guardar datos
+    guardarDatos();
+    actualizarVistaCasilleros();
+    actualizarDetalleCajaFuerte();
+    
+    // Actualizar historial en el modal
+    verHistorialCasillero(numeroCasillero);
+    
+    mostrarMensaje(`Pagos del ${anio} registrados exitosamente`, 'success');
+}
+
+// REGISTRAR PAGO MENSUAL (mes actual)
+function registrarPagoMensual(numeroCasillero) {
+    if (!isAdmin) return;
+    
+    const casillero = datos.casilleros[numeroCasillero];
+    if (!casillero || !casillero.estudiante) {
+        mostrarMensaje('El casillero no tiene estudiante asignado', 'error');
+        return;
+    }
+    
+    const hoy = new Date();
+    const anioActual = hoy.getFullYear();
+    const mesActual = hoy.getMonth() + 1; // Enero = 1
+    
+    if (anioActual !== 2026 && anioActual !== 2027) {
+        mostrarMensaje('Solo se pueden registrar pagos para 2026 o 2027', 'error');
+        return;
+    }
+    
+    // Verificar si ya está pagado este mes
+    const mesesPagados = anioActual === 2026 ? casillero.mesesPagados2026 : casillero.mesesPagados2027;
+    if (mesesPagados.includes(mesActual)) {
+        mostrarMensaje('Este mes ya está pagado', 'info');
+        return;
+    }
+    
+    // Marcar como pagado
+    if (anioActual === 2026) {
+        casillero.mesesPagados2026.push(mesActual);
+    } else {
+        casillero.mesesPagados2027.push(mesActual);
+    }
+    
+    // Agregar al historial
+    if (!casillero.historialPagos) {
+        casillero.historialPagos = [];
+    }
+    
+    casillero.historialPagos.push({
+        fecha: hoy.toISOString().split('T')[0],
+        anio: anioActual,
+        mes: mesActual,
+        nombreMes: obtenerNombreMesCompleto(mesActual),
+        monto: casillero.montoMensual || 10.00,
+        estudiante: casillero.estudiante,
+        tipo: 'pago_mensual',
+        timestamp: Date.now()
+    });
+    
+    // Calcular total pagado
+    const totalMesesPagados = casillero.mesesPagados2026.length + casillero.mesesPagados2027.length;
+    casillero.totalPagado = totalMesesPagados * (casillero.montoMensual || 10.00);
+    
+    // Guardar datos
+    guardarDatos();
+    actualizarVistaCasilleros();
+    actualizarDetalleCajaFuerte();
+    
+    // Actualizar vista del modal
+    verHistorialCasillero(numeroCasillero);
+    
+    mostrarMensaje(`Pago de ${obtenerNombreMesCompleto(mesActual)} ${anioActual} registrado exitosamente`, 'success');
+}
+
+// ACTUALIZAR CONTADORES EN EL MODAL
+function actualizarContadoresCasillero(numeroCasillero) {
+    const casillero = datos.casilleros[numeroCasillero];
+    if (!casillero) return;
+    
+    const meses2026 = casillero.mesesPagados2026.length;
+    const meses2027 = casillero.mesesPagados2027.length;
+    const totalMeses = meses2026 + meses2027;
+    
+    // Actualizar contadores en el modal
+    const contador2026 = document.getElementById('contador2026');
+    const contador2027 = document.getElementById('contador2027');
+    const contadorTotal = document.getElementById('contadorTotal');
+    
+    if (contador2026) contador2026.textContent = `${meses2026}/12`;
+    if (contador2027) contador2027.textContent = `${meses2027}/12`;
+    if (contadorTotal) contadorTotal.textContent = `${totalMeses}/24`;
+}
+
+// ELIMINAR PAGO INDIVIDUAL
+function eliminarPagoIndividual(numeroCasillero, anio, mes) {
+    if (!isAdmin) return;
+    
+    if (!confirm(`¿Eliminar el pago de ${obtenerNombreMesCompleto(mes)} ${anio}?`)) {
+        return;
+    }
+    
+    const casillero = datos.casilleros[numeroCasillero];
+    if (!casillero) return;
+    
+    // Eliminar del historial
+    if (casillero.historialPagos) {
+        casillero.historialPagos = casillero.historialPagos.filter(pago => 
+            !(pago.anio === anio && pago.mes === mes && pago.tipo === 'pago_mensual')
+        );
+    }
+    
+    // Eliminar del array de meses pagados
+    if (anio === 2026) {
+        const index = casillero.mesesPagados2026.indexOf(mes);
+        if (index > -1) casillero.mesesPagados2026.splice(index, 1);
+    } else if (anio === 2027) {
+        const index = casillero.mesesPagados2027.indexOf(mes);
+        if (index > -1) casillero.mesesPagados2027.splice(index, 1);
+    }
+    
+    // Recalcular total pagado
+    const totalMesesPagados = casillero.mesesPagados2026.length + casillero.mesesPagados2027.length;
+    casillero.totalPagado = totalMesesPagados * (casillero.montoMensual || 10.00);
+    
+    // Guardar datos
+    guardarDatos();
+    actualizarVistaCasilleros();
+    actualizarDetalleCajaFuerte();
+    
+    // Actualizar vista del modal
+    verHistorialCasillero(numeroCasillero);
+    
+    mostrarMensaje('Pago eliminado exitosamente', 'success');
+}
+
+// ABRIR MODAL PARA LIBERAR CASILLERO
+function abrirModalLiberarCasillero(numeroCasillero) {
+    if (!isAdmin) return;
+    
+    const casillero = datos.casilleros[numeroCasillero];
+    if (!casillero) return;
+    
+    if (!casillero.estudiante || casillero.estudiante.trim() === '') {
+        mostrarMensaje('Este casillero ya está libre', 'info');
+        return;
+    }
+    
+    // Cerrar el modal actual
+    const modalActual = bootstrap.Modal.getInstance(document.getElementById('modalHistorialCasilleroCompacto'));
+    if (modalActual) modalActual.hide();
+    
+    // Mostrar modal de confirmación
+    const modalConfirmacion = new bootstrap.Modal(document.getElementById('modalLiberarCasillero'));
+    
+    // Configurar contenido del modal
+    document.getElementById('modalLiberarTitulo').textContent = `Liberar Casillero ${numeroCasillero}`;
+    document.getElementById('modalLiberarInfo').innerHTML = `
+        <p><strong>Estudiante actual:</strong> ${casillero.estudiante}</p>
+        <p><strong>Total pagado:</strong> Bs ${casillero.totalPagado?.toFixed(2) || '0.00'}</p>
+        <p><strong>Meses pagados 2026:</strong> ${casillero.mesesPagados2026?.length || 0}/12</p>
+        <p><strong>Meses pagados 2027:</strong> ${casillero.mesesPagados2027?.length || 0}/12</p>
+    `;
+    
+    // Configurar función de liberación
+    document.getElementById('btnConfirmarLiberar').onclick = function() {
+        liberarCasilleroConfirmado(numeroCasillero);
+        modalConfirmacion.hide();
+    };
+    
+    modalConfirmacion.show();
+}
+
+// LIBERAR CASILLERO CONFIRMADO
+function liberarCasilleroConfirmado(numeroCasillero) {
+    if (!isAdmin) return;
+    
+    const casillero = datos.casilleros[numeroCasillero];
+    if (!casillero) return;
+    
+    // Registrar en historial antes de liberar
+    const fechaActual = new Date().toISOString().split('T')[0];
+    if (!casillero.historialPagos) casillero.historialPagos = [];
+    
+    casillero.historialPagos.push({
+        fecha: fechaActual,
+        anio: new Date().getFullYear(),
+        mes: 0,
+        nombreMes: 'Liberación',
+        monto: 0,
+        estudiante: '',
+        tipo: 'liberacion',
+        descripcion: `Casillero ${numeroCasillero} liberado. Estudiante anterior: ${casillero.estudiante}`,
+        timestamp: Date.now()
+    });
+    
+    // Liberar casillero
+    datos.casilleros[numeroCasillero] = {
+        numero: numeroCasillero,
+        estudiante: '',
+        montoMensual: 10.00,
+        mesesPagados2026: [],
+        mesesPagados2027: [],
+        historialPagos: casillero.historialPagos, // Mantener historial
+        totalPagado: 0,
+        fechaAsignacion: '',
+        estado: 'libre',
+        ultimaActualizacion: fechaActual
+    };
+    
+    // Guardar datos
+    guardarDatos();
+    actualizarVistaCasilleros();
+    actualizarDetalleCajaFuerte();
+    
+    // Mostrar mensaje
+    mostrarMensaje(`Casillero ${numeroCasillero} liberado exitosamente`, 'success');
+    
+    // Reabrir el modal de historial (ahora vacío)
+    setTimeout(() => verHistorialCasillero(numeroCasillero), 500);
+}
+
+// ABRIR MODAL PARA CAMBIAR ESTUDIANTE
+function abrirModalCambiarEstudiante(numeroCasillero) {
+    if (!isAdmin) return;
+    
+    const casillero = datos.casilleros[numeroCasillero];
+    if (!casillero) return;
+    
+    // Cerrar el modal actual
+    const modalActual = bootstrap.Modal.getInstance(document.getElementById('modalHistorialCasilleroCompacto'));
+    if (modalActual) modalActual.hide();
+    
+    // Mostrar modal de cambio de estudiante
+    const modalCambio = new bootstrap.Modal(document.getElementById('modalCambiarEstudiante'));
+    
+    // Configurar contenido del modal
+    document.getElementById('modalCambioTitulo').textContent = `Cambiar Estudiante - Casillero ${numeroCasillero}`;
+    document.getElementById('modalCambioInfo').innerHTML = `
+        <p><strong>Estudiante actual:</strong> ${casillero.estudiante || 'Sin asignar'}</p>
+    `;
+    
+    // Limpiar y configurar input
+    const inputNuevoEstudiante = document.getElementById('nuevoEstudiante');
+    inputNuevoEstudiante.value = casillero.estudiante || '';
+    inputNuevoEstudiante.focus();
+    
+    // Configurar función de cambio
+    document.getElementById('btnConfirmarCambio').onclick = function() {
+        cambiarEstudianteConfirmado(numeroCasillero, inputNuevoEstudiante.value);
+        modalCambio.hide();
+    };
+    
+    modalCambio.show();
+}
+
+// CAMBIAR ESTUDIANTE CONFIRMADO
+function cambiarEstudianteConfirmado(numeroCasillero, nuevoEstudiante) {
+    if (!isAdmin) return;
+    
+    if (!nuevoEstudiante.trim()) {
+        mostrarMensaje('Ingrese el nombre del estudiante', 'error');
+        return;
+    }
+    
+    const casillero = datos.casilleros[numeroCasillero];
+    if (!casillero) return;
+    
+    const estudianteAnterior = casillero.estudiante || 'Sin asignar';
+    
+    // Registrar en historial
+    const fechaActual = new Date().toISOString().split('T')[0];
+    if (!casillero.historialPagos) casillero.historialPagos = [];
+    
+    casillero.historialPagos.push({
+        fecha: fechaActual,
+        anio: new Date().getFullYear(),
+        mes: 0,
+        nombreMes: 'Cambio',
+        monto: 0,
+        estudiante: nuevoEstudiante,
+        tipo: 'cambio_estudiante',
+        descripcion: `Cambio de estudiante: ${estudianteAnterior} → ${nuevoEstudiante}`,
+        timestamp: Date.now()
+    });
+    
+    // Actualizar casillero
+    casillero.estudiante = nuevoEstudiante;
+    casillero.estado = nuevoEstudiante.trim() ? 'ocupado' : 'libre';
+    casillero.ultimaActualizacion = fechaActual;
+    
+    // Si no hay fecha de asignación, establecerla
+    if (!casillero.fechaAsignacion) {
+        casillero.fechaAsignacion = fechaActual;
+    }
+    
+    // Guardar datos
+    guardarDatos();
+    actualizarVistaCasilleros();
+    
+    // Mostrar mensaje
+    mostrarMensaje(`Estudiante cambiado exitosamente: ${estudianteAnterior} → ${nuevoEstudiante}`, 'success');
+    
+    // Reabrir el modal de historial
+    setTimeout(() => verHistorialCasillero(numeroCasillero), 500);
+}
+
+// ================================================
+// FUNCIONES NUEVAS PARA PAGOS DE CASILLEROS
+// ================================================
+
+// TOGGLE PAGO POR MES (marcar/desmarcar)
+function togglePagoMes(numeroCasillero, anio, mes) {
+    if (!isAdmin) return;
+    
+    const casillero = datos.casilleros[numeroCasillero];
+    if (!casillero) return;
+    
+    const mesDiv = document.getElementById(`mes-${numeroCasillero}-${anio}-${mes}`);
+    if (!mesDiv) return;
+    
+    const estaPagado = mesDiv.classList.contains('mes-pagado');
+    
+    if (estaPagado) {
+        // Desmarcar pago
+        mesDiv.classList.remove('mes-pagado');
+        mesDiv.classList.add('mes-no-pagado');
+        
+        // Actualizar indicador
+        const indicador = mesDiv.querySelector('.indicador-admin');
+        if (indicador) indicador.textContent = '○';
+        
+        // Quitar del array de meses pagados
+        if (anio === 2026) {
+            const index = casillero.mesesPagados2026.indexOf(mes);
+            if (index > -1) casillero.mesesPagados2026.splice(index, 1);
+        } else if (anio === 2027) {
+            const index = casillero.mesesPagados2027.indexOf(mes);
+            if (index > -1) casillero.mesesPagados2027.splice(index, 1);
+        }
+    } else {
+        // Marcar como pagado
+        mesDiv.classList.remove('mes-no-pagado');
+        mesDiv.classList.add('mes-pagado');
+        
+        // Actualizar indicador
+        const indicador = mesDiv.querySelector('.indicador-admin');
+        if (indicador) indicador.textContent = '✓';
+        
+        // Agregar al array de meses pagados
+        if (anio === 2026) {
+            if (!casillero.mesesPagados2026.includes(mes)) {
+                casillero.mesesPagados2026.push(mes);
+            }
+        } else if (anio === 2027) {
+            if (!casillero.mesesPagados2027.includes(mes)) {
+                casillero.mesesPagados2027.push(mes);
+            }
+        }
+    }
+    
+    // Actualizar contadores
+    actualizarContadoresCasillero(numeroCasillero);
+}
+
+// MARCAR TODOS LOS MESES DE UN AÑO
+function marcarTodosMeses(numeroCasillero, anio) {
+    if (!isAdmin) return;
+    
+    const casillero = datos.casilleros[numeroCasillero];
+    if (!casillero) return;
+    
+    // Resetear arrays
+    if (anio === 2026) {
+        casillero.mesesPagados2026 = [];
+    } else if (anio === 2027) {
+        casillero.mesesPagados2027 = [];
+    }
+    
+    // Marcar todos los meses como pagados
+    for (let mes = 1; mes <= 12; mes++) {
+        const mesDiv = document.getElementById(`mes-${numeroCasillero}-${anio}-${mes}`);
+        if (mesDiv) {
+            mesDiv.classList.remove('mes-no-pagado');
+            mesDiv.classList.add('mes-pagado');
+            
+            const indicador = mesDiv.querySelector('.indicador-admin');
+            if (indicador) indicador.textContent = '✓';
+            
+            // Agregar al array
+            if (anio === 2026) {
+                if (!casillero.mesesPagados2026.includes(mes)) {
+                    casillero.mesesPagados2026.push(mes);
+                }
+            } else if (anio === 2027) {
+                if (!casillero.mesesPagados2027.includes(mes)) {
+                    casillero.mesesPagados2027.push(mes);
+                }
+            }
+        }
+    }
+    
+    // Actualizar contadores
+    actualizarContadoresCasillero(numeroCasillero);
+}
+
+// REGISTRAR PAGO MASIVO (guardar cambios de un año)
+function registrarPagoMasivo(numeroCasillero, anio) {
+    if (!isAdmin) return;
+    
+    const casillero = datos.casilleros[numeroCasillero];
+    if (!casillero) return;
+    
+    const mesesPagados = anio === 2026 ? casillero.mesesPagados2026 : casillero.mesesPagados2027;
+    const fechaActual = new Date().toISOString().split('T')[0];
+    
+    // Verificar si ya existe historial
+    if (!casillero.historialPagos) {
+        casillero.historialPagos = [];
+    }
+    
+    // Eliminar pagos antiguos de este año
+    casillero.historialPagos = casillero.historialPagos.filter(pago => 
+        !(pago.anio === anio && pago.tipo === 'pago_mensual')
+    );
+    
+    // Crear nuevos registros para cada mes pagado
+    mesesPagados.forEach(mes => {
+        casillero.historialPagos.push({
+            fecha: fechaActual,
+            anio: anio,
+            mes: mes,
+            nombreMes: obtenerNombreMesCompleto(mes),
+            monto: casillero.montoMensual || 10.00,
+            estudiante: casillero.estudiante,
+            tipo: 'pago_mensual',
+            timestamp: Date.now()
+        });
+    });
+    
+    // Calcular total pagado
+    const totalMesesPagados = casillero.mesesPagados2026.length + casillero.mesesPagados2027.length;
+    casillero.totalPagado = totalMesesPagados * (casillero.montoMensual || 10.00);
+    
+    // Guardar datos
+    guardarDatos();
+    actualizarVistaCasilleros();
+    actualizarDetalleCajaFuerte();
+    
+    // Actualizar historial en el modal
+    verHistorialCasillero(numeroCasillero);
+    
+    mostrarMensaje(`Pagos del ${anio} registrados exitosamente`, 'success');
+}
+
+// REGISTRAR PAGO MENSUAL (mes actual)
+function registrarPagoMensual(numeroCasillero) {
+    if (!isAdmin) return;
+    
+    const casillero = datos.casilleros[numeroCasillero];
+    if (!casillero || !casillero.estudiante) {
+        mostrarMensaje('El casillero no tiene estudiante asignado', 'error');
+        return;
+    }
+    
+    const hoy = new Date();
+    const anioActual = hoy.getFullYear();
+    const mesActual = hoy.getMonth() + 1; // Enero = 1
+    
+    if (anioActual !== 2026 && anioActual !== 2027) {
+        mostrarMensaje('Solo se pueden registrar pagos para 2026 o 2027', 'error');
+        return;
+    }
+    
+    // Verificar si ya está pagado este mes
+    const mesesPagados = anioActual === 2026 ? casillero.mesesPagados2026 : casillero.mesesPagados2027;
+    if (mesesPagados.includes(mesActual)) {
+        mostrarMensaje('Este mes ya está pagado', 'info');
+        return;
+    }
+    
+    // Marcar como pagado
+    if (anioActual === 2026) {
+        casillero.mesesPagados2026.push(mesActual);
+    } else {
+        casillero.mesesPagados2027.push(mesActual);
+    }
+    
+    // Agregar al historial
+    if (!casillero.historialPagos) {
+        casillero.historialPagos = [];
+    }
+    
+    casillero.historialPagos.push({
+        fecha: hoy.toISOString().split('T')[0],
+        anio: anioActual,
+        mes: mesActual,
+        nombreMes: obtenerNombreMesCompleto(mesActual),
+        monto: casillero.montoMensual || 10.00,
+        estudiante: casillero.estudiante,
+        tipo: 'pago_mensual',
+        timestamp: Date.now()
+    });
+    
+    // Calcular total pagado
+    const totalMesesPagados = casillero.mesesPagados2026.length + casillero.mesesPagados2027.length;
+    casillero.totalPagado = totalMesesPagados * (casillero.montoMensual || 10.00);
+    
+    // Guardar datos
+    guardarDatos();
+    actualizarVistaCasilleros();
+    actualizarDetalleCajaFuerte();
+    
+    // Actualizar vista del modal
+    verHistorialCasillero(numeroCasillero);
+    
+    mostrarMensaje(`Pago de ${obtenerNombreMesCompleto(mesActual)} ${anioActual} registrado exitosamente`, 'success');
+}
+
+// ACTUALIZAR CONTADORES EN EL MODAL
+function actualizarContadoresCasillero(numeroCasillero) {
+    const casillero = datos.casilleros[numeroCasillero];
+    if (!casillero) return;
+    
+    const meses2026 = casillero.mesesPagados2026.length;
+    const meses2027 = casillero.mesesPagados2027.length;
+    const totalMeses = meses2026 + meses2027;
+    
+    // Actualizar contadores en el modal
+    const contador2026 = document.getElementById('contador2026');
+    const contador2027 = document.getElementById('contador2027');
+    const contadorTotal = document.getElementById('contadorTotal');
+    
+    if (contador2026) contador2026.textContent = `${meses2026}/12`;
+    if (contador2027) contador2027.textContent = `${meses2027}/12`;
+    if (contadorTotal) contadorTotal.textContent = `${totalMeses}/24`;
+}
+
+// ELIMINAR PAGO INDIVIDUAL
+function eliminarPagoIndividual(numeroCasillero, anio, mes) {
+    if (!isAdmin) return;
+    
+    if (!confirm(`¿Eliminar el pago de ${obtenerNombreMesCompleto(mes)} ${anio}?`)) {
+        return;
+    }
+    
+    const casillero = datos.casilleros[numeroCasillero];
+    if (!casillero) return;
+    
+    // Eliminar del historial
+    if (casillero.historialPagos) {
+        casillero.historialPagos = casillero.historialPagos.filter(pago => 
+            !(pago.anio === anio && pago.mes === mes && pago.tipo === 'pago_mensual')
+        );
+    }
+    
+    // Eliminar del array de meses pagados
+    if (anio === 2026) {
+        const index = casillero.mesesPagados2026.indexOf(mes);
+        if (index > -1) casillero.mesesPagados2026.splice(index, 1);
+    } else if (anio === 2027) {
+        const index = casillero.mesesPagados2027.indexOf(mes);
+        if (index > -1) casillero.mesesPagados2027.splice(index, 1);
+    }
+    
+    // Recalcular total pagado
+    const totalMesesPagados = casillero.mesesPagados2026.length + casillero.mesesPagados2027.length;
+    casillero.totalPagado = totalMesesPagados * (casillero.montoMensual || 10.00);
+    
+    // Guardar datos
+    guardarDatos();
+    actualizarVistaCasilleros();
+    actualizarDetalleCajaFuerte();
+    
+    // Actualizar vista del modal
+    verHistorialCasillero(numeroCasillero);
+    
+    mostrarMensaje('Pago eliminado exitosamente', 'success');
+}
+
+// ABRIR MODAL PARA LIBERAR CASILLERO
+function abrirModalLiberarCasillero(numeroCasillero) {
+    if (!isAdmin) return;
+    
+    const casillero = datos.casilleros[numeroCasillero];
+    if (!casillero) return;
+    
+    if (!casillero.estudiante || casillero.estudiante.trim() === '') {
+        mostrarMensaje('Este casillero ya está libre', 'info');
+        return;
+    }
+    
+    // Cerrar el modal actual
+    const modalActual = bootstrap.Modal.getInstance(document.getElementById('modalHistorialCasilleroCompacto'));
+    if (modalActual) modalActual.hide();
+    
+    // Mostrar modal de confirmación
+    const modalConfirmacion = new bootstrap.Modal(document.getElementById('modalLiberarCasillero'));
+    
+    // Configurar contenido del modal
+    document.getElementById('modalLiberarTitulo').textContent = `Liberar Casillero ${numeroCasillero}`;
+    document.getElementById('modalLiberarInfo').innerHTML = `
+        <p><strong>Estudiante actual:</strong> ${casillero.estudiante}</p>
+        <p><strong>Total pagado:</strong> Bs ${casillero.totalPagado?.toFixed(2) || '0.00'}</p>
+        <p><strong>Meses pagados 2026:</strong> ${casillero.mesesPagados2026?.length || 0}/12</p>
+        <p><strong>Meses pagados 2027:</strong> ${casillero.mesesPagados2027?.length || 0}/12</p>
+    `;
+    
+    // Configurar función de liberación
+    document.getElementById('btnConfirmarLiberar').onclick = function() {
+        liberarCasilleroConfirmado(numeroCasillero);
+        modalConfirmacion.hide();
+    };
+    
+    modalConfirmacion.show();
+}
+
+// LIBERAR CASILLERO CONFIRMADO
+function liberarCasilleroConfirmado(numeroCasillero) {
+    if (!isAdmin) return;
+    
+    const casillero = datos.casilleros[numeroCasillero];
+    if (!casillero) return;
+    
+    // Registrar en historial antes de liberar
+    const fechaActual = new Date().toISOString().split('T')[0];
+    if (!casillero.historialPagos) casillero.historialPagos = [];
+    
+    casillero.historialPagos.push({
+        fecha: fechaActual,
+        anio: new Date().getFullYear(),
+        mes: 0,
+        nombreMes: 'Liberación',
+        monto: 0,
+        estudiante: '',
+        tipo: 'liberacion',
+        descripcion: `Casillero ${numeroCasillero} liberado. Estudiante anterior: ${casillero.estudiante}`,
+        timestamp: Date.now()
+    });
+    
+    // Liberar casillero
+    datos.casilleros[numeroCasillero] = {
+        numero: numeroCasillero,
+        estudiante: '',
+        montoMensual: 10.00,
+        mesesPagados2026: [],
+        mesesPagados2027: [],
+        historialPagos: casillero.historialPagos, // Mantener historial
+        totalPagado: 0,
+        fechaAsignacion: '',
+        estado: 'libre',
+        ultimaActualizacion: fechaActual
+    };
+    
+    // Guardar datos
+    guardarDatos();
+    actualizarVistaCasilleros();
+    actualizarDetalleCajaFuerte();
+    
+    // Mostrar mensaje
+    mostrarMensaje(`Casillero ${numeroCasillero} liberado exitosamente`, 'success');
+    
+    // Reabrir el modal de historial (ahora vacío)
+    setTimeout(() => verHistorialCasillero(numeroCasillero), 500);
+}
+
+// ABRIR MODAL PARA CAMBIAR ESTUDIANTE
+function abrirModalCambiarEstudiante(numeroCasillero) {
+    if (!isAdmin) return;
+    
+    const casillero = datos.casilleros[numeroCasillero];
+    if (!casillero) return;
+    
+    // Cerrar el modal actual
+    const modalActual = bootstrap.Modal.getInstance(document.getElementById('modalHistorialCasilleroCompacto'));
+    if (modalActual) modalActual.hide();
+    
+    // Mostrar modal de cambio de estudiante
+    const modalCambio = new bootstrap.Modal(document.getElementById('modalCambiarEstudiante'));
+    
+    // Configurar contenido del modal
+    document.getElementById('modalCambioTitulo').textContent = `Cambiar Estudiante - Casillero ${numeroCasillero}`;
+    document.getElementById('modalCambioInfo').innerHTML = `
+        <p><strong>Estudiante actual:</strong> ${casillero.estudiante || 'Sin asignar'}</p>
+    `;
+    
+    // Limpiar y configurar input
+    const inputNuevoEstudiante = document.getElementById('nuevoEstudiante');
+    inputNuevoEstudiante.value = casillero.estudiante || '';
+    inputNuevoEstudiante.focus();
+    
+    // Configurar función de cambio
+    document.getElementById('btnConfirmarCambio').onclick = function() {
+        cambiarEstudianteConfirmado(numeroCasillero, inputNuevoEstudiante.value);
+        modalCambio.hide();
+    };
+    
+    modalCambio.show();
+}
+
+// CAMBIAR ESTUDIANTE CONFIRMADO
+function cambiarEstudianteConfirmado(numeroCasillero, nuevoEstudiante) {
+    if (!isAdmin) return;
+    
+    if (!nuevoEstudiante.trim()) {
+        mostrarMensaje('Ingrese el nombre del estudiante', 'error');
+        return;
+    }
+    
+    const casillero = datos.casilleros[numeroCasillero];
+    if (!casillero) return;
+    
+    const estudianteAnterior = casillero.estudiante || 'Sin asignar';
+    
+    // Registrar en historial
+    const fechaActual = new Date().toISOString().split('T')[0];
+    if (!casillero.historialPagos) casillero.historialPagos = [];
+    
+    casillero.historialPagos.push({
+        fecha: fechaActual,
+        anio: new Date().getFullYear(),
+        mes: 0,
+        nombreMes: 'Cambio',
+        monto: 0,
+        estudiante: nuevoEstudiante,
+        tipo: 'cambio_estudiante',
+        descripcion: `Cambio de estudiante: ${estudianteAnterior} → ${nuevoEstudiante}`,
+        timestamp: Date.now()
+    });
+    
+    // Actualizar casillero
+    casillero.estudiante = nuevoEstudiante;
+    casillero.estado = nuevoEstudiante.trim() ? 'ocupado' : 'libre';
+    casillero.ultimaActualizacion = fechaActual;
+    
+    // Si no hay fecha de asignación, establecerla
+    if (!casillero.fechaAsignacion) {
+        casillero.fechaAsignacion = fechaActual;
+    }
+    
+    // Guardar datos
+    guardarDatos();
+    actualizarVistaCasilleros();
+    
+    // Mostrar mensaje
+    mostrarMensaje(`Estudiante cambiado exitosamente: ${estudianteAnterior} → ${nuevoEstudiante}`, 'success');
+    
+    // Reabrir el modal de historial
+    setTimeout(() => verHistorialCasillero(numeroCasillero), 500);
+}
+
+// FUNCIÓN SIMPLE PARA FORZAR CIERRE DE MODALES
+function forzarCierreModal() {
+    // Remover el fondo oscuro que bloquea
+    const backdrop = document.querySelector('.modal-backdrop');
+    if (backdrop) {
+        backdrop.remove();
+    }
+    
+    // Restaurar el body
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = 'auto';
+    document.body.style.paddingRight = '0px';
+    
+    // Ocultar todos los modales visibles
+    document.querySelectorAll('.modal').forEach(modal => {
+        modal.style.display = 'none';
+        modal.classList.remove('show');
+    });
+}
+
+// Agregar este evento al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    // Cuando se presiona ESC, cerrar todo
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            forzarCierreModal();
+        }
+    });
+});
+
+
+// ============================================
+// FUNCIONES PARA MOSTRAR ÚLTIMOS GASTOS E HISTORIAL
+// ============================================
+
+// 1. MOSTRAR ÚLTIMOS GASTOS (solo visualización)
+function mostrarUltimosGastos() {
+    const tbody = document.getElementById('tablaUltimosGastosSeguimiento');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    // Tomar últimos 8 gastos ordenados por fecha
+    const ultimosGastos = [...datos.gastos]
+        .sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
+        .slice(0, 8);
+    
+    if (ultimosGastos.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="text-center text-muted py-3">
+                    <i class="fas fa-receipt"></i> No hay gastos registrados
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    ultimosGastos.forEach(gasto => {
+        const fila = document.createElement('tr');
+        fila.innerHTML = `
+            <td>${gasto.fecha || 'Sin fecha'}</td>
+            <td>${gasto.categoria || 'Sin categoría'}</td>
+            <td>${(gasto.descripcion || '').substring(0, 25)}${(gasto.descripcion || '').length > 25 ? '...' : ''}</td>
+            <td class="text-danger">Bs ${(gasto.monto || 0).toFixed(2)}</td>
+            <td>
+                ${gasto.comprobante ? 
+                    `<button class="btn btn-sm btn-info" onclick="verComprobante(${gasto.id})">
+                        <i class="fas fa-eye"></i>
+                    </button>` : 
+                    '<small class="text-muted">No</small>'
+                }
+            </td>
+        `;
+        tbody.appendChild(fila);
+    });
+}
+
+function actualizarUltimosGastosSeguimiento() {
+    const tbody = document.getElementById('tablaUltimosGastosSeguimiento');
+    if (!tbody) return;
+    
+    // Ordenar gastos por fecha (más reciente primero)
+    const gastosOrdenados = [...datos.gastos].sort((a, b) => {
+        return new Date(b.fecha) - new Date(a.fecha);
+    });
+    
+    const ultimosGastos = gastosOrdenados.slice(0, 10);
+    
+    if (ultimosGastos.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="text-center text-muted">
+                    No hay gastos registrados
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = '';
+    
+    ultimosGastos.forEach(gasto => {
+        const fila = document.createElement('tr');
+        fila.innerHTML = `
+            <td>${gasto.fecha || 'Sin fecha'}</td>
+            <td>${gasto.categoria || 'Sin categoría'}</td>
+            <td>${(gasto.descripcion || '').substring(0, 30)}${(gasto.descripcion || '').length > 30 ? '...' : ''}</td>
+            <td class="text-danger">Bs ${(gasto.monto || 0).toFixed(2)}</td>
+            <td>
+                ${gasto.comprobante ? 
+                    `<button class="btn btn-sm btn-info" onclick="verComprobante(${gasto.id})">
+                        <i class="fas fa-eye"></i>
+                    </button>` : 
+                    '<span class="badge bg-secondary">No</span>'
+                }
+            </td>
+        `;
+        tbody.appendChild(fila);
+    });
+}
+
+function actualizarHistorialGeneral() {
+    const tbody = document.getElementById('tablaHistorialGeneral');
+    if (!tbody) return;
+    
+    // 1. Recopilar TODOS los eventos
+    let todosLosEventos = [];
+    
+    // A) APORTES DE ESTUDIANTES
+    for (const [cursoNombre, datosCurso] of Object.entries(datos.cursos)) {
+        if (datosCurso.estudiantes) {
+            for (const estudiante of datosCurso.estudiantes) {
+                if (estudiante.pagos) {
+                    // 2026
+                    const pago2026 = estudiante.pagos['2026'];
+                    if (pago2026 && pago2026.pagado && pago2026.fecha) {
+                        todosLosEventos.push({
+                            fecha: pago2026.fecha,
+                            tipo: 'APORTE',
+                            descripcion: `Aporte estudiante - ${cursoNombre}`,
+                            detalle: `${estudiante.nombre || 'Estudiante'} - 2026`,
+                            monto: pago2026.monto || 0,
+                            color: 'warning'
+                        });
+                    }
+                    
+                    // 2027
+                    const pago2027 = estudiante.pagos['2027'];
+                    if (pago2027 && pago2027.pagado && pago2027.fecha) {
+                        todosLosEventos.push({
+                            fecha: pago2027.fecha,
+                            tipo: 'APORTE',
+                            descripcion: `Aporte estudiante - ${cursoNombre}`,
+                            detalle: `${estudiante.nombre || 'Estudiante'} - 2027`,
+                            monto: pago2027.monto || 0,
+                            color: 'warning'
+                        });
+                    }
+                }
+            }
+        }
+    }
+    
+    // B) MOVIMIENTOS DE CAJA
+    for (const movimiento of datos.movimientosCaja) {
+        todosLosEventos.push({
+            fecha: movimiento.fecha,
+            tipo: movimiento.tipo === 'ingreso' ? 'INGRESO' : 'EGRESO',
+            descripcion: movimiento.concepto || 'Movimiento de caja',
+            detalle: movimiento.tipo === 'ingreso' ? 'Ingreso' : 'Egreso',
+            monto: movimiento.monto || 0,
+            color: movimiento.tipo === 'ingreso' ? 'success' : 'danger'
+        });
+    }
+    
+    // C) GASTOS
+    for (const gasto of datos.gastos) {
+        todosLosEventos.push({
+            fecha: gasto.fecha,
+            tipo: 'GASTO',
+            descripcion: gasto.categoria || 'Gasto',
+            detalle: gasto.descripcion || 'Sin descripción',
+            monto: gasto.monto || 0,
+            color: 'danger'
+        });
+    }
+    
+    // 2. Ordenar por fecha (más reciente primero)
+    todosLosEventos.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+    
+    // 3. Mostrar (máximo 20 eventos)
+    const eventosMostrar = todosLosEventos.slice(0, 20);
+    
+    if (eventosMostrar.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="text-center text-muted">
+                    No hay eventos registrados
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = '';
+    
+    eventosMostrar.forEach(evento => {
+        const fila = document.createElement('tr');
+        
+        // Determinar clase CSS según tipo
+        let claseMonto = '';
+        if (evento.tipo === 'INGRESO' || evento.tipo === 'APORTE') {
+            claseMonto = 'text-success';
+        } else {
+            claseMonto = 'text-danger';
+        }
+        
+        fila.innerHTML = `
+            <td>${evento.fecha}</td>
+            <td>
+                <span class="badge bg-${evento.color}">
+                    ${evento.tipo}
+                </span>
+            </td>
+            <td>${evento.descripcion}</td>
+            <td><small>${evento.detalle}</small></td>
+            <td class="${claseMonto}">
+                <strong>Bs ${evento.monto.toFixed(2)}</strong>
+            </td>
+        `;
+        
+        tbody.appendChild(fila);
+    });
+}
+
+
+function filtrarHistorialGeneral(tipo) {
+    const tbody = document.getElementById('tablaHistorialGeneral');
+    if (!tbody) return;
+    
+    // Recopilar eventos (mismo código que arriba)
+    let todosLosEventos = [];
+    
+    // ... (copia el mismo código de recopilación de arriba) ...
+    
+    // Filtrar si no es "todos"
+    if (tipo !== 'todos') {
+        todosLosEventos = todosLosEventos.filter(evento => 
+            evento.tipo === tipo.toUpperCase()
+        );
+    }
+    
+    // Ordenar y mostrar
+    todosLosEventos.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+    const eventosMostrar = todosLosEventos.slice(0, 20);
+    
+    // Mostrar resultados
+    if (eventosMostrar.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="text-center text-muted">
+                    No hay ${tipo !== 'todos' ? tipo + 's' : 'eventos'} registrados
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = '';
+    
+    eventosMostrar.forEach(evento => {
+        const fila = document.createElement('tr');
+        
+        let claseMonto = '';
+        if (evento.tipo === 'INGRESO' || evento.tipo === 'APORTE') {
+            claseMonto = 'text-success';
+        } else {
+            claseMonto = 'text-danger';
+        }
+        
+        fila.innerHTML = `
+            <td>${evento.fecha}</td>
+            <td>
+                <span class="badge bg-${evento.color}">
+                    ${evento.tipo}
+                </span>
+            </td>
+            <td>${evento.descripcion}</td>
+            <td><small>${evento.detalle}</small></td>
+            <td class="${claseMonto}">
+                <strong>Bs ${evento.monto.toFixed(2)}</strong>
+            </td>
+        `;
+        
+        tbody.appendChild(fila);
+    });
+}
+
+
+// ============================================
+// FUNCIONES PARA ADMINISTRAR CURSOS ESPECIALES
+// ============================================
+
+// FUNCIÓN PARA AGREGAR CURSO ESPECIAL
+function agregarCursoEspecial() {
+    if (!isAdmin) {
+        mostrarMensaje('Solo el administrador puede agregar cursos', 'error');
+        return;
+    }
+    
+    const nombre = prompt('Ingrese el nombre del nuevo curso especial (debe empezar con "0."):');
+    
+    if (!nombre || !nombre.startsWith('0.')) {
+        mostrarMensaje('El nombre debe empezar con "0." (cero punto)', 'error');
+        return;
+    }
+    
+    if (ordenCursos.includes(nombre)) {
+        mostrarMensaje('Este curso ya existe', 'error');
+        return;
+    }
+    
+    // Agregar a las listas
+    ordenCursos.push(nombre);
+    montosPorCurso2026[nombre] = 100; // Monto por defecto 100
+    montosPorCurso2027[nombre] = 100; // Monto por defecto 100
+    
+    // Crear estructura de datos
+    datos.cursos[nombre] = { estudiantes: [] };
+    inicializarEstudiantesCurso(nombre);
+    
+    // Guardar y actualizar
+    guardarDatos();
+    actualizarSelectorCursos();
+    mostrarMensaje(`Curso especial "${nombre}" agregado exitosamente`, 'success');
+}
+
+// FUNCIÓN PARA ELIMINAR CURSO ESPECIAL
+function eliminarCursoEspecial() {
+    if (!isAdmin) {
+        mostrarMensaje('Solo el administrador puede eliminar cursos', 'error');
+        return;
+    }
+    
+    // Filtrar solo cursos especiales (que empiezan con "0.")
+    const cursosEspeciales = ordenCursos.filter(curso => curso.startsWith('0.'));
+    
+    if (cursosEspeciales.length === 0) {
+        mostrarMensaje('No hay cursos especiales para eliminar', 'info');
+        return;
+    }
+    
+    let opciones = '';
+    cursosEspeciales.forEach((curso, index) => {
+        opciones += `${index + 1}. ${curso}\n`;
+    });
+    
+    const seleccion = prompt(`Seleccione el número del curso a eliminar:\n${opciones}`);
+    const indice = parseInt(seleccion) - 1;
+    
+    if (isNaN(indice) || indice < 0 || indice >= cursosEspeciales.length) {
+        mostrarMensaje('Selección inválida', 'error');
+        return;
+    }
+    
+    const cursoAEliminar = cursosEspeciales[indice];
+    
+    if (!confirm(`¿Está seguro de eliminar el curso "${cursoAEliminar}"?\n\nIMPORTANTE: Todos los estudiantes y pagos de este curso se perderán.`)) {
+        return;
+    }
+    
+    // Eliminar de las listas
+    const indexEnOrden = ordenCursos.indexOf(cursoAEliminar);
+    if (indexEnOrden !== -1) ordenCursos.splice(indexEnOrden, 1);
+    
+    delete montosPorCurso2026[cursoAEliminar];
+    delete montosPorCurso2027[cursoAEliminar];
+    delete datos.cursos[cursoAEliminar];
+    
+    // Guardar y actualizar
+    guardarDatos();
+    actualizarSelectorCursos();
+    actualizarSeguimiento();
+    
+    mostrarMensaje(`Curso especial "${cursoAEliminar}" eliminado exitosamente`, 'success');
+}
+
+// FUNCIÓN PARA INICIALIZAR ESTUDIANTES EN UN CURSO NUEVO
+function inicializarEstudiantesCurso(cursoNombre) {
+    const datosCurso = datos.cursos[cursoNombre];
+    if (!datosCurso.estudiantes || datosCurso.estudiantes.length === 0) {
+        datosCurso.estudiantes = [];
+        for (let i = 1; i <= 45; i++) {
+            datosCurso.estudiantes.push({
+                nombre: `Estudiante ${i}`,
+                pagos: {
+                    2026: { monto: 0, fecha: '', pagado: false },
+                    2027: { monto: 0, fecha: '', pagado: false }
+                }
+            });
+        }
+    }
+}
+
+
+// ============================================
+// FUNCIONES PARA ADMINISTRAR CURSOS ESPECIALES
+// ============================================
+
+// FUNCIÓN PARA CAMBIAR NOMBRE DE CURSO ESPECIAL
+function cambiarNombreCursoEspecial() {
+    if (!isAdmin) {
+        mostrarMensaje('Solo el administrador puede cambiar nombres', 'error');
+        return;
+    }
+    
+    // Obtener solo cursos especiales
+    const cursosEspeciales = ordenCursos.filter(curso => curso.startsWith('0.'));
+    
+    if (cursosEspeciales.length === 0) {
+        mostrarMensaje('No hay cursos especiales para cambiar', 'info');
+        return;
+    }
+    
+    // Mostrar lista de cursos especiales
+    let lista = 'Cursos especiales actuales:\n\n';
+    cursosEspeciales.forEach((curso, index) => {
+        lista += `${index + 1}. ${curso}\n`;
+    });
+    
+    const seleccion = prompt(`${lista}\n\nIngrese el NÚMERO del curso que quiere cambiar:`);
+    const indice = parseInt(seleccion) - 1;
+    
+    if (isNaN(indice) || indice < 0 || indice >= cursosEspeciales.length) {
+        mostrarMensaje('Selección inválida', 'error');
+        return;
+    }
+    
+    const cursoViejo = cursosEspeciales[indice];
+    const nuevoNombre = prompt(`Nombre actual: ${cursoViejo}\n\nIngrese el NUEVO nombre (debe empezar con "0."):`, cursoViejo);
+    
+    if (!nuevoNombre || !nuevoNombre.startsWith('0.')) {
+        mostrarMensaje('El nombre debe empezar con "0."', 'error');
+        return;
+    }
+    
+    if (nuevoNombre === cursoViejo) {
+        mostrarMensaje('El nombre es el mismo, no se realizó ningún cambio', 'info');
+        return;
+    }
+    
+    if (ordenCursos.includes(nuevoNombre)) {
+        mostrarMensaje('Ya existe un curso con ese nombre', 'error');
+        return;
+    }
+    
+    // ACTUALIZAR TODO:
+    // 1. Cambiar en ordenCursos
+    const indexOrden = ordenCursos.indexOf(cursoViejo);
+    ordenCursos[indexOrden] = nuevoNombre;
+    
+    // 2. Cambiar en montos 2026
+    montosPorCurso2026[nuevoNombre] = montosPorCurso2026[cursoViejo] || 0;
+    delete montosPorCurso2026[cursoViejo];
+    
+    // 3. Cambiar en montos 2027
+    montosPorCurso2027[nuevoNombre] = montosPorCurso2027[cursoViejo] || 200;
+    delete montosPorCurso2027[cursoViejo];
+    
+    // 4. Cambiar en datos.cursos
+    datos.cursos[nuevoNombre] = datos.cursos[cursoViejo];
+    delete datos.cursos[cursoViejo];
+    
+    // Guardar y actualizar
+    guardarDatos();
+    actualizarSelectorCursos();
+    
+    mostrarMensaje(`Curso cambiado: "${cursoViejo}" → "${nuevoNombre}"`, 'success');
+}
+
+// FUNCIÓN PARA ELIMINAR CURSO ESPECIAL
+function eliminarCursoEspecial() {
+    if (!isAdmin) {
+        mostrarMensaje('Solo el administrador puede eliminar cursos', 'error');
+        return;
+    }
+    
+    // Obtener solo cursos especiales
+    const cursosEspeciales = ordenCursos.filter(curso => curso.startsWith('0.'));
+    
+    if (cursosEspeciales.length === 0) {
+        mostrarMensaje('No hay cursos especiales para eliminar', 'info');
+        return;
+    }
+    
+    // Mostrar lista
+    let lista = 'Cursos especiales:\n\n';
+    cursosEspeciales.forEach((curso, index) => {
+        lista += `${index + 1}. ${curso}\n`;
+    });
+    
+    const seleccion = prompt(`${lista}\n\nIngrese el NÚMERO del curso a ELIMINAR:`);
+    const indice = parseInt(seleccion) - 1;
+    
+    if (isNaN(indice) || indice < 0 || indice >= cursosEspeciales.length) {
+        mostrarMensaje('Selección inválida', 'error');
+        return;
+    }
+    
+    const cursoAEliminar = cursosEspeciales[indice];
+    
+    if (!confirm(`¿Está SEGURO de eliminar el curso "${cursoAEliminar}"?\n\nIMPORTANTE: Se perderán TODOS los estudiantes y pagos de este curso.`)) {
+        return;
+    }
+    
+    // ELIMINAR TODO:
+    // 1. Eliminar de ordenCursos
+    const indexEnOrden = ordenCursos.indexOf(cursoAEliminar);
+    ordenCursos.splice(indexEnOrden, 1);
+    
+    // 2. Eliminar de montos
+    delete montosPorCurso2026[cursoAEliminar];
+    delete montosPorCurso2027[cursoAEliminar];
+    
+    // 3. Eliminar de datos.cursos
+    delete datos.cursos[cursoAEliminar];
+    
+    // Guardar y actualizar
+    guardarDatos();
+    actualizarSelectorCursos();
+    actualizarSeguimiento();
+    
+    mostrarMensaje(`Curso especial "${cursoAEliminar}" ELIMINADO`, 'success');
+}
+
+// FUNCIÓN PARA ACTUALIZAR SELECTOR DE CURSOS
+function actualizarSelectorCursos() {
+    // Actualizar selector principal
+    const selectorCurso = document.getElementById('selectorCurso');
+    if (selectorCurso) {
+        selectorCurso.innerHTML = '<option value="">Seleccione un curso</option>';
+        ordenCursos.forEach(curso => {
+            const option = document.createElement('option');
+            option.value = curso;
+            option.textContent = curso;
+            selectorCurso.appendChild(option);
+        });
+    }
+    
+    // Actualizar filtro de seguimiento
+    const filtroCursoSeguimiento = document.getElementById('filtroCursoSeguimiento');
+    if (filtroCursoSeguimiento) {
+        filtroCursoSeguimiento.innerHTML = '<option value="todos">Todos los cursos</option>';
+        ordenCursos.forEach(curso => {
+            const option = document.createElement('option');
+            option.value = curso;
+            option.textContent = curso;
+            filtroCursoSeguimiento.appendChild(option);
+        });
+    }
+    
+    // Actualizar selector de otros cobros
+    const cursoOtroCobro = document.getElementById('cursoOtroCobro');
+    if (cursoOtroCobro) {
+        cursoOtroCobro.innerHTML = '<option value="">Seleccione curso</option>';
+        ordenCursos.forEach(curso => {
+            const option = document.createElement('option');
+            option.value = curso;
+            option.textContent = curso;
+            cursoOtroCobro.appendChild(option);
+        });
+    }
+}
+
+
+// ============================================
+// FUNCIONES PARA GASTOS DE OTROS COBROS
+// ============================================
+
+// FUNCIÓN PARA ACTUALIZAR RESUMEN DE OTROS COBROS
+function actualizarResumenOtrosCobros() {
+    // Calcular ingresos totales (suma de todos los cobros de todos los sectores)
+    let ingresosTotales = 0;
+    if (datos.sectoresCobro) {
+        datos.sectoresCobro.forEach(sector => {
+            if (sector.cobros) {
+                sector.cobros.forEach(cobro => {
+                    ingresosTotales += cobro.monto || 0;
+                });
+            }
+        });
+    }
+    
+    datos.otrosCobrosIngresos = ingresosTotales;
+    
+    // Calcular gastos totales
+    let gastosTotales = 0;
+    if (datos.otrosCobrosSaldos) {
+        datos.otrosCobrosSaldos.forEach(gasto => {
+            gastosTotales += gasto.monto || 0;
+        });
+    }
+    datos.otrosCobrosGastos = gastosTotales;
+    
+    // Calcular saldo
+    const saldo = ingresosTotales - gastosTotales;
+    
+    // Actualizar en la página
+    if (document.getElementById('otrosCobrosIngresos')) {
+        document.getElementById('otrosCobrosIngresos').textContent = `Bs ${ingresosTotales.toFixed(2)}`;
+    }
+    if (document.getElementById('otrosCobrosGastos')) {
+        document.getElementById('otrosCobrosGastos').textContent = `Bs ${gastosTotales.toFixed(2)}`;
+    }
+    if (document.getElementById('otrosCobrosSaldo')) {
+        document.getElementById('otrosCobrosSaldo').textContent = `Bs ${saldo.toFixed(2)}`;
+    }
+    if (document.getElementById('resumenIngresosOtrosCobros')) {
+        document.getElementById('resumenIngresosOtrosCobros').textContent = `Bs ${ingresosTotales.toFixed(2)}`;
+    }
+    if (document.getElementById('resumenGastosOtrosCobros')) {
+        document.getElementById('resumenGastosOtrosCobros').textContent = `Bs ${gastosTotales.toFixed(2)}`;
+    }
+    if (document.getElementById('resumenSaldoOtrosCobros')) {
+        document.getElementById('resumenSaldoOtrosCobros').textContent = `Bs ${saldo.toFixed(2)}`;
+    }
+    
+    // Actualizar también el total general de otros cobros (en el header)
+    datos.totalOtrosCobros = ingresosTotales;
+    if (document.getElementById('totalOtrosCobros')) {
+        document.getElementById('totalOtrosCobros').textContent = `Bs ${ingresosTotales.toFixed(2)}`;
+    }
+}
+
+// FUNCIÓN PARA REGISTRAR GASTO DE OTROS COBROS
+function registrarGastoOtroCobro(e) {
+    if (e) e.preventDefault();
+    
+    if (!isAdmin) {
+        mostrarMensaje('Solo el administrador puede registrar gastos', 'error');
+        return;
+    }
+    
+    const concepto = document.getElementById('conceptoGastoOtroCobro').value;
+    const monto = parseFloat(document.getElementById('montoGastoOtroCobro').value) || 0;
+    const fecha = document.getElementById('fechaGastoOtroCobro').value;
+    const descripcion = document.getElementById('descripcionGastoOtroCobro').value;
+    
+    if (!concepto || !monto || !fecha || !descripcion) {
+        mostrarMensaje('Complete todos los campos', 'error');
+        return;
+    }
+    
+    if (monto <= 0) {
+        mostrarMensaje('El monto debe ser mayor a 0', 'error');
+        return;
+    }
+    
+    // Verificar que hay saldo disponible
+    const saldoActual = datos.otrosCobrosIngresos - datos.otrosCobrosGastos;
+    if (monto > saldoActual) {
+        mostrarMensaje(`No hay suficiente saldo. Disponible: Bs ${saldoActual.toFixed(2)}`, 'error');
+        return;
+    }
+    
+    // Crear objeto de gasto
+    const nuevoGasto = {
+        id: Date.now(),
+        concepto: concepto,
+        monto: monto,
+        fecha: fecha,
+        descripcion: descripcion,
+        timestamp: Date.now()
+    };
+    
+    // Guardar en datos
+    if (!datos.otrosCobrosSaldos) datos.otrosCobrosSaldos = [];
+    datos.otrosCobrosSaldos.push(nuevoGasto);
+    
+    // Guardar en historial
+    if (!datos.otrosCobrosHistorial) datos.otrosCobrosHistorial = [];
+    datos.otrosCobrosHistorial.push({
+        ...nuevoGasto,
+        tipo: 'gasto_otros_cobros'
+    });
+    
+    // Actualizar total de gastos
+    datos.otrosCobrosGastos += monto;
+    
+    // Guardar y actualizar
+    guardarDatos();
+    actualizarResumenOtrosCobros();
+    actualizarTablaGastosOtrosCobros();
+    
+    // Limpiar formulario
+    document.getElementById('formGastoOtroCobro').reset();
+    const hoy = new Date().toISOString().split('T')[0];
+    document.getElementById('fechaGastoOtroCobro').value = hoy;
+    
+    mostrarMensaje('Gasto registrado exitosamente (solo afecta otros cobros)', 'success');
+}
+
+// FUNCIÓN PARA ACTUALIZAR TABLA DE GASTOS
+function actualizarTablaGastosOtrosCobros() {
+    const tbody = document.getElementById('tablaGastosOtrosCobros');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    if (!datos.otrosCobrosSaldos || datos.otrosCobrosSaldos.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="text-center text-muted">
+                    No hay gastos registrados
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    // Ordenar por fecha (más reciente primero)
+    const gastosOrdenados = [...datos.otrosCobrosSaldos].sort((a, b) => 
+        new Date(b.fecha) - new Date(a.fecha)
+    );
+    
+    gastosOrdenados.forEach(gasto => {
+        const fila = document.createElement('tr');
+        fila.innerHTML = `
+            <td>${gasto.fecha || 'Sin fecha'}</td>
+            <td>${gasto.concepto || 'Sin concepto'}</td>
+            <td>${gasto.descripcion || 'Sin descripción'}</td>
+            <td class="text-danger">Bs ${(gasto.monto || 0).toFixed(2)}</td>
+            <td>
+                ${isAdmin ? `
+                <button class="btn btn-danger btn-sm" onclick="eliminarGastoOtroCobro(${gasto.id})">
+                    <i class="fas fa-trash"></i>
+                </button>
+                ` : ''}
+            </td>
+        `;
+        tbody.appendChild(fila);
+    });
+}
+
+// FUNCIÓN PARA ELIMINAR GASTO
+function eliminarGastoOtroCobro(id) {
+    if (!isAdmin) return;
+    
+    if (!confirm('¿Está seguro de eliminar este gasto?')) {
+        return;
+    }
+    
+    const index = datos.otrosCobrosSaldos.findIndex(gasto => gasto.id === id);
+    if (index !== -1) {
+        const gasto = datos.otrosCobrosSaldos[index];
+        
+        // Restar del total de gastos
+        datos.otrosCobrosGastos -= gasto.monto || 0;
+        
+        // Eliminar de la lista
+        datos.otrosCobrosSaldos.splice(index, 1);
+        
+        // Eliminar del historial
+        if (datos.otrosCobrosHistorial) {
+            const histIndex = datos.otrosCobrosHistorial.findIndex(h => h.id === id);
+            if (histIndex !== -1) datos.otrosCobrosHistorial.splice(histIndex, 1);
+        }
+        
+        // Guardar y actualizar
+        guardarDatos();
+        actualizarResumenOtrosCobros();
+        actualizarTablaGastosOtrosCobros();
+        
+        mostrarMensaje('Gasto eliminado', 'success');
+    }
+}
+
+// FUNCIÓN PARA ACTUALIZAR CUANDO SE REGISTRE UN COBRO
+function actualizarCuandoSeRegistreCobro(monto) {
+    datos.otrosCobrosIngresos += monto;
+    actualizarResumenOtrosCobros();
+}
+
+
+
+console.log('✅ Sistema de Gestión Financiera cargado completamente con todas las mejoras');
+
+
+
+
+
+
