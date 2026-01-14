@@ -269,6 +269,13 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
+ <li class="nav-item d-flex align-items-center me-3 creator-mini">
+    <img src="dog.exe.jpeg" alt="Creador" class="creator-img">
+    <div class="creator-info">
+        <span class="creator-name">SISTEMAS</span>
+        <small class="creator-author">DOGUI.EXE</small>
+    </div>
+</li>
                     <li class="nav-item">
                         <a class="nav-link active" href="#" data-tab="dashboard">
                             <i class="fas fa-tachometer-alt"></i> Dashboard
@@ -314,6 +321,9 @@
                             <i class="fas fa-chart-bar"></i> Reportes
                         </a>
                     </li>
+
+                   
+
                     <li class="nav-item">
                         <button class="btn btn-outline-warning btn-sm ms-2" onclick="cerrarSesion()">
                             <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
@@ -480,6 +490,9 @@
                 </div>
             </div>
             
+
+
+
             <!-- Firma del creador -->
             <div class="firma-creador">
                 <p>Sistema de Gestión Financiera - Federación Estudiantil</p>
@@ -930,25 +943,7 @@
 </div>
 
 <!-- NUEVO: Últimos Gastos y Resumen Financiero -->
-<div class="row mb-4" id="resumenFinancieroSeguimiento">
-    <div class="col-12">
-        <div class="card neon-card-inner">
-            <div class="card-header">
-                <h5 class="neon-text"><i class="fas fa-chart-line"></i> Resumen Financiero Actual</h5>
-            </div>
-            <div class="card-body">
-                <div class="row" id="contenidoResumenFinanciero">
-                    <!-- Se cargará dinámicamente -->
-                </div>
-                <div class="row mt-3">
-                    <div class="col-12" id="ultimosGastosSeguimiento">
-                        <!-- Últimos gastos se cargarán aquí -->
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+
                                     <h5 class="neon-text"><i class="fas fa-users"></i> Lista General de Estudiantes - Estado Detallado de Pagos</h5>
                                     <p class="mb-0"><small class="text-warning">Muestra el estado real de cada estudiante según los montos requeridos por curso y año</small></p>
                                 </div>
@@ -982,16 +977,16 @@
                         </div>
                     </div>
 
-                    <!-- Resumen por curso MEJORADO -->
+                    <!-- Resumen por curso -->
                     <div class="row mb-4">
                         <div class="col-12">
                             <div class="card neon-card-inner">
                                 <div class="card-header">
-                                    <h5 class="neon-text"><i class="fas fa-chart-bar"></i> Resumen por Curso - Montos Faltantes</h5>
+                                    <h5 class="neon-text"><i class="fas fa-chart-bar"></i> Resumen por Curso</h5>
                                 </div>
                                 <div class="card-body">
                                     <div class="row" id="resumenCursosSeguimiento">
-                                        <!-- Se llenará dinámicamente con montos faltantes -->
+                                        <!-- Se llenará dinámicamente -->
                                     </div>
                                 </div>
                             </div>
@@ -1199,70 +1194,135 @@
 
                     <!-- Registro de Gastos de Casilleros -->
                     <div class="row mt-4">
-                        <div class="col-12">
-                            <div class="card neon-card-inner">
-                                <div class="card-header">
-                                    <h5 class="neon-text"><i class="fas fa-receipt"></i> Gastos de Fondos de Casilleros</h5>
-                                    <p class="mb-0"><small class="text-warning">Estos gastos son solo del dinero recaudado por casilleros</small></p>
-                                </div>
-                                <div class="card-body">
-                                    <form id="formGastoCasillero">
-                                        <div class="row">
-                                            <div class="col-md-3">
-                                                <div class="mb-3">
-                                                    <label for="conceptoGastoCasillero" class="form-label neon-text">Concepto</label>
-                                                    <input type="text" class="form-control neon-input" id="conceptoGastoCasillero" required>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <div class="mb-3">
-                                                    <label for="montoGastoCasillero" class="form-label neon-text">Monto (Bs)</label>
-                                                    <input type="number" step="0.01" class="form-control neon-input" id="montoGastoCasillero" required>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <div class="mb-3">
-                                                    <label for="fechaGastoCasillero" class="form-label neon-text">Fecha</label>
-                                                    <input type="date" class="form-control neon-input" id="fechaGastoCasillero" required>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <div class="mb-3">
-                                                    <label for="descripcionGastoCasillero" class="form-label neon-text">Descripción</label>
-                                                    <input type="text" class="form-control neon-input" id="descripcionGastoCasillero" required>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <button type="submit" class="btn neon-btn">
-                                            <i class="fas fa-save"></i> Registrar Gasto
-                                        </button>
-                                    </form>
-                                    
-                                    <div class="mt-4">
-                                        <h6 class="neon-text">Gastos Registrados</h6>
-                                        <div class="table-responsive">
-                                            <table class="table table-dark table-hover">
-                                                <thead>
-                                                    <tr>
-                                                        <th>Fecha</th>
-                                                        <th>Concepto</th>
-                                                        <th>Descripción</th>
-                                                        <th>Monto</th>
-                                                        <th>Acciones</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody id="tablaGastosCasilleros">
-                                                    <!-- Se llenará dinámicamente -->
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div>
+    <div class="col-12">
+        <div class="card neon-card-inner" style="border-color: #00ffaa;">
+            <div class="card-header" style="border-bottom: 1px solid #00ffaa;">
+                <h5 class="neon-text" style="color: #00ffaa;">
+                    <i class="fas fa-receipt"></i> GASTOS DEL DINERO DE CASILLEROS
+                </h5>
+                <div class="d-flex justify-content-between align-items-center mt-2">
+                    <small class="text-info">
+                        <i class="fas fa-info-circle"></i> Estos gastos SOLO afectan el dinero de "Casilleros"
+                    </small>
+                    <h4 class="mb-0">
+                        <span class="text-success">Ingresos: <span id="casillerosIngresos">Bs 0.00</span></span> | 
+                        <span class="text-danger">Gastos: <span id="casillerosGastos">Bs 0.00</span></span> | 
+                        <span class="text-info">Saldo: <span id="casillerosSaldo">Bs 0.00</span></span>
+                    </h4>
+                </div>
+            </div>
+            <div class="card-body">
+                
+                <!-- Formulario para registrar gasto -->
+                <form id="formGastoCasillero" onsubmit="registrarGastoCasillero(event)">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="conceptoGastoCasillero" class="form-label" style="color: #00ffaa;">Concepto</label>
+                                <input type="text" class="form-control" id="conceptoGastoCasillero" 
+                                       style="background: #1a1a2e; color: white; border: 1px solid #00ffaa;"
+                                       placeholder="Ej: Mantenimiento de casilleros" required>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="mb-3">
+                                <label for="montoGastoCasillero" class="form-label" style="color: #00ffaa;">Monto (Bs)</label>
+                                <input type="number" step="0.01" class="form-control" id="montoGastoCasillero"
+                                       style="background: #1a1a2e; color: white; border: 1px solid #00ffaa;"
+                                       required>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="mb-3">
+                                <label for="fechaGastoCasillero" class="form-label" style="color: #00ffaa;">Fecha</label>
+                                <input type="date" class="form-control" id="fechaGastoCasillero"
+                                       style="background: #1a1a2e; color: white; border: 1px solid #00ffaa;"
+                                       required>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="descripcionGastoCasillero" class="form-label" style="color: #00ffaa;">Descripción</label>
+                                <input type="text" class="form-control" id="descripcionGastoCasillero"
+                                       style="background: #1a1a2e; color: white; border: 1px solid #00ffaa;"
+                                       placeholder="Detalle del gasto" required>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="mb-3">
+                                <label class="form-label" style="color: #00ffaa;">&nbsp;</label>
+                                <button type="submit" class="btn w-100" 
+                                        style="background: linear-gradient(45deg, #00ffaa, #00aa7f); color: white; border: none;">
+                                    <i class="fas fa-save"></i> Registrar Gasto
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                
+                <!-- Tabla de gastos registrados -->
+                <div class="mt-4">
+                    <h6 class="neon-text" style="color: #00ffaa;">
+                        <i class="fas fa-history"></i> Historial de Gastos
+                    </h6>
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover" style="border: 1px solid #00ffaa;">
+                            <thead>
+                                <tr style="background: rgba(0, 255, 170, 0.2);">
+                                    <th width="15%">Fecha</th>
+                                    <th width="20%">Concepto</th>
+                                    <th width="40%">Descripción</th>
+                                    <th width="15%">Monto</th>
+                                    <th width="10%">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaGastosCasilleros">
+                                <!-- Se llenará dinámicamente -->
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">
+                                        No hay gastos registrados
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Resumen rápido -->
+                <div class="row mt-3">
+                    <div class="col-md-4">
+                        <div class="card text-center" style="background: rgba(0, 255, 0, 0.1); border: 1px solid #00ff00;">
+                            <div class="card-body">
+                                <h6 class="card-title text-success">TOTAL INGRESOS</h6>
+                                <h3 class="text-success" id="resumenIngresosCasilleros">Bs 0.00</h3>
+                                <small>Recaudado en casilleros</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-center" style="background: rgba(255, 0, 0, 0.1); border: 1px solid #ff0000;">
+                            <div class="card-body">
+                                <h6 class="card-title text-danger">TOTAL GASTADO</h6>
+                                <h3 class="text-danger" id="resumenGastosCasilleros">Bs 0.00</h3>
+                                <small>Gastado de casilleros</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-center" style="background: rgba(0, 150, 255, 0.1); border: 1px solid #0096ff;">
+                            <div class="card-body">
+                                <h6 class="card-title text-info">DISPONIBLE</h6>
+                                <h3 class="text-info" id="resumenSaldoCasilleros">Bs 0.00</h3>
+                                <small>Saldo para usar</small>
                             </div>
                         </div>
                     </div>
                 </div>
+                
             </div>
+        </div>
+    </div>
+</div>
         </section>
 
 
@@ -1313,7 +1373,7 @@
                             <input type="file" class="form-control neon-input" id="comprobante" accept="image/*,.pdf" style="padding: 3px;">
                             <small class="text-muted">Puede subir imágenes o archivos PDF</small>
                         </div>
-                        <button type="submit" class="btn neon-btn">Registrar Gasto</button>
+                        <button type="button" class="btn neon-btn" onclick="registrarGasto(event)">Registrar Gasto</button>
                     </form>
                     
                     <div class="mt-4">
@@ -1382,9 +1442,9 @@
                                             <div class="col-md-2">
                                                 <div class="mb-3">
                                                     <label class="form-label neon-text">&nbsp;</label>
-                                                    <button type="submit" class="btn neon-btn w-100">
-                                                        <i class="fas fa-plus"></i> Crear
-                                                    </button>
+                                                    <button type="button" class="btn neon-btn w-100" onclick="crearNuevoSector(event)">
+    <i class="fas fa-plus"></i> Crear
+</button>
                                                 </div>
                                             </div>
                                         </div>
@@ -1660,9 +1720,9 @@
                                             <small class="text-muted">Puede subir múltiples fotos para mostrar en la publicación</small>
                                         </div>
                                         <div class="text-center">
-                                            <button type="submit" class="btn neon-btn" style="padding: 12px 30px; font-size: 1.1rem;">
-                                                <i class="fas fa-paper-plane"></i> Publicar Evento
-                                            </button>
+                                           <button type="button" class="btn neon-btn" style="padding: 12px 30px; font-size: 1.1rem;" onclick="registrarEvento(event)">
+    <i class="fas fa-paper-plane"></i> Publicar Evento
+</button>
                                         </div>
                                     </form>
                                 </div>
