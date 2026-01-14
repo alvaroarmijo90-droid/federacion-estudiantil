@@ -145,7 +145,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     cargarDatos();
     inicializarNavegacion();
     inicializarCasilleros();
-    
+    // Inicializar estudiantes si no existen
+    inicializarEstudiantes();
+    inicializarCursosEspeciales(); // ← AGREGAR ESTA LÍNEA
+
     // Configurar fecha actual en los formularios
     const hoy = new Date().toISOString().split('T')[0];
     ['fechaGasto', 'fechaCaja', 'fechaPago', 'fechaGastoCasillero', 'fechaOtroCobro', 'fechaEvento', 'fechaLimiteSector'].forEach(id => {
@@ -153,8 +156,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (elem) elem.value = hoy;
     });
     
-    // Inicializar estudiantes si no existen
-    inicializarEstudiantes();
+    
     
     // Event listeners para formularios
     const cursoOtroCobro = document.getElementById('cursoOtroCobro');
@@ -254,7 +256,8 @@ if (formGastoOtroCobro) {
     actualizarInterfazPorUsuario();
     // Actualizar resumen de otros cobros
 actualizarResumenOtrosCobros();
-actualizarTablaGastosOtrosCobros();
+actualizarResumenCasilleros();
+
     // Inicializar datos
     cargarDatos();
     inicializarGraficos();
@@ -480,6 +483,7 @@ async function cargarDatos() {
     
     // 9. Asegurar que gastosCasilleros exista
     if (!datos.gastosCasilleros) {
+        console.log("🔧 Creando gastosCasilleros porque no existe");
         datos.gastosCasilleros = [];
     }
     
@@ -507,6 +511,8 @@ async function cargarDatos() {
     actualizarEventos();
     actualizarSectoresCobro();
     actualizarTablaGastosCasilleros();
+    actualizarResumenOtrosCobros();
+    actualizarResumenCasilleros();
     
 const hoy = new Date().toISOString().split('T')[0];
 const fechaGastoOtroCobro = document.getElementById('fechaGastoOtroCobro');
@@ -877,19 +883,18 @@ function actualizarVistaCasilleros() {
         const casilleroDiv = document.createElement('div');
         casilleroDiv.className = `col-4 col-md-2`;
         
-        // En la función actualizarVistaCasilleros(), modifica esta línea:
-casilleroDiv.innerHTML = `
-    <div class="casillero ${estadoClase}" onclick="verHistorialCasillero(${i})" style="cursor: pointer;">
-        <div class="numero">${i}</div>
-        <div class="estudiante-casillero">${casillero.estudiante || 'Sin asignar'}</div>
-        ${resumenMeses}
-        <div class="estado">${estadoTexto}</div>
-        <div class="mt-1"><small>Bs ${casillero.totalPagado.toFixed(2)}</small></div>
-        <button class="btn-historial mt-1" onclick="event.stopPropagation(); verHistorialCasillero(${i})">
-            <i class="fas fa-history"></i>
-        </button>
-    </div>
-`;
+        casilleroDiv.innerHTML = `
+            <div class="casillero ${estadoClase}" onclick="verHistorialCasillero(${i})" style="cursor: pointer;">
+                <div class="numero">${i}</div>
+                <div class="estudiante-casillero">${casillero.estudiante || 'Sin asignar'}</div>
+                ${resumenMeses}
+                <div class="estado">${estadoTexto}</div>
+                <div class="mt-1"><small>Bs ${casillero.totalPagado.toFixed(2)}</small></div>
+                <button class="btn-historial mt-1" onclick="event.stopPropagation(); verHistorialCasillero(${i})">
+                    <i class="fas fa-history"></i>
+                </button>
+            </div>
+        `;
         
         if (i <= 18) {
             sectorA.appendChild(casilleroDiv);
@@ -902,17 +907,35 @@ casilleroDiv.innerHTML = `
         totalGeneral += casillero.totalPagado || 0;
     }
     
+    // CALCULAR GASTOS Y RESTARLOS AL TOTAL GENERAL
+    let totalGastos = 0;
+    if (datos.gastosCasilleros && Array.isArray(datos.gastosCasilleros)) {
+        totalGastos = datos.gastosCasilleros.reduce((sum, gasto) => sum + (gasto.monto || 0), 0);
+    }
+    
+    // Calcular el balance neto (recaudación - gastos)
+    const balanceNeto = totalGeneral - totalGastos;
+    
+    // Actualizar los elementos en el HTML
     if (document.getElementById('totalPagadoSectorA')) {
         document.getElementById('totalPagadoSectorA').textContent = `Bs ${totalSectorA.toFixed(2)}`;
     }
     if (document.getElementById('totalPagadoSectorB')) {
         document.getElementById('totalPagadoSectorB').textContent = `Bs ${totalSectorB.toFixed(2)}`;
     }
+    
+    // ACTUALIZAR TOTAL GENERAL RESTANDO LOS GASTOS
     if (document.getElementById('totalGeneralCasilleros')) {
-        document.getElementById('totalGeneralCasilleros').textContent = `Bs ${totalGeneral.toFixed(2)}`;
+        document.getElementById('totalGeneralCasilleros').textContent = `Bs ${balanceNeto.toFixed(2)}`;
+        // Cambiar color según si es positivo o negativo
+        const elemento = document.getElementById('totalGeneralCasilleros');
+        if (balanceNeto >= 0) {
+            elemento.className = 'text-success';
+        } else {
+            elemento.className = 'text-danger';
+        }
     }
 }
-
 // VER HISTORIAL DE CASILLERO
 /// VER HISTORIAL DE CASILLERO - SIMPLIFICADA Y FUNCIONAL
 // FUNCIÓN MEJORADA PARA VER HISTORIAL DE CASILLERO
@@ -1354,10 +1377,76 @@ function liberarCasilleroDesdeHistorial() {
 }
 
 // REGISTRAR GASTO DE CASILLEROS
-function registrarGastoCasillero(e) {
-    e.preventDefault();
+// REGISTRAR GASTO DE CASILLEROS - VERSIÓN MEJORADA
+
+// FUNCIÓN PARA ACTUALIZAR RESUMEN DE CASILLEROS
+// FUNCIÓN PARA ACTUALIZAR RESUMEN DE CASILLEROS
+function actualizarResumenCasilleros() {
+    // Calcular ingresos totales (suma de todos los pagos de casilleros)
+    let ingresosTotales = 0;
     
-    if (!isAdmin) return;
+    if (datos.casilleros) {
+        // Verificar si casilleros es un objeto
+        if (typeof datos.casilleros === 'object' && datos.casilleros !== null) {
+            // Recorrer todos los casilleros (es un objeto, no un array)
+            Object.values(datos.casilleros).forEach(casillero => {
+                if (casillero && casillero.totalPagado) {
+                    ingresosTotales += casillero.totalPagado || 0;
+                }
+            });
+        }
+    }
+    
+    // Calcular gastos totales de casilleros
+    let gastosTotales = 0;
+    if (datos.gastosCasilleros && Array.isArray(datos.gastosCasilleros)) {
+        datos.gastosCasilleros.forEach(gasto => {
+            gastosTotales += gasto.monto || 0;
+        });
+    }
+    
+    // Calcular saldo
+    const saldo = ingresosTotales - gastosTotales;
+    
+    // Actualizar en la página
+    if (document.getElementById('casillerosIngresos')) {
+        document.getElementById('casillerosIngresos').textContent = `Bs ${ingresosTotales.toFixed(2)}`;
+    }
+    if (document.getElementById('casillerosGastos')) {
+        document.getElementById('casillerosGastos').textContent = `Bs ${gastosTotales.toFixed(2)}`;
+    }
+    if (document.getElementById('casillerosSaldo')) {
+        document.getElementById('casillerosSaldo').textContent = `Bs ${saldo.toFixed(2)}`;
+    }
+    if (document.getElementById('resumenIngresosCasilleros')) {
+        document.getElementById('resumenIngresosCasilleros').textContent = `Bs ${ingresosTotales.toFixed(2)}`;
+    }
+    if (document.getElementById('resumenGastosCasilleros')) {
+        document.getElementById('resumenGastosCasilleros').textContent = `Bs ${gastosTotales.toFixed(2)}`;
+    }
+    if (document.getElementById('resumenSaldoCasilleros')) {
+        document.getElementById('resumenSaldoCasilleros').textContent = `Bs ${saldo.toFixed(2)}`;
+    }
+    
+    // Guardar los datos calculados en el objeto datos
+    datos.casillerosIngresos = ingresosTotales || 0;
+    datos.casillerosGastos = gastosTotales || 0;
+    
+    // Actualizar también el total general de casilleros (en el header si existe)
+    if (document.getElementById('totalCasilleros')) {
+        document.getElementById('totalCasilleros').textContent = `Bs ${ingresosTotales.toFixed(2)}`;
+    }
+}
+
+// FUNCIÓN PARA REGISTRAR GASTO DE CASILLEROS
+// FUNCIÓN PARA REGISTRAR GASTO DE CASILLEROS
+function registrarGastoCasillero(e) {
+    if (e) e.preventDefault();
+    
+    if (!isAdmin) {
+        mostrarMensaje('Solo el administrador puede registrar gastos', 'error');
+        return false;
+    }
     
     const concepto = document.getElementById('conceptoGastoCasillero').value;
     const monto = parseFloat(document.getElementById('montoGastoCasillero').value) || 0;
@@ -1366,36 +1455,86 @@ function registrarGastoCasillero(e) {
     
     if (!concepto || !monto || !fecha || !descripcion) {
         mostrarMensaje('Complete todos los campos', 'error');
-        return;
+        return false;
     }
     
+    // PASO 1: CREAR EL GASTO
     const nuevoGasto = {
         id: Date.now(),
         concepto: concepto,
         monto: monto,
         fecha: fecha,
-        descripcion: descripcion
+        descripcion: descripcion,
+        timestamp: Date.now()
     };
     
-    datos.gastosCasilleros.push(nuevoGasto);
-    guardarDatos();
-    actualizarTablaGastosCasilleros();
+    console.log("📝 Creando gasto:", nuevoGasto);
     
+    // PASO 2: AGREGAR AL ARRAY (asegurando que existe)
+    if (!datos.gastosCasilleros) {
+        console.log("⚠️ Creando array gastosCasilleros");
+        datos.gastosCasilleros = [];
+    }
+    
+    datos.gastosCasilleros.push(nuevoGasto);
+    console.log("✅ Gasto agregado. Total:", datos.gastosCasilleros.length);
+    
+    // PASO 3: GUARDAR EN LOCALSTORAGE DE FORMA DIRECTA
+    try {
+        localStorage.setItem('gastos_casilleros', JSON.stringify(datos.gastosCasilleros));
+        console.log("💾 Guardado directo en localStorage");
+    } catch (error) {
+        console.error("Error guardando:", error);
+    }
+    
+    // PASO 4: GUARDAR TODO EL OBJETO DATOS
+    guardarDatos();
+    
+    // PASO 5: ACTUALIZAR VISUALIZACIÓN INMEDIATA
+    actualizarTablaGastosCasilleros();
+    actualizarResumenCasilleros();
+    
+    // PASO 6: LIMPIAR FORMULARIO
     document.getElementById('formGastoCasillero').reset();
     const hoy = new Date().toISOString().split('T')[0];
     document.getElementById('fechaGastoCasillero').value = hoy;
     
-    mostrarMensaje('Gasto de casilleros registrado exitosamente', 'success');
+    mostrarMensaje('Gasto registrado exitosamente', 'success');
+    return false;
 }
 
-// ACTUALIZAR TABLA DE GASTOS DE CASILLEROS
+// FUNCIÓN PARA ACTUALIZAR TABLA DE GASTOS DE CASILLEROS
+// FUNCIÓN PARA ACTUALIZAR TABLA DE GASTOS DE CASILLEROS
 function actualizarTablaGastosCasilleros() {
+    console.log("🔄 Actualizando tabla de gastos casilleros");
+    
     const tbody = document.getElementById('tablaGastosCasilleros');
-    if (!tbody) return;
+    if (!tbody) {
+        console.error("❌ No existe tablaGastosCasilleros en el HTML");
+        return;
+    }
     
     tbody.innerHTML = '';
     
-    datos.gastosCasilleros.forEach(gasto => {
+    // VERIFICAR SI EXISTEN DATOS
+    if (!datos.gastosCasilleros || datos.gastosCasilleros.length === 0) {
+        console.log("ℹ️ No hay gastos para mostrar");
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="text-center text-muted">
+                    No hay gastos registrados
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    console.log(`✅ Mostrando ${datos.gastosCasilleros.length} gastos`);
+    
+    // Mostrar en orden inverso (más reciente primero)
+    for (let i = datos.gastosCasilleros.length - 1; i >= 0; i--) {
+        const gasto = datos.gastosCasilleros[i];
+        
         const fila = document.createElement('tr');
         fila.innerHTML = `
             <td>${gasto.fecha || 'Sin fecha'}</td>
@@ -1411,23 +1550,125 @@ function actualizarTablaGastosCasilleros() {
             </td>
         `;
         tbody.appendChild(fila);
-    });
+    }
+}
+// FUNCIÓN PARA ELIMINAR GASTO DE CASILLEROS
+function eliminarGastoCasillero(id) {
+    if (!isAdmin) {
+        mostrarMensaje('Solo el administrador puede eliminar gastos', 'error');
+        return;
+    }
+    
+    if (!confirm('¿Está seguro de eliminar este gasto?')) {
+        return;
+    }
+    
+    // Verificar que existe el array
+    if (!datos.gastosCasilleros || !Array.isArray(datos.gastosCasilleros)) {
+        return;
+    }
+    
+    const index = datos.gastosCasilleros.findIndex(gasto => gasto.id === id);
+    if (index !== -1) {
+        const gasto = datos.gastosCasilleros[index];
+        
+        // Eliminar de la lista
+        datos.gastosCasilleros.splice(index, 1);
+        
+        // Eliminar del historial
+        if (datos.casillerosHistorial) {
+            const histIndex = datos.casillerosHistorial.findIndex(h => h.id === id);
+            if (histIndex !== -1) datos.casillerosHistorial.splice(histIndex, 1);
+        }
+        
+        // FORMA SEGURA DE GUARDAR
+        guardarDatosSeguro();
+        
+        // Actualizar todo
+        actualizarResumenCasilleros();
+        actualizarTablaGastosCasilleros();
+        
+        mostrarMensaje('Gasto eliminado', 'success');
+    }
 }
 
-// ELIMINAR GASTO DE CASILLEROS
-function eliminarGastoCasillero(id) {
-    if (!isAdmin) return;
-    
-    if (confirm('¿Está seguro de eliminar este gasto?')) {
-        const index = datos.gastosCasilleros.findIndex(gasto => gasto.id === id);
-        if (index !== -1) {
-            datos.gastosCasilleros.splice(index, 1);
-            guardarDatos();
-            actualizarTablaGastosCasilleros();
-            mostrarMensaje('Gasto eliminado', 'success');
+// FUNCIÓN PARA ACTUALIZAR CUANDO SE REGISTRE UN PAGO DE CASILLERO
+function actualizarCuandoSeRegistrePagoCasillero(monto) {
+    if (!datos.casillerosIngresos) datos.casillerosIngresos = 0;
+    datos.casillerosIngresos += monto;
+    actualizarResumenCasilleros();
+}
+
+// FUNCIÓN DE GUARDADO SEGURO - AGREGAR ESTA FUNCIÓN NUEVA
+// FUNCIÓN DE GUARDADO SEGURO - VERSIÓN QUE SÍ FUNCIONA
+function guardarDatosSeguro() {
+    try {
+        console.log("💾 GUARDANDO DATOS SEGURO...");
+        
+        // 1. Asegurar que todos los arrays y objetos existen
+        if (!datos.gastosCasilleros || !Array.isArray(datos.gastosCasilleros)) {
+            console.log("⚠️ Creando gastosCasilleros...");
+            datos.gastosCasilleros = [];
+        }
+        
+        if (!datos.gastos || !Array.isArray(datos.gastos)) {
+            datos.gastos = [];
+        }
+        
+        if (!datos.movimientosCaja || !Array.isArray(datos.movimientosCaja)) {
+            datos.movimientosCaja = [];
+        }
+        
+        if (!datos.sectoresCobro || !Array.isArray(datos.sectoresCobro)) {
+            datos.sectoresCobro = [];
+        }
+        
+        if (!datos.casilleros || typeof datos.casilleros !== 'object') {
+            datos.casilleros = {};
+        }
+        
+        if (!datos.otrosCobrosSaldos || !Array.isArray(datos.otrosCobrosSaldos)) {
+            datos.otrosCobrosSaldos = [];
+        }
+        
+        // 2. Convertir a JSON con manejo de errores
+        const datosJSON = JSON.stringify(datos);
+        
+        // 3. Guardar en localStorage
+        localStorage.setItem('datosFederacion', datosJSON);
+        
+        console.log("✅ Datos guardados correctamente en localStorage");
+        console.log("📊 Gastos casilleros guardados:", datos.gastosCasilleros.length);
+        console.log("📊 Total en localStorage:", localStorage.getItem('datosFederacion')?.length || 0, "caracteres");
+        
+    } catch (error) {
+        console.error("❌ ERROR CRÍTICO al guardar:", error);
+        
+        // Intentar guardar solo los datos esenciales
+        try {
+            const datosMinimos = {
+                gastosCasilleros: datos.gastosCasilleros || [],
+                casilleros: datos.casilleros || {},
+                timestamp: Date.now()
+            };
+            localStorage.setItem('datosFederacion_min', JSON.stringify(datosMinimos));
+            console.log("✅ Datos mínimos guardados como respaldo");
+        } catch (e2) {
+            console.error("❌ No se pudo guardar ni siquiera los datos mínimos:", e2);
         }
     }
 }
+// LUEGO, al inicio de tu código (después de cargarDatos()), agrega:
+// Busca donde dice:
+// cargarDatos();
+// Y agrega después:
+
+// INICIALIZAR gastosCasilleros si no existe después de cargar
+if (!datos.gastosCasilleros) {
+    datos.gastosCasilleros = [];
+    guardarDatosSeguro();
+}
+
 
 // FUNCIÓN ACTUALIZAR DASHBOARD MEJORADA
 function actualizarDashboard() {
@@ -1497,6 +1738,8 @@ function actualizarDashboard() {
     
     // Actualizar últimos pagos registrados
     actualizarUltimosPagosDashboard();
+    actualizarResumenOtrosCobros();
+    actualizarResumenCasilleros();
 }
 
 // Función para obtener el dinero inicial
@@ -1516,6 +1759,8 @@ function actualizarUltimosPagosDashboard() {
     if (!tbody) return;
     
     tbody.innerHTML = '';
+
+
     
     // Recopilar todos los pagos de estudiantes
     let todosLosPagos = [];
@@ -1758,6 +2003,7 @@ function actualizarSeguimiento() {
     actualizarTablaSeguimientoEstudiantes();
     actualizarResumenCursosSeguimiento();
     actualizarUltimosPagosSeguimiento();
+    actualizarTablaGastosCasilleros();
 }
 
 // ACTUALIZAR TABLA DE SEGUIMIENTO ESTUDIANTES
@@ -2101,188 +2347,625 @@ function actualizarUltimosGastosSeguimiento() {
 }
 // ACTUALIZAR RESUMEN DE CURSOS SEGUIMIENTO CON MONTOS FALTANTES
 // ACTUALIZAR RESUMEN DE CURSOS EN SEGUIMIENTO - SEPARADO POR AÑO
+// ============================================
+// FUNCIÓN ACTUALIZADA PARA ACTUALIZACIÓN AUTOMÁTICA
+// ============================================
 function actualizarResumenCursosSeguimiento() {
+    console.log("🔄 ACTUALIZANDO RESUMEN DE CURSOS - AUTOMÁTICO");
+    
     const contenedor = document.getElementById('resumenCursosSeguimiento');
-    if (!contenedor) return;
+    if (!contenedor) {
+        console.error("❌ ERROR: No existe div con id='resumenCursosSeguimiento'");
+        return;
+    }
     
     contenedor.innerHTML = '';
     
+    // VERIFICAR DATOS CRÍTICOS
+    if (!datos) {
+        datos = { cursos: {} };
+        console.warn("⚠️ Datos vacíos, creando estructura");
+    }
+    
+    if (!datos.cursos) {
+        datos.cursos = {};
+        console.warn("⚠️ Cursos vacíos, creando estructura");
+    }
+    
+    // GARANTIZAR QUE EXISTEN TODOS LOS CURSOS
+    ordenCursos.forEach(cursoNombre => {
+        if (!datos.cursos[cursoNombre]) {
+            datos.cursos[cursoNombre] = { estudiantes: [] };
+        }
+        
+        // Crear estudiantes si no existen
+        if (!datos.cursos[cursoNombre].estudiantes || datos.cursos[cursoNombre].estudiantes.length === 0) {
+            datos.cursos[cursoNombre].estudiantes = [];
+            for (let i = 1; i <= 45; i++) {
+                datos.cursos[cursoNombre].estudiantes.push({
+                    nombre: `Estudiante ${i}`,
+                    pagos: {
+                        '2026': { monto: 0, fecha: '', pagado: false },
+                        '2027': { monto: 0, fecha: '', pagado: false }
+                    }
+                });
+            }
+        }
+    });
+    
+    // CONTADOR PARA DEBUG
+    let cursosMostrados = 0;
+    
     for (const cursoNombre of ordenCursos) {
         const datosCurso = datos.cursos[cursoNombre];
-        if (datosCurso.estudiantes) {
-            let totalEstudiantes = datosCurso.estudiantes.length;
-            
-            // Estadísticas para 2026
-            let estudiantesPagaron2026 = 0;
-            let estudiantesFaltan2026 = 0;
-            let totalRecaudado2026 = 0;
-            let totalEsperado2026 = 0;
-            let totalFaltante2026 = 0;
-            
-            // Estadísticas para 2027
-            let estudiantesPagaron2027 = 0;
-            let estudiantesFaltan2027 = 0;
-            let totalRecaudado2027 = 0;
-            let totalEsperado2027 = 0;
-            let totalFaltante2027 = 0;
-            
-            const montoReq2026 = obtenerMontoCurso(cursoNombre, '2026');
-            const montoReq2027 = obtenerMontoCurso(cursoNombre, '2027');
-            
+        const totalEstudiantes = datosCurso.estudiantes.length;
+        
+        // OBTENER MONTOS EXACTOS
+        const monto2026 = obtenerMontoCurso(cursoNombre, '2026');
+        const monto2027 = obtenerMontoCurso(cursoNombre, '2027');
+        
+        // Si NO tiene montos en NINGÚN año, omitir
+        if (monto2026 <= 0 && monto2027 <= 0) {
+            continue;
+        }
+        
+        // ============= CÁLCULOS PRECISOS PARA 2026 =============
+        let pagaron2026 = 0;
+        let parcial2026 = 0;
+        let faltan2026 = 0;
+        let recaudado2026 = 0;
+        let faltante2026 = 0;
+        
+        if (monto2026 > 0) {
             datosCurso.estudiantes.forEach(estudiante => {
-                const pago2026 = estudiante.pagos ? estudiante.pagos['2026'] || { monto: 0, fecha: '', pagado: false } : { monto: 0, fecha: '', pagado: false };
-                const pago2027 = estudiante.pagos ? estudiante.pagos['2027'] || { monto: 0, fecha: '', pagado: false } : { monto: 0, fecha: '', pagado: false };
+                const pago = estudiante.pagos?.['2026'] || { monto: 0, pagado: false };
                 
-                totalEsperado2026 += montoReq2026;
-                totalEsperado2027 += montoReq2027;
-                
-                // Calcular para 2026
-                if (pago2026.pagado && pago2026.monto >= montoReq2026) {
-                    estudiantesPagaron2026++;
-                    totalRecaudado2026 += pago2026.monto;
-                } else {
-                    estudiantesFaltan2026++;
-                    if (pago2026.pagado) {
-                        totalRecaudado2026 += pago2026.monto;
-                        totalFaltante2026 += (montoReq2026 - pago2026.monto);
+                if (pago.pagado && pago.monto > 0) {
+                    recaudado2026 += pago.monto;
+                    
+                    if (pago.monto >= monto2026) {
+                        pagaron2026++;
                     } else {
-                        totalFaltante2026 += montoReq2026;
+                        parcial2026++;
+                        faltante2026 += (monto2026 - pago.monto);
                     }
-                }
-                
-                // Calcular para 2027
-                if (pago2027.pagado && pago2027.monto >= montoReq2027) {
-                    estudiantesPagaron2027++;
-                    totalRecaudado2027 += pago2027.monto;
                 } else {
-                    estudiantesFaltan2027++;
-                    if (pago2027.pagado) {
-                        totalRecaudado2027 += pago2027.monto;
-                        totalFaltante2027 += (montoReq2027 - pago2027.monto);
-                    } else {
-                        totalFaltante2027 += montoReq2027;
-                    }
+                    faltan2026++;
+                    faltante2026 += monto2026;
                 }
             });
-            
-            // Crear resumen del curso
-            const resumenDiv = document.createElement('div');
-            resumenDiv.className = 'col-md-6 col-lg-4 mb-4';
-            
-            resumenDiv.innerHTML = `
-                <div class="resumen-curso-seguimiento">
-                    <div class="curso-header-seguimiento">
-                        <h6 class="text-center mb-2">${cursoNombre}</h6>
-                        <div class="text-center mb-2">
-                            <small class="text-muted">${totalEstudiantes} estudiantes</small>
+        }
+        
+        // ============= CÁLCULOS PRECISOS PARA 2027 =============
+        let pagaron2027 = 0;
+        let parcial2027 = 0;
+        let faltan2027 = 0;
+        let recaudado2027 = 0;
+        let faltante2027 = 0;
+        
+        if (monto2027 > 0) {
+            datosCurso.estudiantes.forEach(estudiante => {
+                const pago = estudiante.pagos?.['2027'] || { monto: 0, pagado: false };
+                
+                if (pago.pagado && pago.monto > 0) {
+                    recaudado2027 += pago.monto;
+                    
+                    if (pago.monto >= monto2027) {
+                        pagaron2027++;
+                    } else {
+                        parcial2027++;
+                        faltante2027 += (monto2027 - pago.monto);
+                    }
+                } else {
+                    faltan2027++;
+                    faltante2027 += monto2027;
+                }
+            });
+        }
+        
+        // ============= CREAR TARJETA VISUAL =============
+        const colDiv = document.createElement('div');
+        colDiv.className = 'col-md-6 col-lg-4 mb-4';
+        
+        // Calcular porcentajes
+        const porcentaje2026 = (totalEstudiantes * monto2026) > 0 ? 
+            Math.round((recaudado2026 / (totalEstudiantes * monto2026)) * 100) : 0;
+        
+        const porcentaje2027 = (totalEstudiantes * monto2027) > 0 ? 
+            Math.round((recaudado2027 / (totalEstudiantes * monto2027)) * 100) : 0;
+        
+        // Totales del curso
+        const totalRecaudado = recaudado2026 + recaudado2027;
+        const totalFaltante = faltante2026 + faltante2027;
+        const totalPagaron = pagaron2026 + pagaron2027;
+        const totalParcial = parcial2026 + parcial2027;
+        const totalFaltan = faltan2026 + faltan2027;
+        
+        let contenido2026 = '';
+        let contenido2027 = '';
+        
+        // SECCIÓN 2026 (solo si tiene monto)
+        if (monto2026 > 0) {
+            contenido2026 = `
+                <div class="anio-seguimiento anio-2026 mb-3">
+                    <div class="anio-header">
+                        <h6 class="text-warning mb-2">
+                            <i class="fas fa-calendar-alt"></i> 2026
+                            <small class="text-white ms-2">(Bs ${monto2026})</small>
+                        </h6>
+                    </div>
+                    <div class="row text-center mb-2">
+                        <div class="col-4">
+                            <div class="numero-seguimiento text-success">${pagaron2026}</div>
+                            <small class="text-success">Al día</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="numero-seguimiento text-warning">${parcial2026}</div>
+                            <small class="text-warning">Parcial</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="numero-seguimiento text-danger">${faltan2026}</div>
+                            <small class="text-danger">Faltan</small>
                         </div>
                     </div>
-                    
-                    <!-- AÑO 2026 -->
-                    <div class="anio-seguimiento anio-2026 mb-3">
-                        <div class="anio-header">
-                            <h6 class="text-warning mb-2">
-                                <i class="fas fa-calendar-alt"></i> 2026
-                                <small class="text-white ms-2">(Bs ${montoReq2026})</small>
-                            </h6>
+                    <div class="info-financiera">
+                        <div class="d-flex justify-content-between">
+                            <small>Recaudado:</small>
+                            <strong class="text-success">Bs ${recaudado2026.toFixed(2)}</strong>
                         </div>
-                        <div class="row text-center mb-2">
-                            <div class="col-6">
-                                <div class="numero-seguimiento text-success">${estudiantesPagaron2026}</div>
-                                <small class="text-success">Pagaron</small>
-                            </div>
-                            <div class="col-6">
-                                <div class="numero-seguimiento text-danger">${estudiantesFaltan2026}</div>
-                                <small class="text-danger">Faltan</small>
-                            </div>
+                        <div class="d-flex justify-content-between">
+                            <small>Faltante:</small>
+                            <strong class="text-danger">Bs ${faltante2026.toFixed(2)}</strong>
                         </div>
-                        <div class="info-financiera">
-                            <div class="d-flex justify-content-between">
-                                <small>Recaudado:</small>
-                                <strong class="text-success">Bs ${totalRecaudado2026.toFixed(2)}</strong>
-                            </div>
-                            <div class="d-flex justify-content-between">
-                                <small>Faltante:</small>
-                                <strong class="text-danger">Bs ${totalFaltante2026.toFixed(2)}</strong>
-                            </div>
-                            <div class="d-flex justify-content-between">
-                                <small>% Completado:</small>
-                                <strong class="${(totalRecaudado2026/totalEsperado2026*100) >= 50 ? 'text-success' : 'text-warning'}">
-                                    ${totalEsperado2026 > 0 ? Math.round((totalRecaudado2026/totalEsperado2026*100)) : 0}%
-                                </strong>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- AÑO 2027 -->
-                    <div class="anio-seguimiento anio-2027">
-                        <div class="anio-header">
-                            <h6 class="text-info mb-2">
-                                <i class="fas fa-calendar-alt"></i> 2027
-                                <small class="text-white ms-2">(Bs ${montoReq2027})</small>
-                            </h6>
-                        </div>
-                        <div class="row text-center mb-2">
-                            <div class="col-6">
-                                <div class="numero-seguimiento text-success">${estudiantesPagaron2027}</div>
-                                <small class="text-success">Pagaron</small>
-                            </div>
-                            <div class="col-6">
-                                <div class="numero-seguimiento text-danger">${estudiantesFaltan2027}</div>
-                                <small class="text-danger">Faltan</small>
-                            </div>
-                        </div>
-                        <div class="info-financiera">
-                            <div class="d-flex justify-content-between">
-                                <small>Recaudado:</small>
-                                <strong class="text-success">Bs ${totalRecaudado2027.toFixed(2)}</strong>
-                            </div>
-                            <div class="d-flex justify-content-between">
-                                <small>Faltante:</small>
-                                <strong class="text-danger">Bs ${totalFaltante2027.toFixed(2)}</strong>
-                            </div>
-                            <div class="d-flex justify-content-between">
-                                <small>% Completado:</small>
-                                <strong class="${(totalRecaudado2027/totalEsperado2027*100) >= 50 ? 'text-success' : 'text-warning'}">
-                                    ${totalEsperado2027 > 0 ? Math.round((totalRecaudado2027/totalEsperado2027*100)) : 0}%
-                                </strong>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- RESUMEN TOTAL -->
-                    <div class="resumen-total mt-3 p-2 rounded" style="background: rgba(188, 19, 254, 0.1);">
-                        <div class="row text-center">
-                            <div class="col-4">
-                                <div class="numero-seguimiento text-info">${totalEstudiantes}</div>
-                                <small>Total</small>
-                            </div>
-                            <div class="col-4">
-                                <div class="numero-seguimiento text-success">${estudiantesPagaron2026 + estudiantesPagaron2027}</div>
-                                <small>Pagaron</small>
-                            </div>
-                            <div class="col-4">
-                                <div class="numero-seguimiento text-danger">${estudiantesFaltan2026 + estudiantesFaltan2027}</div>
-                                <small>Faltan</small>
-                            </div>
-                        </div>
-                        <div class="mt-2">
-                            <div class="d-flex justify-content-between">
-                                <small>Total recaudado:</small>
-                                <strong class="text-success">Bs ${(totalRecaudado2026 + totalRecaudado2027).toFixed(2)}</strong>
-                            </div>
-                            <div class="d-flex justify-content-between">
-                                <small>Total faltante:</small>
-                                <strong class="text-danger">Bs ${(totalFaltante2026 + totalFaltante2027).toFixed(2)}</strong>
-                            </div>
+                        <div class="d-flex justify-content-between">
+                            <small>% Completado:</small>
+                            <strong class="${porcentaje2026 >= 50 ? 'text-success' : 'text-warning'}">
+                                ${porcentaje2026}%
+                            </strong>
                         </div>
                     </div>
                 </div>
             `;
-            
-            contenedor.appendChild(resumenDiv);
         }
+        
+        // SECCIÓN 2027 (solo si tiene monto)
+        if (monto2027 > 0) {
+            contenido2027 = `
+                <div class="anio-seguimiento anio-2027">
+                    <div class="anio-header">
+                        <h6 class="text-info mb-2">
+                            <i class="fas fa-calendar-alt"></i> 2027
+                            <small class="text-white ms-2">(Bs ${monto2027})</small>
+                        </h6>
+                    </div>
+                    <div class="row text-center mb-2">
+                        <div class="col-4">
+                            <div class="numero-seguimiento text-success">${pagaron2027}</div>
+                            <small class="text-success">Al día</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="numero-seguimiento text-warning">${parcial2027}</div>
+                            <small class="text-warning">Parcial</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="numero-seguimiento text-danger">${faltan2027}</div>
+                            <small class="text-danger">Faltan</small>
+                        </div>
+                    </div>
+                    <div class="info-financiera">
+                        <div class="d-flex justify-content-between">
+                            <small>Recaudado:</small>
+                            <strong class="text-success">Bs ${recaudado2027.toFixed(2)}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <small>Faltante:</small>
+                            <strong class="text-danger">Bs ${faltante2027.toFixed(2)}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <small>% Completado:</small>
+                            <strong class="${porcentaje2027 >= 50 ? 'text-success' : 'text-warning'}">
+                                ${porcentaje2027}%
+                            </strong>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // CALCULAR PORCENTAJE TOTAL
+        const totalEsperado = (totalEstudiantes * monto2026) + (totalEstudiantes * monto2027);
+        const porcentajeTotal = totalEsperado > 0 ? Math.round((totalRecaudado / totalEsperado) * 100) : 0;
+        
+        // HTML COMPLETO DE LA TARJETA
+        colDiv.innerHTML = `
+            <div class="resumen-curso-seguimiento">
+                <div class="curso-header-seguimiento">
+                    <h6 class="text-center mb-2">${cursoNombre}</h6>
+                    <div class="text-center mb-2">
+                        <small class="text-muted">${totalEstudiantes} estudiantes</small>
+                    </div>
+                </div>
+                
+                ${contenido2026}
+                ${contenido2027}
+                
+                <!-- RESUMEN TOTAL DEL CURSO -->
+                <div class="resumen-total mt-3 p-2 rounded" style="background: rgba(188, 19, 254, 0.1);">
+                    <div class="row text-center">
+                        <div class="col-3">
+                            <div class="numero-seguimiento text-info">${totalEstudiantes}</div>
+                            <small>Total</small>
+                        </div>
+                        <div class="col-3">
+                            <div class="numero-seguimiento text-success">${totalPagaron}</div>
+                            <small>Al día</small>
+                        </div>
+                        <div class="col-3">
+                            <div class="numero-seguimiento text-warning">${totalParcial}</div>
+                            <small>Parcial</small>
+                        </div>
+                        <div class="col-3">
+                            <div class="numero-seguimiento text-danger">${totalFaltan}</div>
+                            <small>Faltan</small>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <div class="d-flex justify-content-between">
+                            <small>Total recaudado:</small>
+                            <strong class="text-success">Bs ${totalRecaudado.toFixed(2)}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <small>Total faltante:</small>
+                            <strong class="text-danger">Bs ${totalFaltante.toFixed(2)}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <small>% Total:</small>
+                            <strong class="${porcentajeTotal >= 50 ? 'text-success' : 'text-warning'}">
+                                ${porcentajeTotal}%
+                            </strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        contenedor.appendChild(colDiv);
+        cursosMostrados++;
     }
+    
+    // SI NO HAY CURSOS, MOSTRAR MENSAJE
+    if (cursosMostrados === 0) {
+        contenedor.innerHTML = `
+            <div class="col-12 text-center py-5">
+                <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                <h4 class="neon-text">No hay datos para mostrar</h4>
+                <p class="text-muted">Ve a la pestaña "Cursos" y registra pagos</p>
+                <button class="btn btn-primary mt-3" onclick="crearDatosDePrueba()">
+                    <i class="fas fa-vial"></i> Crear datos de prueba
+                </button>
+            </div>
+        `;
+    }
+}
+
+// ============================================
+// FUNCIÓN MEJORADA PARA GUARDAR DATOS (con actualización automática)
+// ============================================
+// FUNCIÓN DE GUARDADO MEJORADA CON ACTUALIZACIÓN AUTOMÁTICA
+function guardarDatos(forzarActualizacion = false) {
+    try {
+        console.log("💾 Guardando datos...");
+        
+        // 1. Guardar en localStorage
+        localStorage.setItem('datosFederacion', JSON.stringify(datos));
+        
+        // 2. Si hay conexión, guardar en la nube también
+        if (window.sincronizador && sincronizacionActiva) {
+            window.sincronizador.guardarEnNube(datos);
+            console.log('✅ Datos sincronizados en la nube');
+        }
+        
+        // 3. ACTUALIZACIÓN AUTOMÁTICA INMEDIATA
+        setTimeout(() => {
+            // Determinar qué pestaña está activa
+            const tabs = document.querySelectorAll('.tab-content');
+            const tabActivo = Array.from(tabs).find(tab => 
+                tab.style.display === 'block' || 
+                tab.style.display === '' ||
+                tab.classList.contains('active')
+            );
+            
+            if (tabActivo) {
+                const tabId = tabActivo.id;
+                console.log(`🔄 Actualizando pestaña activa: ${tabId}`);
+                
+                switch(tabId) {
+                    case 'dashboard':
+                        actualizarDashboard();
+                        actualizarDetalleCajaFuerte();
+                        actualizarUltimosPagosDashboard();
+                        actualizarGraficos();
+                        break;
+                    case 'caja':
+                        actualizarTablaMovimientosCaja();
+                        break;
+                    case 'gastos':
+                        actualizarTablaGastos();
+                        break;
+                    case 'cursos':
+                        cargarCursoSeleccionado();
+                        break;
+                    case 'reportes':
+                        actualizarReportes();
+                        break;
+                    case 'seguimiento':
+                        actualizarSeguimiento();
+                        actualizarResumenCursosSeguimiento();
+                        actualizarTablaSeguimientoEstudiantes();
+                        actualizarUltimosPagosSeguimiento();
+                        break;
+                    case 'casilleros':
+                        actualizarVistaCasilleros();
+                        actualizarResumenCasilleros();
+                        actualizarTablaGastosCasilleros();
+                        break;
+                    case 'otros-cobros':
+                        actualizarSectoresCobro();
+                        actualizarResumenOtrosCobros();
+                        actualizarTablaGastosOtrosCobros();
+                        break;
+                    case 'eventos':
+                        actualizarEventos();
+                        break;
+                }
+            }
+            
+            // SIEMPRE actualizar el dashboard (números principales)
+            actualizarDashboardRapido();
+            actualizarResumenCursosSeguimiento();
+            actualizarTablaGastosCasilleros(); // ← AÑADE ESTA LÍNEA
+            actualizarResumenCasilleros();
+            actualizarResumenOtrosCobros();
+    actualizarTablaGastosOtrosCobros();
+            
+        }, 100);
+        
+        console.log("✅ Datos guardados y actualizados");
+        return true;
+        
+    } catch (error) {
+        console.error('❌ Error guardando datos:', error);
+        return false;
+    }
+}
+
+// ACTUALIZACIÓN RÁPIDA DEL DASHBOARD (solo números críticos)
+function actualizarDashboardRapido() {
+    try {
+        // Calcular totales rápidos
+        let totalAportes = 0;
+        for (const curso of Object.values(datos.cursos)) {
+            if (curso.estudiantes) {
+                for (const estudiante of curso.estudiantes) {
+                    if (estudiante.pagos) {
+                        for (const pago of Object.values(estudiante.pagos)) {
+                            if (pago.pagado && pago.monto > 0) {
+                                totalAportes += pago.monto;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        let totalGastos = 0;
+        for (const gasto of datos.gastos) {
+            totalGastos += gasto.monto || 0;
+        }
+        
+        const dineroFinal = datos.dineroInicial + totalAportes - totalGastos;
+        
+        // Actualizar elementos específicos
+        const elementos = [
+            'dineroFinal', 'totalAportesEstudiantes', 'totalGastos',
+            'totalCajaDisplay', 'saldoCaja', 'totalIngresosCaja',
+            'totalEgresosCaja', 'totalAportesCaja'
+        ];
+        
+        elementos.forEach(id => {
+            const elem = document.getElementById(id);
+            if (elem) {
+                if (id === 'dineroFinal' || id === 'totalCajaDisplay' || id === 'saldoCaja') {
+                    elem.textContent = `Bs ${dineroFinal.toFixed(2)}`;
+                } else if (id === 'totalAportesEstudiantes' || id === 'totalAportesCaja') {
+                    elem.textContent = `Bs ${totalAportes.toFixed(2)}`;
+                } else if (id === 'totalGastos') {
+                    elem.textContent = `Bs ${totalGastos.toFixed(2)}`;
+                }
+            }
+        });
+        
+    } catch (e) {
+        console.error("Error en actualización rápida:", e);
+    }
+}
+
+// ============================================
+// FUNCIÓN PARA CREAR DATOS DE PRUEBA
+// ============================================
+function crearDatosDePrueba() {
+    console.log("🧪 Creando datos de prueba...");
+    
+    ordenCursos.forEach(cursoNombre => {
+        if (!datos.cursos[cursoNombre]) {
+            datos.cursos[cursoNombre] = { estudiantes: [] };
+        }
+        
+        // Limpiar estudiantes existentes
+        datos.cursos[cursoNombre].estudiantes = [];
+        
+        // Crear 10 estudiantes con pagos variados
+        for (let i = 1; i <= 10; i++) {
+            const estudiante = {
+                nombre: `Estudiante ${i} ${cursoNombre.substring(0, 3)}`,
+                pagos: {}
+            };
+            
+            // 2026 - 60% paga completo, 20% paga parcial, 20% no paga
+            const monto2026 = obtenerMontoCurso(cursoNombre, '2026');
+            if (monto2026 > 0) {
+                const random = Math.random();
+                if (random < 0.6) {
+                    // Paga completo
+                    estudiante.pagos['2026'] = {
+                        monto: monto2026,
+                        fecha: '2024-01-15',
+                        pagado: true
+                    };
+                } else if (random < 0.8) {
+                    // Paga parcial
+                    estudiante.pagos['2026'] = {
+                        monto: monto2026 * 0.5,
+                        fecha: '2024-01-15',
+                        pagado: true
+                    };
+                }
+                // else: no paga (no se crea el pago)
+            }
+            
+            // 2027 - 50% paga completo, 30% paga parcial, 20% no paga
+            const monto2027 = obtenerMontoCurso(cursoNombre, '2027');
+            if (monto2027 > 0) {
+                const random = Math.random();
+                if (random < 0.5) {
+                    // Paga completo
+                    estudiante.pagos['2027'] = {
+                        monto: monto2027,
+                        fecha: '2024-01-15',
+                        pagado: true
+                    };
+                } else if (random < 0.8) {
+                    // Paga parcial
+                    estudiante.pagos['2027'] = {
+                        monto: monto2027 * 0.6,
+                        fecha: '2024-01-15',
+                        pagado: true
+                    };
+                }
+                // else: no paga (no se crea el pago)
+            }
+            
+            datos.cursos[cursoNombre].estudiantes.push(estudiante);
+        }
+    });
+    
+    guardarDatos();
+    console.log("✅ Datos de prueba creados");
+    alert('✅ Datos de prueba creados. Verás los cursos con pagos.');
+}
+
+// ============================================
+// ACTUALIZACIÓN AUTOMÁTICA CUANDO SE MODIFICAN PAGOS
+// ============================================
+
+// 1. Función mejorada para registrar pagos (llama al resumen automáticamente)
+function registrarPagoEstudiante() {
+    if (!isAdmin) return;
+    
+    const curso = document.getElementById('cursoActual').value;
+    const index = parseInt(document.getElementById('estudianteIndex').value);
+    const anio = document.getElementById('anioPago').value;
+    const monto = parseFloat(document.getElementById('montoPago').value) || 0;
+    const fecha = document.getElementById('fechaPago').value;
+    
+    if (!curso || isNaN(index) || !anio || !monto || !fecha) {
+        mostrarMensaje('Complete todos los campos', 'error');
+        return;
+    }
+    
+    if (!datos.cursos[curso].estudiantes[index].pagos) {
+        datos.cursos[curso].estudiantes[index].pagos = {
+            2026: { monto: 0, fecha: '', pagado: false },
+            2027: { monto: 0, fecha: '', pagado: false }
+        };
+    }
+    
+    datos.cursos[curso].estudiantes[index].pagos[anio] = {
+        monto: monto,
+        fecha: fecha,
+        pagado: true
+    };
+    
+    guardarDatos(); // Esto ya llama a actualizarResumenCursosSeguimiento()
+    
+    const modal = bootstrap.Modal.getInstance(document.getElementById('modalPago'));
+    modal.hide();
+    
+    mostrarMensaje('Pago registrado exitosamente', 'success');
+}
+
+// 2. Función mejorada para editar pagos
+function guardarEdicionPago() {
+    if (!isAdmin) return;
+    
+    const curso = document.getElementById('editarCurso').value;
+    const index = parseInt(document.getElementById('editarIndex').value);
+    const anio = document.getElementById('editarAnio').value;
+    const monto = parseFloat(document.getElementById('editarMontoPago').value) || 0;
+    const fecha = document.getElementById('editarFechaPago').value;
+    const pagado = document.getElementById('editarPagado').checked;
+    
+    if (!datos.cursos[curso].estudiantes[index].pagos) {
+        datos.cursos[curso].estudiantes[index].pagos = {
+            2026: { monto: 0, fecha: '', pagado: false },
+            2027: { monto: 0, fecha: '', pagado: false }
+        };
+    }
+    
+    datos.cursos[curso].estudiantes[index].pagos[anio] = {
+        monto: monto,
+        fecha: fecha,
+        pagado: pagado
+    };
+    
+    guardarDatos(); // Esto ya llama a actualizarResumenCursosSeguimiento()
+    
+    const modal = bootstrap.Modal.getInstance(document.getElementById('modalEditarPago'));
+    modal.hide();
+    
+    mostrarMensaje('Pago actualizado exitosamente', 'success');
+}
+
+// ============================================
+// EJECUTAR AL CARGAR Y CAMBIAR PESTAÑAS
+// ============================================
+
+// Asegurar que la función se ejecute al cargar
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("📋 Página cargada - Listo para mostrar cursos");
+    
+    // Esperar un momento y ejecutar
+    setTimeout(() => {
+        actualizarResumenCursosSeguimiento();
+    }, 1000);
+    
+    // También ejecutar cuando se haga clic en la pestaña de seguimiento
+    const tabSeguimiento = document.querySelector('a[href="#seguimiento"]');
+    if (tabSeguimiento) {
+        tabSeguimiento.addEventListener('shown.bs.tab', function() {
+            console.log("📊 Mostrando pestaña de seguimiento - actualizando");
+            actualizarResumenCursosSeguimiento();
+        });
+    }
+});
+
+// También agregar esto a la función actualizarSeguimiento() si existe
+function actualizarSeguimiento() {
+    console.log("🔄 Actualizando seguimiento completo...");
+    // ... (tu código existente de actualizarSeguimiento) ...
+    
+    // AGREGAR ESTA LÍNEA AL FINAL:
+    actualizarResumenCursosSeguimiento();
 }
 
 // También mejora los estilos para el seguimiento
@@ -5242,17 +5925,50 @@ function generarReporteSectorPDF(sector) {
 }
 
 // GENERAR REPORTE COMPLETO PDF MEJORADO
+// GENERAR REPORTE COMPLETO PDF MEJORADO CON LÍNEA DE TIEMPO
+// GENERAR REPORTE COMPLETO PDF - VERSIÓN MEJORADA Y SIMPLIFICADA
 function generarReporteCompleto() {
-    // Calcular todos los totales
-    let totalIngresos = datos.totalIngresosCaja || 0;
-    let totalEgresos = datos.totalEgresosCaja || 0;
-    let saldoCaja = datos.dineroFinal || 0;
-    
+    // ============= 1. CALCULAR DATOS BÁSICOS =============
+    // A) APORTES DE ESTUDIANTES (2026 + 2027)
     let totalAportesEstudiantes = 0;
-    let totalCasilleros = 0;
-    let totalOtrosCobros = datos.totalOtrosCobros || 0;
+    let recaudado2026 = 0;
+    let recaudado2027 = 0;
     
-    // Calcular aportes por curso y año
+    // B) INGRESOS DE CAJA (movimientos de caja tipo ingreso)
+    let ingresosCaja = 0;
+    for (const movimiento of datos.movimientosCaja) {
+        if (movimiento.tipo === 'ingreso') {
+            ingresosCaja += movimiento.monto || 0;
+        }
+    }
+    
+    // C) EGRESOS DE CAJA (movimientos de caja tipo egreso)
+    let egresosCaja = 0;
+    for (const movimiento of datos.movimientosCaja) {
+        if (movimiento.tipo === 'egreso') {
+            egresosCaja += movimiento.monto || 0;
+        }
+    }
+    
+    // D) GASTOS OPERATIVOS
+    let gastosOperativos = 0;
+    for (const gasto of datos.gastos) {
+        gastosOperativos += gasto.monto || 0;
+    }
+    
+    // E) DINERO INICIAL
+    let dineroInicial = 0;
+    if (datos.movimientosCaja.length > 0) {
+        const primerosIngresos = datos.movimientosCaja
+            .filter(mov => mov.tipo === 'ingreso')
+            .sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+        
+        if (primerosIngresos.length > 0) {
+            dineroInicial = primerosIngresos[0].monto || 0;
+        }
+    }
+    
+    // F) CALCULAR APORTES POR CURSO Y AÑO (código original)
     const aportesPorCurso = {};
     
     for (const cursoNombre of ordenCursos) {
@@ -5292,6 +6008,7 @@ function generarReporteCompleto() {
                         }
                         
                         totalAportesEstudiantes += monto2026;
+                        recaudado2026 += monto2026;
                         aportesPorCurso[cursoNombre].totalGeneral += monto2026;
                     } else {
                         aportesPorCurso[cursoNombre]['2026'].faltan++;
@@ -5311,6 +6028,7 @@ function generarReporteCompleto() {
                         }
                         
                         totalAportesEstudiantes += monto2027;
+                        recaudado2027 += monto2027;
                         aportesPorCurso[cursoNombre].totalGeneral += monto2027;
                     } else {
                         aportesPorCurso[cursoNombre]['2027'].faltan++;
@@ -5338,43 +6056,166 @@ function generarReporteCompleto() {
         }
     }
     
-    // Calcular casilleros
-    for (const casillero of Object.values(datos.casilleros)) {
-        if (casillero && casillero.totalPagado) {
-            totalCasilleros += casillero.totalPagado;
+    // G) Calcular otros ingresos (excluyendo dinero inicial)
+    let otrosIngresos = 0;
+    if (datos.movimientosCaja.length > 0) {
+        const ingresosSinInicial = datos.movimientosCaja
+            .filter(mov => mov.tipo === 'ingreso')
+            .slice(1);
+        
+        for (const ingreso of ingresosSinInicial) {
+            otrosIngresos += ingreso.monto || 0;
         }
     }
     
-    // Calcular gastos de casilleros
-    let totalGastosCasilleros = 0;
-    datos.gastosCasilleros.forEach(gasto => {
-        totalGastosCasilleros += gasto.monto || 0;
-    });
+    // H) Total ingresos reales (sin contar dinero inicial duplicado)
+    const totalIngresosReales = otrosIngresos + totalAportesEstudiantes;
     
-    // Calcular otros ingresos (excluyendo dinero inicial)
-    let otrosIngresos = 0;
-    let dineroInicial = 0;
-    let esPrimerIngreso = true;
+    // I) Calcular gastos totales
+    const totalEgresosTotales = egresosCaja + gastosOperativos;
     
-    for (const movimiento of datos.movimientosCaja) {
-        if (movimiento.tipo === 'ingreso') {
-            if (esPrimerIngreso) {
-                dineroInicial = movimiento.monto || 0;
-                esPrimerIngreso = false;
-            } else {
-                otrosIngresos += movimiento.monto || 0;
+    // J) Saldo final
+    const saldoFinal = dineroInicial + totalIngresosReales - totalEgresosTotales;
+    
+    // ============= 2. CREAR LÍNEA DE TIEMPO EXACTA =============
+    let todosLosEventos = [];
+    
+    // A) DINERO INICIAL (como primer evento)
+    if (dineroInicial > 0) {
+        todosLosEventos.push({
+            fecha: datos.movimientosCaja.length > 0 ? datos.movimientosCaja[0].fecha : new Date().toISOString().split('T')[0],
+            timestamp: datos.movimientosCaja.length > 0 ? new Date(datos.movimientosCaja[0].fecha).getTime() : Date.now(),
+            tipo: 'DINERO INICIAL',
+            descripcion: 'Fondo inicial de caja',
+            detalle: 'Dinero inicial registrado',
+            monto: dineroInicial,
+            color: 'info',
+            esIngreso: true,
+            origen: 'inicial'
+        });
+    }
+    
+    // B) APORTES DE ESTUDIANTES
+    for (const [cursoNombre, datosCurso] of Object.entries(datos.cursos)) {
+        if (datosCurso.estudiantes) {
+            for (const estudiante of datosCurso.estudiantes) {
+                if (estudiante.pagos) {
+                    // 2026
+                    const pago2026 = estudiante.pagos['2026'];
+                    if (pago2026 && pago2026.pagado && pago2026.fecha && pago2026.monto > 0) {
+                        todosLosEventos.push({
+                            fecha: pago2026.fecha,
+                            timestamp: new Date(pago2026.fecha).getTime(),
+                            tipo: 'APORTE ESTUDIANTE',
+                            descripcion: `${cursoNombre}`,
+                            detalle: `${estudiante.nombre || 'Estudiante'} - Aporte 2026`,
+                            monto: pago2026.monto || 0,
+                            color: 'warning',
+                            esIngreso: true,
+                            origen: 'aporte_estudiante_2026'
+                        });
+                    }
+                    
+                    // 2027
+                    const pago2027 = estudiante.pagos['2027'];
+                    if (pago2027 && pago2027.pagado && pago2027.fecha && pago2027.monto > 0) {
+                        todosLosEventos.push({
+                            fecha: pago2027.fecha,
+                            timestamp: new Date(pago2027.fecha).getTime(),
+                            tipo: 'APORTE ESTUDIANTE',
+                            descripcion: `${cursoNombre}`,
+                            detalle: `${estudiante.nombre || 'Estudiante'} - Aporte 2027`,
+                            monto: pago2027.monto || 0,
+                            color: 'warning',
+                            esIngreso: true,
+                            origen: 'aporte_estudiante_2027'
+                        });
+                    }
+                }
             }
         }
     }
     
-    // Total ingresos reales (sin contar dinero inicial duplicado)
-    const totalIngresosReales = otrosIngresos + totalAportesEstudiantes + totalCasilleros;
+    // C) MOVIMIENTOS DE CAJA - INGRESOS (excluyendo el primero que ya es dinero inicial)
+    let primerIngresoContado = false;
+    for (const movimiento of datos.movimientosCaja) {
+        if (movimiento.fecha) {
+            const esIngreso = movimiento.tipo === 'ingreso';
+            
+            // Saltar el primer ingreso si ya lo contamos como dinero inicial
+            if (esIngreso && !primerIngresoContado && movimiento.monto === dineroInicial) {
+                primerIngresoContado = true;
+                continue;
+            }
+            
+            todosLosEventos.push({
+                fecha: movimiento.fecha,
+                timestamp: new Date(movimiento.fecha).getTime(),
+                tipo: esIngreso ? 'INGRESO CAJA' : 'EGRESO CAJA',
+                descripcion: movimiento.concepto || 'Movimiento de caja',
+                detalle: esIngreso ? 'Ingreso de dinero en caja' : 'Egreso de dinero de caja',
+                monto: movimiento.monto || 0,
+                color: esIngreso ? 'success' : 'danger',
+                esIngreso: esIngreso,
+                origen: 'caja'
+            });
+        }
+    }
     
-    // Generar contenido PDF
+    // D) GASTOS OPERATIVOS
+    for (const gasto of datos.gastos) {
+        if (gasto.fecha) {
+            todosLosEventos.push({
+                fecha: gasto.fecha,
+                timestamp: new Date(gasto.fecha).getTime(),
+                tipo: 'GASTO OPERATIVO',
+                descripcion: gasto.categoria || 'Gasto',
+                detalle: gasto.descripcion || 'Sin descripción',
+                monto: gasto.monto || 0,
+                color: 'danger',
+                esIngreso: false,
+                origen: 'gasto'
+            });
+        }
+    }
+    
+    // ============= 3. ORDENAR POR FECHA CRONOLÓGICA =============
+    todosLosEventos.sort((a, b) => a.timestamp - b.timestamp);
+    
+    // ============= 4. CALCULAR SALDO ACUMULADO PARA LÍNEA DE TIEMPO =============
+    let saldoAcumulado = 0;
+    const lineaDeTiempo = [];
+    
+    // Procesar todos los eventos en orden cronológico
+    for (let i = 0; i < todosLosEventos.length; i++) {
+        const evento = todosLosEventos[i];
+        
+        if (evento.esIngreso) {
+            saldoAcumulado += evento.monto;
+        } else {
+            saldoAcumulado -= evento.monto;
+        }
+        
+        lineaDeTiempo.push({
+            fecha: evento.fecha,
+            tipo: evento.tipo,
+            descripcion: evento.descripcion,
+            detalle: evento.detalle,
+            monto: evento.monto,
+            color: evento.color,
+            esIngreso: evento.esIngreso,
+            saldoAcumulado: saldoAcumulado
+        });
+    }
+    
+    // Ordenar para mostrar (más reciente primero)
+    const eventosParaMostrar = [...lineaDeTiempo].reverse();
+    
+    // ============= 5. GENERAR HTML DEL REPORTE =============
     let contenidoPDF = `
         <html>
         <head>
-            <title>Reporte Financiero Completo</title>
+            <title>Reporte Financiero Completo - Solo Caja</title>
             <style>
                 body { font-family: Arial, sans-serif; margin: 10px; font-size: 10px; }
                 .reporte { max-width: 800px; margin: 0 auto; }
@@ -5408,14 +6249,14 @@ function generarReporteCompleto() {
             <div class="reporte">
                 <div class="header">
                     <h1>FEDERACIÓN ESTUDIANTIL</h1>
-                    <h2>REPORTE FINANCIERO COMPLETO</h2>
+                    <h2>REPORTE FINANCIERO COMPLETO - SOLO CAJA</h2>
                     <p>Fecha: ${new Date().toLocaleDateString()}</p>
                 </div>
                 
                 <!-- ESTADO DE CAJA -->
                 <div class="estado-caja">
                     <h2>SALDO ACTUAL EN CAJA</h2>
-                    <h1>Bs ${saldoCaja.toFixed(2)}</h1>
+                    <h1>Bs ${saldoFinal.toFixed(2)}</h1>
                     <p>Disponible para operaciones</p>
                 </div>
                 
@@ -5540,16 +6381,8 @@ function generarReporteCompleto() {
                         <span class="ingreso">Bs ${totalAportesEstudiantes.toFixed(2)}</span>
                     </div>
                     <div class="resumen-item">
-                        <span>Ingresos Casilleros:</span>
-                        <span class="ingreso">Bs ${totalCasilleros.toFixed(2)}</span>
-                    </div>
-                    <div class="resumen-item">
-                        <span>Otros Ingresos:</span>
+                        <span>Otros Ingresos de Caja:</span>
                         <span class="ingreso">Bs ${otrosIngresos.toFixed(2)}</span>
-                    </div>
-                    <div class="resumen-item">
-                        <span>Otros Cobros (fuera de caja):</span>
-                        <span class="ingreso">Bs ${totalOtrosCobros.toFixed(2)}</span>
                     </div>
                     <div class="resumen-item total">
                         <span><strong>TOTAL INGRESOS REALES:</strong></span>
@@ -5562,19 +6395,15 @@ function generarReporteCompleto() {
                     <h3>EGRESOS TOTALES</h3>
                     <div class="resumen-item">
                         <span>Gastos Operativos:</span>
-                        <span class="egreso">Bs ${datos.totalGastos.toFixed(2)}</span>
+                        <span class="egreso">Bs ${gastosOperativos.toFixed(2)}</span>
                     </div>
                     <div class="resumen-item">
                         <span>Egresos de Caja:</span>
-                        <span class="egreso">Bs ${totalEgresos.toFixed(2)}</span>
-                    </div>
-                    <div class="resumen-item">
-                        <span>Gastos de Casilleros:</span>
-                        <span class="egreso">Bs ${totalGastosCasilleros.toFixed(2)}</span>
+                        <span class="egreso">Bs ${egresosCaja.toFixed(2)}</span>
                     </div>
                     <div class="resumen-item total">
                         <span><strong>TOTAL EGRESOS:</strong></span>
-                        <span class="egreso"><strong>Bs ${(datos.totalGastos + totalEgresos + totalGastosCasilleros).toFixed(2)}</strong></span>
+                        <span class="egreso"><strong>Bs ${totalEgresosTotales.toFixed(2)}</strong></span>
                     </div>
                 </div>
                 
@@ -5593,10 +6422,6 @@ function generarReporteCompleto() {
                                 <span class="ingreso">Bs ${totalAportesEstudiantes.toFixed(2)}</span>
                             </div>
                             <div class="resumen-item">
-                                <span>Renta Casilleros:</span>
-                                <span class="ingreso">Bs ${totalCasilleros.toFixed(2)}</span>
-                            </div>
-                            <div class="resumen-item">
                                 <span>Otros Ingresos:</span>
                                 <span class="ingreso">Bs ${otrosIngresos.toFixed(2)}</span>
                             </div>
@@ -5606,19 +6431,15 @@ function generarReporteCompleto() {
                             <h4>DESTINO DEL DINERO</h4>
                             <div class="resumen-item">
                                 <span>Gastos Operativos:</span>
-                                <span class="egreso">Bs ${datos.totalGastos.toFixed(2)}</span>
+                                <span class="egreso">Bs ${gastosOperativos.toFixed(2)}</span>
                             </div>
                             <div class="resumen-item">
                                 <span>Egresos Varios:</span>
-                                <span class="egreso">Bs ${totalEgresos.toFixed(2)}</span>
-                            </div>
-                            <div class="resumen-item">
-                                <span>Gastos Casilleros:</span>
-                                <span class="egreso">Bs ${totalGastosCasilleros.toFixed(2)}</span>
+                                <span class="egreso">Bs ${egresosCaja.toFixed(2)}</span>
                             </div>
                             <div class="resumen-item">
                                 <span>Dinero Disponible:</span>
-                                <span class="ingreso"><strong>Bs ${saldoCaja.toFixed(2)}</strong></span>
+                                <span class="ingreso"><strong>Bs ${saldoFinal.toFixed(2)}</strong></span>
                             </div>
                         </div>
                     </div>
@@ -5629,8 +6450,8 @@ function generarReporteCompleto() {
                         <p>
                             <strong>Dinero Inicial (Bs ${dineroInicial.toFixed(2)}) + 
                             Ingresos Reales (Bs ${totalIngresosReales.toFixed(2)}) - 
-                            Total Egresos (Bs ${(datos.totalGastos + totalEgresos + totalGastosCasilleros).toFixed(2)}) = 
-                            Saldo Final (Bs ${saldoCaja.toFixed(2)})</strong>
+                            Total Egresos (Bs ${totalEgresosTotales.toFixed(2)}) = 
+                            Saldo Final (Bs ${saldoFinal.toFixed(2)})</strong>
                         </p>
                     </div>
                 </div>
@@ -5651,173 +6472,156 @@ function generarReporteCompleto() {
                         </div>
                         <div style="text-align: center; padding: 8px; background: white; border-radius: 3px; border: 1px solid #dc3545;">
                             <h4 style="color: #dc3545; font-size: 11px;">TOTAL GASTADO</h4>
-                            <h3 style="margin: 5px 0;">Bs ${(datos.totalGastos + totalEgresos + totalGastosCasilleros).toFixed(2)}</h3>
+                            <h3 style="margin: 5px 0;">Bs ${totalEgresosTotales.toFixed(2)}</h3>
                             <small>Todos los gastos</small>
                         </div>
                     </div>
                     
                     <div style="text-align: center; padding: 12px; background: #28a745; color: white; border-radius: 4px;">
                         <h2 style="margin: 5px 0; font-size: 14px;">SALDO FINAL DISPONIBLE</h2>
-                        <h1 style="font-size: 24px; margin: 5px 0;">Bs ${saldoCaja.toFixed(2)}</h1>
+                        <h1 style="font-size: 24px; margin: 5px 0;">Bs ${saldoFinal.toFixed(2)}</h1>
                         <p style="margin: 5px 0; font-size: 9px;">Este es el dinero actualmente disponible en caja para la Federación Estudiantil</p>
                     </div>
                 </div>
                 
-                <!-- DETALLE POR CONCEPTO -->
+                <!-- LÍNEA DE TIEMPO COMPLETA Y EXACTA -->
                 <div class="seccion">
-                    <h4>DETALLE POR CONCEPTO:</h4>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                        <div>
-                            <strong>Ingresos:</strong>
-                            <ul style="margin: 5px 0; padding-left: 15px; font-size: 9px;">
-                                <li>Aportes Estudiantes: Bs ${totalAportesEstudiantes.toFixed(2)}</li>
-                                <li>Casilleros: Bs ${totalCasilleros.toFixed(2)}</li>
-                                <li>Otros Ingresos: Bs ${otrosIngresos.toFixed(2)}</li>
-                                <li>Dinero Inicial: Bs ${dineroInicial.toFixed(2)}</li>
-                            </ul>
-                        </div>
-                        <div>
-                            <strong>Egresos:</strong>
-                            <ul style="margin: 5px 0; padding-left: 15px; font-size: 9px;">
-                                <li>Gastos Operativos: Bs ${datos.totalGastos.toFixed(2)}</li>
-                                <li>Egresos Caja: Bs ${totalEgresos.toFixed(2)}</li>
-                                <li>Gastos Casilleros: Bs ${totalGastosCasilleros.toFixed(2)}</li>
-                            </ul>
-                        </div>
-                    </div>
+                    <h3>HISTORIAL CRONOLÓGICO COMPLETO DE CAJA</h3>
+                    <p><small>Ordenado por fecha de registro (${lineaDeTiempo.length} eventos totales)</small></p>
                     
-                    <!-- RESUMEN APORTES POR CURSO -->
-                    <div style="margin-top: 10px; padding: 6px; background: #d4edda; border-radius: 3px;">
-                        <h5 style="color: #155724; margin-bottom: 5px; font-size: 10px;">APORTES POR CURSO - RESUMEN</h5>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                            <div>
-                                <strong>Año 2026:</strong>
-                                <ul style="margin: 3px 0; padding-left: 15px; font-size: 9px;">
-                                    <li>Estudiantes que pagaron: ${totalEstudiantesPagaron2026}</li>
-                                    <li>Estudiantes que faltan: ${totalEstudiantesFaltan2026}</li>
-                                    <li>Recaudado: <strong class="ingreso">Bs ${totalRecaudado2026.toFixed(2)}</strong></li>
-                                    <li>Falta recaudar: <strong class="egreso">Bs ${totalFalta2026.toFixed(2)}</strong></li>
-                                </ul>
-                            </div>
-                            <div>
-                                <strong>Año 2027:</strong>
-                                <ul style="margin: 3px 0; padding-left: 15px; font-size: 9px;">
-                                    <li>Estudiantes que pagaron: ${totalEstudiantesPagaron2027}</li>
-                                    <li>Estudiantes que faltan: ${totalEstudiantesFaltan2027}</li>
-                                    <li>Recaudado: <strong class="ingreso">Bs ${totalRecaudado2027.toFixed(2)}</strong></li>
-                                    <li>Falta recaudar: <strong class="egreso">Bs ${totalFalta2027.toFixed(2)}</strong></li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div style="text-align: center; margin-top: 5px; padding: 5px; background: #c3e6cb; border-radius: 2px; font-size: 9px;">
-                            <strong>TOTAL APORTES ESTUDIANTES: <span class="ingreso">Bs ${totalGeneralCursos.toFixed(2)}</span> | 
-                            DEUDA TOTAL: <span class="egreso">Bs ${totalDeudaCursos.toFixed(2)}</span></strong>
-                        </div>
-                    </div>
-                </div>
-                
-                                <!-- NUEVA SECCIÓN: RESUMEN POR AÑO -->
-                <div class="seccion page-break">
-                    <h3 style="color: #0056b3;">RESUMEN FINANCIERO POR AÑO</h3>
-                    
-                    <!-- TABLA POR AÑO - SIMPLIFICADA -->
-                    <h5 style="color: #28a745;">TOTALES POR AÑO</h5>
-                    <table class="tabla" style="margin-bottom: 20px;">
+                    <table class="tabla" style="font-size: 7px;">
                         <thead>
                             <tr>
-                                <th>Año</th>
-                                <th>Ingresos</th>
-                                <th>Egresos</th>
-                                <th>Gastos Varios</th>
-                                <th>Total Egresos</th>
-                                <th>Balance</th>
+                                <th width="12%">Fecha</th>
+                                <th width="15%">Tipo</th>
+                                <th width="23%">Descripción</th>
+                                <th width="25%">Detalle</th>
+                                <th width="15%" class="text-end">Monto</th>
+                                <th width="10%" class="text-end">Saldo</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td><strong>2025</strong></td>
-                                <td class="ingreso">Bs ${datos.totalIngresosCaja ? datos.totalIngresosCaja.toFixed(2) : '0.00'}</td>
-                                <td class="egreso">Bs ${datos.totalEgresosCaja ? datos.totalEgresosCaja.toFixed(2) : '0.00'}</td>
-                                <td class="egreso">Bs ${datos.totalGastos ? datos.totalGastos.toFixed(2) : '0.00'}</td>
-                                <td class="egreso"><strong>Bs ${((datos.totalEgresosCaja || 0) + (datos.totalGastos || 0)).toFixed(2)}</strong></td>
-                                <td class="${((datos.totalIngresosCaja || 0) - ((datos.totalEgresosCaja || 0) + (datos.totalGastos || 0))) >= 0 ? 'ingreso' : 'egreso'}">
-                                    <strong>Bs ${((datos.totalIngresosCaja || 0) - ((datos.totalEgresosCaja || 0) + (datos.totalGastos || 0))).toFixed(2)}</strong>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><strong>2026</strong></td>
-                                <td class="ingreso">Bs ${(datos.totalAportesEstudiantes || 0).toFixed(2)}</td>
-                                <td class="egreso">Bs ${(datos.totalEgresosCaja || 0).toFixed(2)}</td>
-                                <td class="egreso">Bs ${(datos.totalGastos || 0).toFixed(2)}</td>
-                                <td class="egreso"><strong>Bs ${((datos.totalEgresosCaja || 0) + (datos.totalGastos || 0)).toFixed(2)}</strong></td>
-                                <td class="${((datos.totalAportesEstudiantes || 0) - ((datos.totalEgresosCaja || 0) + (datos.totalGastos || 0))) >= 0 ? 'ingreso' : 'egreso'}">
-                                    <strong>Bs ${((datos.totalAportesEstudiantes || 0) - ((datos.totalEgresosCaja || 0) + (datos.totalGastos || 0))).toFixed(2)}</strong>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><strong>2027</strong></td>
-                                <td class="ingreso">Bs ${(datos.totalAportesEstudiantes || 0).toFixed(2)}</td>
-                                <td class="egreso">Bs ${(datos.totalEgresosCaja || 0).toFixed(2)}</td>
-                                <td class="egreso">Bs ${(datos.totalGastos || 0).toFixed(2)}</td>
-                                <td class="egreso"><strong>Bs ${((datos.totalEgresosCaja || 0) + (datos.totalGastos || 0)).toFixed(2)}</strong></td>
-                                <td class="${((datos.totalAportesEstudiantes || 0) - ((datos.totalEgresosCaja || 0) + (datos.totalGastos || 0))) >= 0 ? 'ingreso' : 'egreso'}">
-                                    <strong>Bs ${((datos.totalAportesEstudiantes || 0) - ((datos.totalEgresosCaja || 0) + (datos.totalGastos || 0))).toFixed(2)}</strong>
-                                </td>
-                            </tr>
-                            <tr class="subtotal">
-                                <td><strong>TOTAL GENERAL</strong></td>
-                                <td class="ingreso"><strong>Bs ${((datos.totalIngresosCaja || 0) + (datos.totalAportesEstudiantes || 0) * 2).toFixed(2)}</strong></td>
-                                <td class="egreso"><strong>Bs ${((datos.totalEgresosCaja || 0) * 3).toFixed(2)}</strong></td>
-                                <td class="egreso"><strong>Bs ${((datos.totalGastos || 0) * 3).toFixed(2)}</strong></td>
-                                <td class="egreso"><strong>Bs ${(((datos.totalEgresosCaja || 0) + (datos.totalGastos || 0)) * 3).toFixed(2)}</strong></td>
-                                <td class="${(((datos.totalIngresosCaja || 0) + (datos.totalAportesEstudiantes || 0) * 2) - (((datos.totalEgresosCaja || 0) + (datos.totalGastos || 0)) * 3)) >= 0 ? 'ingreso' : 'egreso'}">
-                                    <strong>Bs ${(((datos.totalIngresosCaja || 0) + (datos.totalAportesEstudiantes || 0) * 2) - (((datos.totalEgresosCaja || 0) + (datos.totalGastos || 0)) * 3)).toFixed(2)}</strong>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-
-                    <!-- RESUMEN POR MESES -->
-                    <h5 style="color: #28a745; margin-top: 20px;">RESUMEN MENSUAL</h5>
-                    <div style="font-size: 9px; color: #666;">
-                        <p><strong>Registros más recientes:</strong></p>
-                        <ul>
-                            <li><strong>Ingresos totales 2026-2027:</strong> Bs ${(datos.totalAportesEstudiantes || 0).toFixed(2)}</li>
-                            <li><strong>Gastos totales:</strong> Bs ${(datos.totalGastos || 0).toFixed(2)}</li>
-                            <li><strong>Egresos de caja:</strong> Bs ${(datos.totalEgresosCaja || 0).toFixed(2)}</li>
-                            <li><strong>Gastos de casilleros:</strong> Bs ${calcularGastosCasilleros ? calcularGastosCasilleros().toFixed(2) : '0.00'}</li>
-                            <li><strong>Gastos otros cobros:</strong> Bs ${(datos.otrosCobrosGastos || 0).toFixed(2)}</li>
-                        </ul>
-                        <p style="margin-top: 10px; padding: 8px; background: #f8f9fa; border-radius: 4px;">
-                            <strong>Informe generado el:</strong> ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}<br>
-                            <strong>Total registros en sistema:</strong> ${datos.gastos.length + datos.movimientosCaja.length + (datos.gastosCasilleros ? datos.gastosCasilleros.length : 0)} movimientos
-                        </p>
-                    </div>
-                </div>
-
-
-
-
-
-
-
-
-
-                
-
-                <div class="no-print" style="text-align: center; margin-top: 15px; padding-top: 10px; border-top: 1px solid #ccc;">
-                    <button onclick="window.print()" style="padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px;">
-                        <i class="fas fa-print"></i> Imprimir Reporte Completo
-                    </button>
-                    <p style="margin-top: 8px; color: #666; font-size: 9px;">
-                        <strong>Nota:</strong> Este reporte incluye TODA la información financiera de la Federación Estudiantil<br>
-                        Generado automáticamente por el Sistema de Gestión Financiera
-                    </p>
-                </div>
-            </div>
-        </body>
-        </html>
     `;
+    
+    // Mostrar eventos (máximo 100 para el PDF)
+    const eventosParaPDF = eventosParaMostrar.length > 100 ? eventosParaMostrar.slice(0, 100) : eventosParaMostrar;
+    
+    eventosParaPDF.forEach(evento => {
+        const claseMonto = evento.esIngreso ? 'ingreso' : 'egreso';
+        const signoMonto = evento.esIngreso ? '+' : '-';
+        const claseSaldo = evento.saldoAcumulado >= 0 ? 'ingreso' : 'egreso';
+        
+        contenidoPDF += `
+            <tr>
+                <td>${evento.fecha}</td>
+                <td><small>${evento.tipo}</small></td>
+                <td>${evento.descripcion}</td>
+                <td><small>${evento.detalle}</small></td>
+                <td class="${claseMonto} text-end">
+                    ${signoMonto}Bs ${evento.monto.toFixed(2)}
+                </td>
+                <td class="${claseSaldo} text-end">
+                    Bs ${evento.saldoAcumulado.toFixed(2)}
+                </td>
+            </tr>
+        `;
+    });
+    
+    if (eventosParaMostrar.length > 100) {
+        contenidoPDF += `
+            <tr>
+                <td colspan="6" class="text-center text-muted">
+                    <small>... y ${eventosParaMostrar.length - 100} eventos más</small>
+                </td>
+            </tr>
+        `;
+    }
+    
+    // Fila final con resumen
+    const ultimoSaldo = lineaDeTiempo.length > 0 ? lineaDeTiempo[lineaDeTiempo.length-1].saldoAcumulado : dineroInicial;
+    
+    contenidoPDF += `
+                <tr class="subtotal">
+                    <td colspan="4" class="text-end"><strong>Resumen final:</strong></td>
+                    <td class="text-end">
+                        <small>Ingresos: <span class="ingreso">Bs ${totalIngresosReales.toFixed(2)}</span><br>
+                        Egresos: <span class="egreso">Bs ${totalEgresosTotales.toFixed(2)}</span></small>
+                    </td>
+                    <td class="${ultimoSaldo >= 0 ? 'ingreso' : 'egreso'} text-end">
+                        <strong>Bs ${ultimoSaldo.toFixed(2)}</strong>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <div style="margin-top: 10px; font-size: 8px; color: #666;">
+            <p><strong>Análisis del historial:</strong></p>
+            <p>• Total eventos registrados: ${lineaDeTiempo.length}</p>
+            <p>• Primer evento: ${lineaDeTiempo.length > 0 ? lineaDeTiempo[0].fecha : 'N/A'}</p>
+            <p>• Último evento: ${lineaDeTiempo.length > 0 ? lineaDeTiempo[lineaDeTiempo.length-1].fecha : 'N/A'}</p>
+            <p>• Saldo más alto: Bs ${Math.max(...lineaDeTiempo.map(e => e.saldoAcumulado)).toFixed(2)}</p>
+            <p>• Saldo más bajo: Bs ${Math.min(...lineaDeTiempo.map(e => e.saldoAcumulado)).toFixed(2)}</p>
+        </div>
+        
+        <!-- RESUMEN POR TIPO -->
+        <div style="margin-top: 15px;">
+            <h4 style="font-size: 10px; color: #333;">RESUMEN POR TIPO DE MOVIMIENTO</h4>
+            <table class="tabla" style="font-size: 7px;">
+                <thead>
+                    <tr>
+                        <th>Tipo de Movimiento</th>
+                        <th>Cantidad</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    // Agrupar por tipo
+    const resumenPorTipo = {};
+    lineaDeTiempo.forEach(evento => {
+        if (!resumenPorTipo[evento.tipo]) {
+            resumenPorTipo[evento.tipo] = {
+                cantidad: 0,
+                total: 0
+            };
+        }
+        resumenPorTipo[evento.tipo].cantidad++;
+        resumenPorTipo[evento.tipo].total += evento.monto;
+    });
+    
+    Object.entries(resumenPorTipo).forEach(([tipo, datos]) => {
+        const esIngreso = tipo.includes('INGRESO') || tipo.includes('APORTE') || tipo.includes('DINERO INICIAL');
+        const clase = esIngreso ? 'ingreso' : 'egreso';
+        
+        contenidoPDF += `
+            <tr>
+                <td>${tipo}</td>
+                <td>${datos.cantidad}</td>
+                <td class="${clase}">${esIngreso ? '+' : '-'}Bs ${datos.total.toFixed(2)}</td>
+            </tr>
+        `;
+    });
+    
+    contenidoPDF += `
+                </tbody>
+            </table>
+        </div>
+    </div>
+                
+    <div class="no-print" style="text-align: center; margin-top: 15px; padding-top: 10px; border-top: 1px solid #ccc;">
+        <button onclick="window.print()" style="padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px;">
+            <i class="fas fa-print"></i> Imprimir Reporte Completo
+        </button>
+        <p style="margin-top: 8px; color: #666; font-size: 9px;">
+            <strong>Nota:</strong> Este reporte incluye SOLO información de caja (aportes, ingresos/egresos de caja y gastos)<br>
+            Generado automáticamente por el Sistema de Gestión Financiera
+        </p>
+    </div>
+</div>
+</body>
+</html>
+`;
     
     const ventanaPDF = window.open('', '_blank');
     if (ventanaPDF) {
@@ -6300,12 +7104,31 @@ function actualizarResumenMensualSeguimiento() {
 
 // NUEVA FUNCIÓN: Cargar estudiantes para marcar pagos en otros cobros
 function cargarEstudiantesParaMarcarPagos() {
+    console.log("🔄 Cargando estudiantes para marcar pagos...");
+    
     const cursoSeleccionado = document.getElementById('cursoOtroCobro').value;
     const sectorId = parseInt(document.getElementById('sectorCobro').value);
     
     if (!cursoSeleccionado || !sectorId) {
-        mostrarMensaje('Seleccione curso y sector primero', 'error');
+        console.log("⚠️ Curso o sector no seleccionado");
         return;
+    }
+    
+    // FORZAR recarga de datos desde localStorage para asegurar datos actualizados
+    try {
+        const datosActualizados = JSON.parse(localStorage.getItem('datosFederacion') || '{}');
+        if (datosActualizados.sectoresCobro) {
+            // Actualizar el sector en memoria con los datos más recientes
+            const sectorActualizado = datosActualizados.sectoresCobro.find(s => s.id === sectorId);
+            if (sectorActualizado) {
+                const sectorIndex = datos.sectoresCobro.findIndex(s => s.id === sectorId);
+                if (sectorIndex !== -1) {
+                    datos.sectoresCobro[sectorIndex].cobros = sectorActualizado.cobros;
+                }
+            }
+        }
+    } catch (error) {
+        console.error("Error cargando datos actualizados:", error);
     }
     
     const sector = datos.sectoresCobro.find(s => s.id === sectorId);
@@ -6317,9 +7140,11 @@ function cargarEstudiantesParaMarcarPagos() {
     const datosCurso = datos.cursos[cursoSeleccionado];
     const contenedor = document.getElementById('contenedorMarcarPagos');
     
+    // Si el contenedor no existe, crearlo
     if (!contenedor) {
-        // Crear contenedor si no existe
         const form = document.getElementById('formOtroCobro');
+        if (!form) return;
+        
         const nuevoContenedor = document.createElement('div');
         nuevoContenedor.id = 'contenedorMarcarPagos';
         nuevoContenedor.className = 'contenedor-marcar-pagos mt-3';
@@ -6327,8 +7152,12 @@ function cargarEstudiantesParaMarcarPagos() {
     }
     
     const contenedorActual = document.getElementById('contenedorMarcarPagos');
+    if (!contenedorActual) return;
+    
     contenedorActual.style.display = 'block';
-    contenedorActual.innerHTML = `
+    
+    // Generar contenido HTML DIRECTO (sin esperar)
+    let contenidoHTML = `
         <h5 class="neon-text-blue mb-3">
             <i class="fas fa-check-circle"></i> Marcar Pagos - ${cursoSeleccionado}
             <small class="text-white">(Sector: ${sector.nombre})</small>
@@ -6345,62 +7174,102 @@ function cargarEstudiantesParaMarcarPagos() {
                     </tr>
                 </thead>
                 <tbody id="listaEstudiantesMarcar">
+    `;
+    
+    // Generar filas de estudiantes INMEDIATAMENTE
+    if (datosCurso.estudiantes) {
+        datosCurso.estudiantes.forEach((estudiante, index) => {
+            const nombreEstudiante = estudiante.nombre || `Estudiante ${index + 1}`;
+            
+            // Verificar si ya pagó en este sector (con datos actualizados)
+            const cobroExistente = sector.cobros ? sector.cobros.find(cobro => 
+                cobro.curso === cursoSeleccionado && 
+                cobro.estudiante === nombreEstudiante
+            ) : null;
+            
+            const yaPago = !!cobroExistente;
+            
+            contenidoHTML += `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${nombreEstudiante}</td>
+                    <td>
+                        <span class="${yaPago ? 'badge-estado-tabla badge-pagado' : 'badge-estado-tabla badge-deuda'}">
+                            ${yaPago ? '<i class="fas fa-check-circle"></i> PAGADO' : '<i class="fas fa-times-circle"></i> PENDIENTE'}
+                        </span>
+                        ${yaPago ? `<br><small class="text-muted">Fecha: ${cobroExistente.fecha || 'No registrada'}</small>` : ''}
+                    </td>
+                    <td><strong>Bs ${sector.monto.toFixed(2)}</strong></td>
+                    <td>
+                        ${yaPago ? `
+                        <button class="btn-desmarcar" onclick="desmarcarPago('${cursoSeleccionado}', ${index}, ${sectorId})">
+                            <i class="fas fa-times"></i> Eliminar
+                        </button>
+                        ` : `
+                        <button class="btn-marcar" onclick="marcarComoPagado('${cursoSeleccionado}', ${index}, ${sectorId})">
+                            <i class="fas fa-check"></i> Marcar
+                        </button>
+                        `}
+                    </td>
+                </tr>
+            `;
+        });
+    }
+    
+    contenidoHTML += `
                 </tbody>
                 <tfoot>
                     <tr class="table-primary">
                         <td colspan="3" class="text-end"><strong>Total del curso:</strong></td>
-                        <td><strong class="monto-importante">Bs ${(datosCurso.estudiantes.length * sector.monto).toFixed(2)}</strong></td>
+                        <td><strong class="monto-importante">Bs ${(datosCurso.estudiantes ? datosCurso.estudiantes.length * sector.monto : 0).toFixed(2)}</strong></td>
                         <td>
                             <button class="btn-marcar-todos" onclick="marcarTodosComoPagados('${cursoSeleccionado}', ${sectorId})">
                                 <i class="fas fa-check-double"></i> Marcar todos
+                            </button>
+                            <button class="btn-limpiar-todos ms-2" onclick="limpiarTodosLosPagos('${cursoSeleccionado}', ${sectorId})">
+                                <i class="fas fa-trash"></i> Limpiar todo
                             </button>
                         </td>
                     </tr>
                 </tfoot>
             </table>
         </div>
+        
+        <!-- Botones de exportación -->
+        <div class="mt-3 text-center">
+            <div class="btn-group" role="group">
+                <button class="btn btn-info btn-sm" onclick="exportarPagosSector(${sectorId}, '${cursoSeleccionado}')">
+                    <i class="fas fa-file-export"></i> Exportar curso
+                </button>
+                <button class="btn btn-warning btn-sm" onclick="exportarPagosSector(${sectorId})">
+                    <i class="fas fa-file-export"></i> Exportar todo
+                </button>
+                ${isAdmin ? `
+                <button class="btn btn-danger btn-sm" onclick="limpiarTodosLosPagos('${cursoSeleccionado}', ${sectorId})">
+                    <i class="fas fa-trash"></i> Limpiar curso
+                </button>
+                ` : ''}
+            </div>
+        </div>
+        
+        <!-- Estadísticas rápidas -->
+        <div class="mt-3 p-2 bg-dark rounded">
+            <div class="row text-center">
+                <div class="col-6">
+                    <small class="text-success">Pagados: <strong>${sector.cobros ? sector.cobros.filter(c => c.curso === cursoSeleccionado).length : 0}</strong></small>
+                </div>
+                <div class="col-6">
+                    <small class="text-danger">Pendientes: <strong>${datosCurso.estudiantes ? datosCurso.estudiantes.length - (sector.cobros ? sector.cobros.filter(c => c.curso === cursoSeleccionado).length : 0) : 0}</strong></small>
+                </div>
+            </div>
+        </div>
     `;
     
-    const tbody = document.getElementById('listaEstudiantesMarcar');
+    // ASIGNAR CONTENIDO INMEDIATAMENTE
+    contenedorActual.innerHTML = contenidoHTML;
     
-        datosCurso.estudiantes.forEach((estudiante, index) => {
-        // Verificar si ya pagó en este sector - CORREGIDO
-        const nombreEstudiante = estudiante.nombre || `Estudiante ${index + 1}`;
-        const cobroExistente = sector.cobros.find(cobro => 
-            cobro.curso === cursoSeleccionado && 
-            cobro.estudiante === nombreEstudiante
-        );
-        
-        const yaPago = !!cobroExistente; // Si existe el cobro, está pagado
-        
-        const fila = document.createElement('tr');
-        fila.innerHTML = `
-            <td>${index + 1}</td>
-            <td>${nombreEstudiante}</td>
-            <td>
-                <span class="${yaPago ? 'badge-estado-tabla badge-pagado' : 'badge-estado-tabla badge-deuda'}">
-                    ${yaPago ? '<i class="fas fa-check-circle"></i> PAGADO' : '<i class="fas fa-times-circle"></i> PENDIENTE'}
-                </span>
-                ${yaPago ? `<br><small>Fecha: ${cobroExistente.fecha || 'No registrada'}</small>` : ''}
-            </td>
-            <td><strong>Bs ${sector.monto.toFixed(2)}</strong></td>
-            <td>
-                ${yaPago ? `
-                <button class="btn-desmarcar" onclick="desmarcarPago('${cursoSeleccionado}', ${index}, ${sectorId})">
-                    <i class="fas fa-times"></i> Eliminar
-                </button>
-                ` : `
-                <button class="btn-marcar" onclick="marcarComoPagado('${cursoSeleccionado}', ${index}, ${sectorId})">
-                    <i class="fas fa-check"></i> Marcar
-                </button>
-                `}
-            </td>
-        `;
-        tbody.appendChild(fila);
-    });
-    
-    // Agregar botones de exportación después de la tabla
-    agregarBotonesExportacion(cursoSeleccionado, sectorId);
+    console.log(`✅ Tabla de marcado actualizada: ${cursoSeleccionado} - Sector ${sector.nombre}`);
+    console.log(`📊 Estudiantes: ${datosCurso.estudiantes ? datosCurso.estudiantes.length : 0}, Pagados: ${sector.cobros ? sector.cobros.filter(c => c.curso === cursoSeleccionado).length : 0}`);
 }
 
 
@@ -6436,17 +7305,81 @@ function marcarComoPagado(curso, indexEstudiante, sectorId) {
     sector.cobros.push(nuevoCobro);
     datos.totalOtrosCobros += sector.monto;
     
+    // SOLO guardarDatos() - ya actualiza todo automáticamente
     guardarDatos();
-    actualizarSectoresCobro();
-    actualizarTotalOtrosCobros();
     
-    // Actualizar la vista inmediatamente
-    cargarEstudiantesParaMarcarPagos();
+    // Actualizar la vista de marcado INMEDIATAMENTE
+    setTimeout(() => {
+        cargarEstudiantesParaMarcarPagos();
+        mostrarMensaje('Estudiante marcado como pagado', 'success');
+    }, 100);
+}
+
+// NUEVA FUNCIÓN: Desmarcar pago
+function marcarComoPagado(curso, indexEstudiante, sectorId) {
+    if (!isAdmin) return;
+    
+    const sector = datos.sectoresCobro.find(s => s.id === sectorId);
+    const estudiante = datos.cursos[curso].estudiantes[indexEstudiante];
+    const hoy = new Date().toISOString().split('T')[0];
+    
+    // Verificar si ya está pagado
+    const nombreEstudiante = estudiante.nombre || `Estudiante ${indexEstudiante + 1}`;
+    const yaPago = sector.cobros.some(cobro => 
+        cobro.curso === curso && cobro.estudiante === nombreEstudiante
+    );
+    
+    if (yaPago) {
+        mostrarMensaje('Este estudiante ya está marcado como pagado', 'info');
+        return;
+    }
+    
+    const nuevoCobro = {
+        id: Date.now(),
+        curso: curso,
+        estudiante: nombreEstudiante,
+        monto: sector.monto,
+        fecha: hoy,
+        observaciones: 'Marcado desde sistema',
+        timestamp: Date.now()
+    };
+    
+    sector.cobros.push(nuevoCobro);
+    datos.totalOtrosCobros += sector.monto;
+    
+    // Guardar datos primero
+    guardarDatos();
+    
+    // ACTUALIZAR LA FILA INMEDIATAMENTE SIN RECARGAR TODO
+    const fila = document.querySelector(`tr:has(td:contains("${nombreEstudiante}"))`);
+    if (fila) {
+        // Actualizar estado
+        const celdaEstado = fila.cells[2];
+        celdaEstado.innerHTML = `
+            <span class="badge-estado-tabla badge-pagado">
+                <i class="fas fa-check-circle"></i> PAGADO
+            </span>
+            <br><small class="text-muted">Fecha: ${hoy}</small>
+        `;
+        
+        // Actualizar botón
+        const celdaAccion = fila.cells[4];
+        celdaAccion.innerHTML = `
+            <button class="btn-desmarcar" onclick="desmarcarPago('${curso}', ${indexEstudiante}, ${sectorId})">
+                <i class="fas fa-times"></i> Eliminar
+            </button>
+        `;
+        
+        // Actualizar estadísticas
+        actualizarEstadisticasRapidas(curso, sectorId);
+        
+        // Actualizar totales del pie de tabla
+        actualizarTotalesTabla(curso, sectorId);
+    }
     
     mostrarMensaje('Estudiante marcado como pagado', 'success');
 }
 
-// NUEVA FUNCIÓN: Desmarcar pago
 function desmarcarPago(curso, indexEstudiante, sectorId) {
     if (!isAdmin) return;
     
@@ -6464,12 +7397,34 @@ function desmarcarPago(curso, indexEstudiante, sectorId) {
         sector.cobros.splice(indexCobro, 1);
         datos.totalOtrosCobros -= montoEliminado;
         
+        // Guardar datos primero
         guardarDatos();
-        actualizarSectoresCobro();
-        actualizarTotalOtrosCobros();
         
-        // Actualizar la vista inmediatamente
-        cargarEstudiantesParaMarcarPagos();
+        // ACTUALIZAR LA FILA INMEDIATAMENTE SIN RECARGAR TODO
+        const fila = document.querySelector(`tr:has(td:contains("${nombreEstudiante}"))`);
+        if (fila) {
+            // Actualizar estado
+            const celdaEstado = fila.cells[2];
+            celdaEstado.innerHTML = `
+                <span class="badge-estado-tabla badge-deuda">
+                    <i class="fas fa-times-circle"></i> PENDIENTE
+                </span>
+            `;
+            
+            // Actualizar botón
+            const celdaAccion = fila.cells[4];
+            celdaAccion.innerHTML = `
+                <button class="btn-marcar" onclick="marcarComoPagado('${curso}', ${indexEstudiante}, ${sectorId})">
+                    <i class="fas fa-check"></i> Marcar
+                </button>
+            `;
+            
+            // Actualizar estadísticas
+            actualizarEstadisticasRapidas(curso, sectorId);
+            
+            // Actualizar totales del pie de tabla
+            actualizarTotalesTabla(curso, sectorId);
+        }
         
         mostrarMensaje('Pago desmarcado', 'success');
     } else {
@@ -6477,6 +7432,128 @@ function desmarcarPago(curso, indexEstudiante, sectorId) {
     }
 }
 
+
+function actualizarEstadisticasRapidas(curso, sectorId) {
+    const contenedor = document.getElementById('contenedorMarcarPagos');
+    if (!contenedor) return;
+    
+    const sector = datos.sectoresCobro.find(s => s.id === sectorId);
+    const datosCurso = datos.cursos[curso];
+    
+    if (!sector || !datosCurso) return;
+    
+    // Calcular nuevos valores
+    const pagados = sector.cobros.filter(c => c.curso === curso).length;
+    const totalEstudiantes = datosCurso.estudiantes ? datosCurso.estudiantes.length : 0;
+    const pendientes = totalEstudiantes - pagados;
+    
+    // Actualizar el div de estadísticas
+    const estadisticasDiv = contenedor.querySelector('.bg-dark.rounded');
+    if (estadisticasDiv) {
+        estadisticasDiv.innerHTML = `
+            <div class="row text-center">
+                <div class="col-6">
+                    <small class="text-success">Pagados: <strong>${pagados}</strong></small>
+                </div>
+                <div class="col-6">
+                    <small class="text-danger">Pendientes: <strong>${pendientes}</strong></small>
+                </div>
+            </div>
+        `;
+    }
+}
+
+// FUNCIÓN AUXILIAR: Actualizar totales en el pie de tabla
+function actualizarTotalesTabla(curso, sectorId) {
+    const sector = datos.sectoresCobro.find(s => s.id === sectorId);
+    const datosCurso = datos.cursos[curso];
+    
+    if (!sector || !datosCurso) return;
+    
+    const totalPagado = sector.cobros.filter(c => c.curso === curso).reduce((sum, cobro) => sum + (cobro.monto || 0), 0);
+    const totalCurso = (datosCurso.estudiantes ? datosCurso.estudiantes.length * sector.monto : 0);
+    
+    // Actualizar la celda de totales
+    const filaTotal = document.querySelector('.tabla-marcar-pagos tfoot tr');
+    if (filaTotal) {
+        const celdaTotal = filaTotal.cells[3];
+        celdaTotal.innerHTML = `<strong class="monto-importante">Bs ${totalCurso.toFixed(2)}</strong>`;
+    }
+}
+
+// MODIFICAR la función para marcar todos (opcional, puedes dejarla recargando)
+function marcarTodosComoPagados(curso, sectorId) {
+    if (!isAdmin) return;
+    
+    if (!confirm(`¿Marcar a TODOS los estudiantes de ${curso} como pagados en este sector?\n\nEsta acción no se puede deshacer fácilmente.`)) {
+        return;
+    }
+    
+    const sector = datos.sectoresCobro.find(s => s.id === sectorId);
+    const datosCurso = datos.cursos[curso];
+    const hoy = new Date().toISOString().split('T')[0];
+    
+    let estudiantesMarcados = 0;
+    let estudiantesYaPagados = 0;
+    
+    datosCurso.estudiantes.forEach((estudiante, index) => {
+        const nombreEstudiante = estudiante.nombre || `Estudiante ${index + 1}`;
+        
+        // Verificar si ya está pagado
+        const yaPago = sector.cobros.some(cobro => 
+            cobro.curso === curso && cobro.estudiante === nombreEstudiante
+        );
+        
+        if (!yaPago) {
+            sector.cobros.push({
+                id: Date.now() + index,
+                curso: curso,
+                estudiante: nombreEstudiante,
+                monto: sector.monto,
+                fecha: hoy,
+                observaciones: 'Marcado masivamente desde sistema',
+                timestamp: Date.now() + index
+            });
+            
+            datos.totalOtrosCobros += sector.monto;
+            estudiantesMarcados++;
+            
+            // ACTUALIZAR FILA SI ESTÁ VISIBLE
+            const fila = document.querySelector(`tr:has(td:contains("${nombreEstudiante}"))`);
+            if (fila) {
+                // Actualizar estado
+                const celdaEstado = fila.cells[2];
+                celdaEstado.innerHTML = `
+                    <span class="badge-estado-tabla badge-pagado">
+                        <i class="fas fa-check-circle"></i> PAGADO
+                    </span>
+                    <br><small class="text-muted">Fecha: ${hoy}</small>
+                `;
+                
+                // Actualizar botón
+                const celdaAccion = fila.cells[4];
+                celdaAccion.innerHTML = `
+                    <button class="btn-desmarcar" onclick="desmarcarPago('${curso}', ${index}, ${sectorId})">
+                        <i class="fas fa-times"></i> Eliminar
+                    </button>
+                `;
+            }
+        } else {
+            estudiantesYaPagados++;
+        }
+    });
+    
+    // Guardar datos
+    guardarDatos();
+    
+    // Actualizar estadísticas y totales
+    actualizarEstadisticasRapidas(curso, sectorId);
+    actualizarTotalesTabla(curso, sectorId);
+    
+    mostrarMensaje(`${estudiantesMarcados} estudiantes marcados como pagados (${estudiantesYaPagados} ya estaban pagados)`, 'success');
+}
+
+// MODIFICAR la función para limpiar todos (opcional, puedes dejarla recargando)
 // NUEVA FUNCIÓN: Marcar todos como pagados
 function marcarTodosComoPagados(curso, sectorId) {
     if (!isAdmin) return;
@@ -6518,14 +7595,14 @@ function marcarTodosComoPagados(curso, sectorId) {
         }
     });
     
+    // SOLO guardarDatos() - ya actualiza todo automáticamente
     guardarDatos();
-    actualizarSectoresCobro();
-    actualizarTotalOtrosCobros();
     
-    // Actualizar la vista inmediatamente
-    cargarEstudiantesParaMarcarPagos();
-    
-    mostrarMensaje(`${estudiantesMarcados} estudiantes marcados como pagados (${estudiantesYaPagados} ya estaban pagados)`, 'success');
+    // Actualizar la vista INMEDIATAMENTE
+    setTimeout(() => {
+        cargarEstudiantesParaMarcarPagos();
+        mostrarMensaje(`${estudiantesMarcados} estudiantes marcados como pagados (${estudiantesYaPagados} ya estaban pagados)`, 'success');
+    }, 100);
 }
 
 // NUEVA FUNCIÓN: Limpiar todos los pagos de un curso
@@ -6537,6 +7614,7 @@ function limpiarTodosLosPagos(curso, sectorId) {
     }
     
     const sector = datos.sectoresCobro.find(s => s.id === sectorId);
+    const datosCurso = datos.cursos[curso];
     
     // Filtrar solo los cobros de este curso
     const cobrosAEliminar = sector.cobros.filter(cobro => cobro.curso === curso);
@@ -6546,12 +7624,36 @@ function limpiarTodosLosPagos(curso, sectorId) {
     sector.cobros = sector.cobros.filter(cobro => cobro.curso !== curso);
     datos.totalOtrosCobros -= totalEliminado;
     
+    // Guardar datos
     guardarDatos();
-    actualizarSectoresCobro();
-    actualizarTotalOtrosCobros();
     
-    // Actualizar la vista inmediatamente
-    cargarEstudiantesParaMarcarPagos();
+    // ACTUALIZAR TODAS LAS FILAS INMEDIATAMENTE
+    datosCurso.estudiantes.forEach((estudiante, index) => {
+        const nombreEstudiante = estudiante.nombre || `Estudiante ${index + 1}`;
+        const fila = document.querySelector(`tr:has(td:contains("${nombreEstudiante}"))`);
+        
+        if (fila) {
+            // Actualizar estado
+            const celdaEstado = fila.cells[2];
+            celdaEstado.innerHTML = `
+                <span class="badge-estado-tabla badge-deuda">
+                    <i class="fas fa-times-circle"></i> PENDIENTE
+                </span>
+            `;
+            
+            // Actualizar botón
+            const celdaAccion = fila.cells[4];
+            celdaAccion.innerHTML = `
+                <button class="btn-marcar" onclick="marcarComoPagado('${curso}', ${index}, ${sectorId})">
+                    <i class="fas fa-check"></i> Marcar
+                </button>
+            `;
+        }
+    });
+    
+    // Actualizar estadísticas y totales
+    actualizarEstadisticasRapidas(curso, sectorId);
+    actualizarTotalesTabla(curso, sectorId);
     
     mostrarMensaje(`Se eliminaron ${cobrosAEliminar.length} pagos del curso (Total: Bs ${totalEliminado.toFixed(2)})`, 'success');
 }
@@ -7673,37 +8775,46 @@ function actualizarHistorialGeneral() {
     const tbody = document.getElementById('tablaHistorialGeneral');
     if (!tbody) return;
     
-    // 1. Recopilar TODOS los eventos
+    // 1. Recopilar SOLO los eventos que queremos:
     let todosLosEventos = [];
     
     // A) APORTES DE ESTUDIANTES
     for (const [cursoNombre, datosCurso] of Object.entries(datos.cursos)) {
         if (datosCurso.estudiantes) {
-            for (const estudiante of datosCurso.estudiantes) {
+            for (let i = 0; i < datosCurso.estudiantes.length; i++) {
+                const estudiante = datosCurso.estudiantes[i];
+                const nombreEstudiante = estudiante.nombre || `Estudiante ${i + 1}`;
+                
                 if (estudiante.pagos) {
                     // 2026
-                    const pago2026 = estudiante.pagos['2026'];
-                    if (pago2026 && pago2026.pagado && pago2026.fecha) {
+                    if (estudiante.pagos['2026'] && estudiante.pagos['2026'].pagado && estudiante.pagos['2026'].fecha) {
+                        const pago = estudiante.pagos['2026'];
                         todosLosEventos.push({
-                            fecha: pago2026.fecha,
+                            fecha: pago.fecha,
+                            timestamp: new Date(pago.fecha).getTime(),
                             tipo: 'APORTE',
-                            descripcion: `Aporte estudiante - ${cursoNombre}`,
-                            detalle: `${estudiante.nombre || 'Estudiante'} - 2026`,
-                            monto: pago2026.monto || 0,
-                            color: 'warning'
+                            descripcion: `${cursoNombre} - 2026`,
+                            detalle: `${nombreEstudiante}`,
+                            monto: pago.monto || 0,
+                            color: 'warning',
+                            esIngreso: true,
+                            origen: 'aporte_estudiante'
                         });
                     }
                     
                     // 2027
-                    const pago2027 = estudiante.pagos['2027'];
-                    if (pago2027 && pago2027.pagado && pago2027.fecha) {
+                    if (estudiante.pagos['2027'] && estudiante.pagos['2027'].pagado && estudiante.pagos['2027'].fecha) {
+                        const pago = estudiante.pagos['2027'];
                         todosLosEventos.push({
-                            fecha: pago2027.fecha,
+                            fecha: pago.fecha,
+                            timestamp: new Date(pago.fecha).getTime(),
                             tipo: 'APORTE',
-                            descripcion: `Aporte estudiante - ${cursoNombre}`,
-                            detalle: `${estudiante.nombre || 'Estudiante'} - 2027`,
-                            monto: pago2027.monto || 0,
-                            color: 'warning'
+                            descripcion: `${cursoNombre} - 2027`,
+                            detalle: `${nombreEstudiante}`,
+                            monto: pago.monto || 0,
+                            color: 'warning',
+                            esIngreso: true,
+                            origen: 'aporte_estudiante'
                         });
                     }
                 }
@@ -7711,62 +8822,107 @@ function actualizarHistorialGeneral() {
         }
     }
     
-    // B) MOVIMIENTOS DE CAJA
+    // B) MOVIMIENTOS DE CAJA - INGRESOS DE CAJA
     for (const movimiento of datos.movimientosCaja) {
-        todosLosEventos.push({
-            fecha: movimiento.fecha,
-            tipo: movimiento.tipo === 'ingreso' ? 'INGRESO' : 'EGRESO',
-            descripcion: movimiento.concepto || 'Movimiento de caja',
-            detalle: movimiento.tipo === 'ingreso' ? 'Ingreso' : 'Egreso',
-            monto: movimiento.monto || 0,
-            color: movimiento.tipo === 'ingreso' ? 'success' : 'danger'
-        });
+        if (movimiento.fecha) {
+            const esIngreso = movimiento.tipo === 'ingreso';
+            todosLosEventos.push({
+                fecha: movimiento.fecha,
+                timestamp: new Date(movimiento.fecha).getTime(),
+                tipo: esIngreso ? 'INGRESO DE CAJA' : 'EGRESO DE CAJA',
+                descripcion: movimiento.concepto || 'Movimiento de caja',
+                detalle: esIngreso ? 'Ingreso de caja' : 'Egreso de caja',
+                monto: movimiento.monto || 0,
+                color: esIngreso ? 'success' : 'danger',
+                esIngreso: esIngreso,
+                origen: 'caja'
+            });
+        }
     }
     
-    // C) GASTOS
+    // C) GASTOS OPERATIVOS
     for (const gasto of datos.gastos) {
-        todosLosEventos.push({
-            fecha: gasto.fecha,
-            tipo: 'GASTO',
-            descripcion: gasto.categoria || 'Gasto',
-            detalle: gasto.descripcion || 'Sin descripción',
-            monto: gasto.monto || 0,
-            color: 'danger'
+        if (gasto.fecha) {
+            todosLosEventos.push({
+                fecha: gasto.fecha,
+                timestamp: new Date(gasto.fecha).getTime(),
+                tipo: 'GASTO',
+                descripcion: gasto.categoria || 'Gasto',
+                detalle: gasto.descripcion || 'Sin descripción',
+                monto: gasto.monto || 0,
+                color: 'danger',
+                esIngreso: false,
+                origen: 'gasto'
+            });
+        }
+    }
+    
+    // 2. ORDENAR POR FECHA CRONOLÓGICA (más ANTIGUO primero para cálculo correcto)
+    todosLosEventos.sort((a, b) => a.timestamp - b.timestamp);
+    
+    // 3. Calcular saldo acumulado DESDE EL INICIO
+    let saldoAcumulado = 0;
+    const eventosConSaldo = [];
+    
+    for (let i = 0; i < todosLosEventos.length; i++) {
+        const evento = todosLosEventos[i];
+        
+        if (evento.esIngreso) {
+            saldoAcumulado += evento.monto;
+        } else {
+            saldoAcumulado -= evento.monto;
+        }
+        
+        eventosConSaldo.push({
+            fecha: evento.fecha,
+            tipo: evento.tipo,
+            descripcion: evento.descripcion,
+            detalle: evento.detalle,
+            monto: evento.monto,
+            color: evento.color,
+            esIngreso: evento.esIngreso,
+            saldoAcumulado: saldoAcumulado,
+            origen: evento.origen
         });
     }
     
-    // 2. Ordenar por fecha (más reciente primero)
-    todosLosEventos.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+    // 4. Ordenar para mostrar en tabla (más RECIENTE primero)
+    const eventosParaMostrar = [...eventosConSaldo].reverse();
     
-    // 3. Mostrar (máximo 20 eventos)
-    const eventosMostrar = todosLosEventos.slice(0, 20);
+    // 5. Mostrar en la tabla TODOS LOS EVENTOS (sin límite)
+    tbody.innerHTML = '';
     
-    if (eventosMostrar.length === 0) {
+    if (eventosParaMostrar.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="5" class="text-center text-muted">
-                    No hay eventos registrados
+                <td colspan="6" class="text-center text-muted py-3">
+                    <i class="fas fa-history"></i> No hay eventos registrados
                 </td>
             </tr>
         `;
         return;
     }
     
-    tbody.innerHTML = '';
-    
-    eventosMostrar.forEach(evento => {
+    // MOSTRAR TODOS LOS EVENTOS SIN LÍMITE
+    eventosParaMostrar.forEach(evento => {
         const fila = document.createElement('tr');
         
         // Determinar clase CSS según tipo
         let claseMonto = '';
-        if (evento.tipo === 'INGRESO' || evento.tipo === 'APORTE') {
+        let signoMonto = '';
+        if (evento.esIngreso) {
             claseMonto = 'text-success';
+            signoMonto = '+';
         } else {
             claseMonto = 'text-danger';
+            signoMonto = '-';
         }
         
+        // Determinar color de saldo
+        let claseSaldo = evento.saldoAcumulado >= 0 ? 'text-primary' : 'text-danger';
+        
         fila.innerHTML = `
-            <td>${evento.fecha}</td>
+            <td>${evento.fecha || 'Sin fecha'}</td>
             <td>
                 <span class="badge bg-${evento.color}">
                     ${evento.tipo}
@@ -7775,77 +8931,64 @@ function actualizarHistorialGeneral() {
             <td>${evento.descripcion}</td>
             <td><small>${evento.detalle}</small></td>
             <td class="${claseMonto}">
-                <strong>Bs ${evento.monto.toFixed(2)}</strong>
+                <strong>${signoMonto}Bs ${evento.monto.toFixed(2)}</strong>
+            </td>
+            <td class="${claseSaldo}">
+                <strong>Bs ${evento.saldoAcumulado.toFixed(2)}</strong>
             </td>
         `;
         
         tbody.appendChild(fila);
     });
+    
+    // Mostrar información del cálculo
+    if (eventosConSaldo.length > 0) {
+        const ultimoSaldo = eventosConSaldo[eventosConSaldo.length - 1].saldoAcumulado;
+        
+        // Agregar fila con resumen
+        const filaResumen = document.createElement('tr');
+        filaResumen.className = 'table-info';
+        filaResumen.innerHTML = `
+            <td colspan="4" class="text-end">
+                <small><strong>Resumen:</strong> ${eventosConSaldo.length} eventos registrados</small>
+            </td>
+            <td colspan="2" class="${ultimoSaldo >= 0 ? 'text-success' : 'text-danger'}">
+                <small><strong>Saldo final: Bs ${ultimoSaldo.toFixed(2)}</strong></small>
+            </td>
+        `;
+        tbody.appendChild(filaResumen);
+    }
 }
-
 
 function filtrarHistorialGeneral(tipo) {
     const tbody = document.getElementById('tablaHistorialGeneral');
     if (!tbody) return;
     
-    // Recopilar eventos (mismo código que arriba)
-    let todosLosEventos = [];
+    // Primero actualizar el historial completo
+    actualizarHistorialGeneral();
     
-    // ... (copia el mismo código de recopilación de arriba) ...
+    // Si es "todos", ya está actualizado
+    if (tipo === 'todos') return;
     
-    // Filtrar si no es "todos"
-    if (tipo !== 'todos') {
-        todosLosEventos = todosLosEventos.filter(evento => 
-            evento.tipo === tipo.toUpperCase()
-        );
-    }
+    // Filtrar las filas visibles
+    const filas = tbody.querySelectorAll('tr');
+    const tipoUpper = tipo.toUpperCase();
     
-    // Ordenar y mostrar
-    todosLosEventos.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-    const eventosMostrar = todosLosEventos.slice(0, 20);
-    
-    // Mostrar resultados
-    if (eventosMostrar.length === 0) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="5" class="text-center text-muted">
-                    No hay ${tipo !== 'todos' ? tipo + 's' : 'eventos'} registrados
-                </td>
-            </tr>
-        `;
-        return;
-    }
-    
-    tbody.innerHTML = '';
-    
-    eventosMostrar.forEach(evento => {
-        const fila = document.createElement('tr');
-        
-        let claseMonto = '';
-        if (evento.tipo === 'INGRESO' || evento.tipo === 'APORTE') {
-            claseMonto = 'text-success';
-        } else {
-            claseMonto = 'text-danger';
+    filas.forEach(fila => {
+        // Obtener el tipo del badge
+        const badge = fila.querySelector('.badge');
+        if (badge) {
+            const tipoFila = badge.textContent.trim();
+            
+            // Mostrar u ocultar según coincidencia
+            if (tipoFila.includes(tipoUpper)) {
+                fila.style.display = '';
+            } else {
+                fila.style.display = 'none';
+            }
         }
-        
-        fila.innerHTML = `
-            <td>${evento.fecha}</td>
-            <td>
-                <span class="badge bg-${evento.color}">
-                    ${evento.tipo}
-                </span>
-            </td>
-            <td>${evento.descripcion}</td>
-            <td><small>${evento.detalle}</small></td>
-            <td class="${claseMonto}">
-                <strong>Bs ${evento.monto.toFixed(2)}</strong>
-            </td>
-        `;
-        
-        tbody.appendChild(fila);
     });
 }
-
 
 // ============================================
 // FUNCIONES PARA ADMINISTRAR CURSOS ESPECIALES
@@ -8334,9 +9477,5 @@ function actualizarCuandoSeRegistreCobro(monto) {
 
 
 console.log('✅ Sistema de Gestión Financiera cargado completamente con todas las mejoras');
-
-
-
-
 
 
