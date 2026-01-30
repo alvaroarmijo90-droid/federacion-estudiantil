@@ -36,8 +36,45 @@ let datos = {
     }
 };
 
+
+function crearBackupAutomatico() {
+    try {
+        const backupKey = 'backup_' + new Date().toISOString().split('T')[0];
+        const backup = {
+            datos: JSON.parse(JSON.stringify(datos)),
+            fecha: new Date().toISOString(),
+            version: "1.0"
+        };
+        
+        localStorage.setItem(backupKey, JSON.stringify(backup));
+        console.log("💾 Backup creado:", backupKey);
+        
+        // Mantener solo últimos 7 backups
+        const backups = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key.startsWith('backup_')) {
+                backups.push(key);
+            }
+        }
+        
+        if (backups.length > 7) {
+            backups.sort();
+            const eliminar = backups.slice(0, backups.length - 7);
+            eliminar.forEach(key => localStorage.removeItem(key));
+        }
+        
+    } catch (error) {
+        console.error("Error creando backup:", error);
+    }
+}
+
+
 // Variable para sincronización
 let sincronizacionActiva = false;
+
+
+
 
 // Configuración de montos por curso PARA 2026
 const montosPorCurso2026 = {
@@ -95,6 +132,8 @@ const ordenCursos = [
     '5. INICIAL',
     '5. PRIMARIA'
 ];
+
+
 
 // Función para obtener el monto requerido para un curso según el año
 function obtenerMontoCurso(curso, anio) {
@@ -915,6 +954,8 @@ function actualizarVistaCasilleros() {
     
     // Calcular el balance neto (recaudación - gastos)
     const balanceNeto = totalGeneral - totalGastos;
+    const montoVisualGuardado = localStorage.getItem('montoGeneralCasillerosVisual');
+    const montoParaMostrar = montoVisualGuardado ? parseFloat(montoVisualGuardado) : balanceNeto;
     
     // Actualizar los elementos en el HTML
     if (document.getElementById('totalPagadoSectorA')) {
@@ -925,22 +966,188 @@ function actualizarVistaCasilleros() {
     }
     
     // ACTUALIZAR TOTAL GENERAL RESTANDO LOS GASTOS
-    if (document.getElementById('totalGeneralCasilleros')) {
-        document.getElementById('totalGeneralCasilleros').textContent = `Bs ${balanceNeto.toFixed(2)}`;
-        // Cambiar color según si es positivo o negativo
-        const elemento = document.getElementById('totalGeneralCasilleros');
-        if (balanceNeto >= 0) {
-            elemento.className = 'text-success';
-        } else {
-            elemento.className = 'text-danger';
-        }
+    // ACTUALIZAR TOTAL GENERAL RESTANDO LOS GASTOS
+if (document.getElementById('totalGeneralCasilleros')) {
+    const elemento = document.getElementById('totalGeneralCasilleros');
+    
+    // Cargar monto visual guardado si existe (solo para visualización)
+    const montoVisualGuardado = localStorage.getItem('montoGeneralCasillerosVisual');
+    const montoParaMostrar = montoVisualGuardado ? parseFloat(montoVisualGuardado) : balanceNeto;
+    
+    // Si es admin, mostrar con botón de edición
+    if (isAdmin) {
+        elemento.innerHTML = `
+            <span class="contador-cobros">Bs ${montoParaMostrar.toFixed(2)}</span>
+            <button class="btn btn-sm btn-outline-warning btn-editar-total ms-2" 
+                    onclick="editarMontoGeneralCasilleros()" 
+                    title="Editar monto general"
+                    style="padding: 5px 8px; border-radius: 50%;">
+                <i class="fas fa-pencil-alt"></i>
+            </button>
+        `;
+    } else {
+        // Para observadores, solo mostrar el texto
+        elemento.textContent = `Bs ${montoParaMostrar.toFixed(2)}`;
     }
+    
+    // Cambiar color según si es positivo o negativo
+    if (montoParaMostrar >= 0) {
+        elemento.style.color = '#28a745';
+        elemento.classList.add('text-success');
+    } else {
+        elemento.style.color = '#dc3545';
+        elemento.classList.add('text-danger');
+    }
+}
 }
 // VER HISTORIAL DE CASILLERO
 /// VER HISTORIAL DE CASILLERO - SIMPLIFICADA Y FUNCIONAL
 // FUNCIÓN MEJORADA PARA VER HISTORIAL DE CASILLERO
 // VER HISTORIAL DE CASILLERO - COMPLETA CON CONTROLES DE PAGO
 // VER HISTORIAL DE CASILLERO - COMPLETA CON CONTROLES DE PAGO
+
+// FUNCIÓN MEJORADA PARA EDITAR MONTO GENERAL DE CASILLEROS
+function editarMontoGeneralCasilleros() {
+    if (!isAdmin) {
+        mostrarMensaje('Solo el administrador puede editar montos', 'error');
+        return;
+    }
+    
+    // Obtener el monto actual del texto (quitando "Bs ")
+    const elementoTotal = document.getElementById('totalGeneralCasilleros');
+    let montoActualTexto = elementoTotal.textContent;
+    
+    // Si el elemento tiene hijos (como el span y el botón), tomar solo el texto del primer hijo
+    if (elementoTotal.firstChild && elementoTotal.firstChild.nodeType === 3) {
+        montoActualTexto = elementoTotal.firstChild.textContent;
+    }
+    
+    const montoActual = parseFloat(montoActualTexto.replace('Bs ', '').replace(',', '')) || 0;
+    
+    // Crear un modal mejorado para la edición
+    const modalHTML = `
+        <div class="modal fade" id="modalEditarMontoGeneral" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content bg-dark text-white">
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="fas fa-edit"></i> Editar Monto General de Casilleros</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Este monto es solo informativo. Para cambiar montos reales:</p>
+                        <ul class="mb-3">
+                            <li><strong>Monto predeterminado:</strong> Cambia el valor base para nuevos casilleros</li>
+                            <li><strong>Monto por casillero:</strong> Edita cada casillero individualmente</li>
+                        </ul>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Monto general informativo:</label>
+                            <input type="number" id="nuevoMontoGeneral" class="form-control" 
+                                   value="${montoActual.toFixed(2)}" step="0.01" min="0">
+                            <div class="form-text">Este valor solo afecta la visualización, no los cálculos reales</div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> 
+                            <strong>Para cambiar cálculos reales:</strong><br>
+                            <button class="btn btn-sm btn-warning mt-2" onclick="cambiarMontoPredeterminado()">
+                                <i class="fas fa-cog"></i> Cambiar monto predeterminado
+                            </button>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-primary" onclick="guardarMontoGeneralEditado()">
+                            <i class="fas fa-save"></i> Guardar Cambio Visual
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Si el modal ya existe, removerlo
+    const modalExistente = document.getElementById('modalEditarMontoGeneral');
+    if (modalExistente) {
+        modalExistente.remove();
+    }
+    
+    // Agregar el modal al DOM
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // Mostrar el modal
+    const modal = new bootstrap.Modal(document.getElementById('modalEditarMontoGeneral'));
+    modal.show();
+    
+    // Enfocar el campo de entrada
+    setTimeout(() => {
+        document.getElementById('nuevoMontoGeneral').focus();
+    }, 500);
+}
+
+// FUNCIÓN PARA GUARDAR EL MONTO GENERAL EDITADO
+function guardarMontoGeneralEditado() {
+    const nuevoMonto = parseFloat(document.getElementById('nuevoMontoGeneral').value) || 0;
+    
+    if (isNaN(nuevoMonto) || nuevoMonto < 0) {
+        mostrarMensaje('Ingrese un monto válido', 'error');
+        return;
+    }
+    
+    // Actualizar el elemento en pantalla
+    const elementoTotal = document.getElementById('totalGeneralCasilleros');
+    
+    // Si tiene estructura con hijos (span + botón)
+    if (elementoTotal.querySelector('span')) {
+        elementoTotal.querySelector('span').textContent = `Bs ${nuevoMonto.toFixed(2)}`;
+    } else {
+        // Si es texto simple
+        elementoTotal.textContent = `Bs ${nuevoMonto.toFixed(2)}`;
+    }
+    
+    // Guardar en localStorage para persistencia
+    localStorage.setItem('montoGeneralCasillerosVisual', nuevoMonto.toString());
+    
+    // Cerrar modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('modalEditarMontoGeneral'));
+    modal.hide();
+    
+    mostrarMensaje('Monto general actualizado (visualmente)', 'success');
+}
+
+// FUNCIÓN PARA CARGAR EL MONTO VISUAL AL INICIAR
+function cargarMontoVisualCasilleros() {
+    const montoGuardado = localStorage.getItem('montoGeneralCasillerosVisual');
+    if (montoGuardado && document.getElementById('totalGeneralCasilleros')) {
+        const montoNum = parseFloat(montoGuardado);
+        const elemento = document.getElementById('totalGeneralCasilleros');
+        
+        if (isAdmin) {
+            elemento.innerHTML = `
+                <span class="contador-cobros">Bs ${montoNum.toFixed(2)}</span>
+                <button class="btn btn-sm btn-outline-warning btn-editar-total ms-2" 
+                        onclick="editarMontoGeneralCasilleros()" 
+                        title="Editar monto general"
+                        style="padding: 5px 8px; border-radius: 50%;">
+                    <i class="fas fa-pencil-alt"></i>
+                </button>
+            `;
+        } else {
+            elemento.textContent = `Bs ${montoNum.toFixed(2)}`;
+        }
+        
+        elemento.style.color = montoNum >= 0 ? '#28a745' : '#dc3545';
+    }
+}
+
+// LLAMAR ESTA FUNCIÓN AL CARGAR LA PÁGINA
+document.addEventListener('DOMContentLoaded', function() {
+    // Cargar monto visual si existe
+    setTimeout(cargarMontoVisualCasilleros, 1000);
+});
+
+
+
 function verHistorialCasillero(numero) {
     const casillero = datos.casilleros[numero] || {
         numero: numero,
@@ -1971,7 +2178,13 @@ function actualizarSeguimiento() {
         document.getElementById('totalAportesSeguimiento').textContent = `Bs ${totalAportes.toFixed(2)}`;
     }
     if (document.getElementById('totalDeudasSeguimiento')) {
-        document.getElementById('totalDeudasSeguimiento').textContent = `Bs ${totalDeudas.toFixed(2)}`;
+        // ====== CAMBIO: OCULTAR DEUDA TOTAL A OBSERVADORES ======
+        if (isAdmin) {
+            document.getElementById('totalDeudasSeguimiento').textContent = `Bs ${totalDeudas.toFixed(2)}`;
+        } else {
+            document.getElementById('totalDeudasSeguimiento').textContent = "---";
+        }
+        // ========================================================
     }
     
     // ACTUALIZAR LOS NUEVOS CUADROS POR AÑO (si existen)
@@ -1983,7 +2196,13 @@ function actualizarSeguimiento() {
             document.getElementById('estudiantesFaltan2026').textContent = estudiantesFaltan2026;
         }
         if (document.getElementById('deudaTotal2026')) {
-            document.getElementById('deudaTotal2026').textContent = `Bs ${totalDeuda2026.toFixed(2)}`;
+            // ====== CAMBIO: OCULTAR DEUDA 2026 A OBSERVADORES ======
+            if (isAdmin) {
+                document.getElementById('deudaTotal2026').textContent = `Bs ${totalDeuda2026.toFixed(2)}`;
+            } else {
+                document.getElementById('deudaTotal2026').textContent = "---";
+            }
+            // ========================================================
         }
         
         if (document.getElementById('estudiantesAlDia2027')) {
@@ -1993,7 +2212,11 @@ function actualizarSeguimiento() {
             document.getElementById('estudiantesFaltan2027').textContent = estudiantesFaltan2027;
         }
         if (document.getElementById('deudaTotal2027')) {
-            document.getElementById('deudaTotal2027').textContent = `Bs ${totalDeuda2027.toFixed(2)}`;
+            if (isAdmin) {
+                document.getElementById('deudaTotal2027').textContent = `Bs ${totalDeuda2027.toFixed(2)}`;
+            } else {
+                document.getElementById('deudaTotal2027').textContent = "---";
+            }
         }
     } catch (e) {
         console.log("Algunos elementos por año no existen aún");
@@ -2654,15 +2877,30 @@ function actualizarResumenCursosSeguimiento() {
 // FUNCIÓN DE GUARDADO MEJORADA CON ACTUALIZACIÓN AUTOMÁTICA
 function guardarDatos(forzarActualizacion = false) {
     try {
-        console.log("💾 Guardando datos...");
+        console.log("💾 Guardando datos - Usuario:", isAdmin ? "ADMIN" : "OBSERVADOR");
         
-        // 1. Guardar en localStorage
+        // 1. Guardar en localStorage (SIEMPRE)
         localStorage.setItem('datosFederacion', JSON.stringify(datos));
         
         // 2. Si hay conexión, guardar en la nube también
         if (window.sincronizador && sincronizacionActiva) {
-            window.sincronizador.guardarEnNube(datos);
-            console.log('✅ Datos sincronizados en la nube');
+            // ====== CAMBIO CRÍTICO: ======
+            // El ADMIN SIEMPRE puede guardar en la nube
+            // Los OBSERVADORES solo guardan localmente
+            if (isAdmin) {
+                console.log("👑 Admin guardando en la nube...");
+                window.sincronizador.guardarEnNube(datos)
+                    .then(exito => {
+                        if (exito) {
+                            console.log("✅ Admin: Datos forzados a la nube");
+                            // Notificación especial para admin
+                            mostrarNotificacionAdmin("Cambios guardados y sincronizados");
+                        }
+                    });
+            } else {
+                console.log("👁️ Observador: Solo guardado local (no en la nube)");
+            }
+            // ==============================
         }
         
         // 3. ACTUALIZACIÓN AUTOMÁTICA INMEDIATA
@@ -2730,9 +2968,13 @@ function guardarDatos(forzarActualizacion = false) {
             
         }, 100);
         
-        console.log("✅ Datos guardados y actualizados");
+        console.log("✅ Datos guardados exitosamente");
+        crearBackupAutomatico();
+        
         return true;
         
+        
+
     } catch (error) {
         console.error('❌ Error guardando datos:', error);
         return false;
@@ -9474,8 +9716,89 @@ function actualizarCuandoSeRegistreCobro(monto) {
     actualizarResumenOtrosCobros();
 }
 
+// ============================================
+// FUNCIÓN PARA MOSTRAR NOTIFICACIÓN AL ADMIN
+// ============================================
+function mostrarNotificacionAdmin(mensaje) {
+    if (!isAdmin) return;
+    
+    // Crear notificación
+    const notificacion = document.createElement('div');
+    notificacion.id = 'notificacion-admin-' + Date.now();
+    notificacion.style.cssText = `
+        position: fixed;
+        top: 100px;
+        right: 20px;
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        padding: 15px;
+        border-radius: 10px;
+        border-left: 5px solid gold;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        z-index: 9999;
+        max-width: 300px;
+        animation: slideIn 0.5s ease;
+    `;
+    
+    notificacion.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-crown" style="color: gold;"></i>
+            <div>
+                <strong>ADMIN:</strong>
+                <div>${mensaje}</div>
+                <small style="opacity: 0.8;">${new Date().toLocaleTimeString()}</small>
+            </div>
+            <button onclick="this.parentElement.parentElement.remove()" 
+                    style="margin-left: auto; background: transparent; border: none; color: white; cursor: pointer;">
+                ✕
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(notificacion);
+    
+    // Auto-eliminar después de 5 segundos
+    setTimeout(() => {
+        if (notificacion.parentElement) {
+            notificacion.remove();
+        }
+    }, 5000);
+}
 
+
+
+// Al final de tu script.js, agrega:
+window.addEventListener('beforeunload', function(e) {
+    if (isAdmin && datos && Object.keys(datos.cursos || {}).length > 0) {
+        // Guardar automáticamente antes de cerrar
+        localStorage.setItem('datosFederacion', JSON.stringify(datos));
+        
+        // Crear backup de emergencia
+        const backupEmergencia = {
+            datos: datos,
+            fecha: new Date().toISOString(),
+            tipo: 'emergencia'
+        };
+        localStorage.setItem('backup_emergencia_' + Date.now(), JSON.stringify(backupEmergencia));
+    }
+});
+
+
+// Al final de tu script.js, agrega:
+window.addEventListener('beforeunload', function(e) {
+    if (isAdmin && datos && Object.keys(datos.cursos || {}).length > 0) {
+        // Guardar automáticamente antes de cerrar
+        localStorage.setItem('datosFederacion', JSON.stringify(datos));
+        
+        // Crear backup de emergencia
+        const backupEmergencia = {
+            datos: datos,
+            fecha: new Date().toISOString(),
+            tipo: 'emergencia'
+        };
+        localStorage.setItem('backup_emergencia_' + Date.now(), JSON.stringify(backupEmergencia));
+    }
+});
 
 console.log('✅ Sistema de Gestión Financiera cargado completamente con todas las mejoras');
-
 
