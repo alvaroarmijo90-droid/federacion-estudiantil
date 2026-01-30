@@ -2621,4 +2621,23 @@ select {
     );
     border-radius: 10px;
 }
+/* Agrega esto en tu CSS existente */
+.btn-editar-total {
+    transition: all 0.3s ease;
+    opacity: 0.7;
+}
 
+.btn-editar-total:hover {
+    opacity: 1;
+    transform: scale(1.1);
+    box-shadow: 0 0 10px rgba(255, 193, 7, 0.5);
+}
+
+/* Para que el total y el botón estén alineados verticalmente */
+.d-flex.align-items-center.justify-content-center {
+    min-height: 60px;
+}
+
+.contador-cobros {
+    margin-bottom: 0 !important;
+}
