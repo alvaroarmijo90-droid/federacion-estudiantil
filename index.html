@@ -1056,47 +1056,63 @@
         </section>
 
         <!-- Pestaña Casilleros MEJORADA -->
-        <section id="casilleros" class="tab-content">
-            <div class="card neon-card">
-                <div class="card-header">
-                    <h3 class="neon-text"><i class="fas fa-archive"></i> Gestión de Casilleros - Pago Mensual</h3>
-                    <p class="mb-0 text-warning"><small><i class="fas fa-info-circle"></i> Sistema de control mensual - Marque los meses pagados</small></p>
+<section id="casilleros" class="tab-content">
+    <div class="card neon-card">
+        <div class="card-header">
+            <h3 class="neon-text"><i class="fas fa-archive"></i> Gestión de Casilleros - Pago Mensual</h3>
+            <p class="mb-0 text-warning"><small><i class="fas fa-info-circle"></i> Sistema de control mensual - Marque los meses pagados</small></p>
+        </div>
+        
+        <div class="card-body">
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="card neon-card-inner">
+                        <div class="card-body text-center">
+                            <h4 class="neon-text">Sector A</h4>
+                            <p class="text-muted">Casilleros 1-18</p>
+                            <h2 class="neon-text" id="totalPagadoSectorA">Bs 0.00</h2>
+                            <small>Total recaudado</small>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <div class="row mb-4">
-                        <div class="col-md-4">
-                            <div class="card neon-card-inner">
-                                <div class="card-body text-center">
-                                    <h4 class="neon-text">Sector A</h4>
-                                    <p class="text-muted">Casilleros 1-18</p>
-                                    <h2 class="neon-text" id="totalPagadoSectorA">Bs 0.00</h2>
-                                    <small>Total recaudado</small>
-                                </div>
-                            </div>
+                <div class="col-md-4">
+                    <div class="card neon-card-inner">
+                        <div class="card-body text-center">
+                            <h4 class="neon-text">Sector B</h4>
+                            <p class="text-muted">Casilleros 19-36</p>
+                            <h2 class="neon-text" id="totalPagadoSectorB">Bs 0.00</h2>
+                            <small>Total recaudado</small>
                         </div>
-                        <div class="col-md-4">
-                            <div class="card neon-card-inner">
-                                <div class="card-body text-center">
-                                    <h4 class="neon-text">Sector B</h4>
-                                    <p class="text-muted">Casilleros 19-36</p>
-                                    <h2 class="neon-text" id="totalPagadoSectorB">Bs 0.00</h2>
-                                    <small>Total recaudado</small>
-                                </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card neon-card-inner">
+                        <div class="card-body text-center">
+                            <h4 class="neon-text">Total General</h4>
+                            <p class="text-muted">2026 y 2027</p>
+                            <div class="d-flex align-items-center justify-content-center">
+                                <h1 class="contador-cobros me-2" id="totalGeneralCasilleros">Bs 0.00</h1>
+                                <!-- AQUÍ ESTÁ EL BOTÓN DE EDICIÓN -->
+                                <button class="btn btn-sm btn-outline-warning btn-editar-total" 
+                                        onclick="editarMontoGeneralCasilleros()" 
+                                        title="Editar monto general"
+                                        style="padding: 5px 8px; border-radius: 50%;">
+                                    <i class="fas fa-pencil-alt"></i>
+                                </button>
                             </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="card neon-card-inner">
-                                <div class="card-body text-center">
-                                    <h4 class="neon-text">Total General</h4>
-                                    <p class="text-muted">2026 y 2027</p>
-                                    <h1 class="contador-cobros" id="totalGeneralCasilleros">Bs 0.00</h1>
-                                    <button class="btn btn-sm btn-info mt-2" onclick="generarReporteCasillerosPDF()">
-                                        <i class="fas fa-file-pdf"></i> Reporte PDF
-                                    </button>
-                                </div>
+                            <div class="mt-2">
+                                <button class="btn btn-sm btn-info" onclick="generarReporteCasillerosPDF()">
+                                    <i class="fas fa-file-pdf"></i> Reporte PDF
+                                </button>
+                                <!-- Botón para cambiar monto predeterminado -->
+                                <button class="btn btn-sm btn-outline-info ms-2" onclick="cambiarMontoPredeterminado()">
+                                    <i class="fas fa-cog"></i> Predeterminado
+                                </button>
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
 
                     <div class="row">
                         <!-- Sector A -->
