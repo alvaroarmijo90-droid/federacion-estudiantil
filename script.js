@@ -2738,7 +2738,7 @@ function actualizarResumenCursosSeguimiento() {
                         </div>
                         <div class="d-flex justify-content-between">
                             <small>Faltante:</small>
-                            <strong class="text-danger">Bs ${faltante2026.toFixed(2)}</strong>
+                            ${!esObservador ? `<strong class="text-danger">Bs ${faltante2026.toFixed(2)}</strong>` : `<strong class="text-muted">---</strong>`}
                         </div>
                         <div class="d-flex justify-content-between">
                             <small>% Completado:</small>
@@ -2782,7 +2782,7 @@ function actualizarResumenCursosSeguimiento() {
                         </div>
                         <div class="d-flex justify-content-between">
                             <small>Faltante:</small>
-                            <strong class="text-danger">Bs ${faltante2027.toFixed(2)}</strong>
+                            ${!esObservador ? `<strong class="text-danger">Bs ${faltante2027.toFixed(2)}</strong>` : `<strong class="text-muted">---</strong>`}
                         </div>
                         <div class="d-flex justify-content-between">
                             <small>% Completado:</small>
@@ -2839,7 +2839,7 @@ function actualizarResumenCursosSeguimiento() {
                         </div>
                         <div class="d-flex justify-content-between">
                             <small>Total faltante:</small>
-                            <strong class="text-danger">Bs ${totalFaltante.toFixed(2)}</strong>
+                            ${!esObservador ? `<strong class="text-danger">Bs ${totalFaltante.toFixed(2)}</strong>` : `<strong class="text-muted">---</strong>`}
                         </div>
                         <div class="d-flex justify-content-between">
                             <small>% Total:</small>
@@ -9801,4 +9801,5 @@ window.addEventListener('beforeunload', function(e) {
 });
 
 console.log('✅ Sistema de Gestión Financiera cargado completamente con todas las mejoras');
+
 
