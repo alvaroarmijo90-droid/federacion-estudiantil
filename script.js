@@ -18,6 +18,7 @@ let datos = {
     gastosCasilleros: [],
     otrosCobrosIngresos: 0,          // Total recaudado en otros cobros
     otrosCobrosGastos: 0,            // Total gastado de otros cobros
+    montoInicialCasilleros: 0,
     otrosCobrosSaldos: [],          // Gastos individuales
     otrosCobrosHistorial: [],        // Historial completo // Nuevo: gastos de fondos de casilleros
     cursos: {
@@ -2453,12 +2454,16 @@ function actualizarResumenFinancieroSeguimiento() {
 
 // Funciones auxiliares para calcular
 function calcularTotalCasilleros() {
-    let total = 0;
-    for (const casillero of Object.values(datos.casilleros)) {
-        if (casillero && casillero.totalPagado) {
-            total += casillero.totalPagado;
+    let total = datos.montoInicialCasilleros || 0;
+
+    datos.sectores.forEach(sector => {
+        if (sector.cobros) {
+            sector.cobros.forEach(cobro => {
+                total += cobro.monto || 0;
+            });
         }
-    }
+    });
+
     return total;
 }
 
@@ -9765,6 +9770,22 @@ function mostrarNotificacionAdmin(mensaje) {
     }, 5000);
 }
 
+function establecerDineroInicialCasilleros() {
+    const monto = prompt("Ingrese el dinero inicial para Casilleros:");
+
+    if (monto === null) return;
+
+    const montoNumero = parseFloat(monto);
+
+    if (isNaN(montoNumero) || montoNumero < 0) {
+        alert("Ingrese un monto válido");
+        return;
+    }
+
+    datos.montoInicialCasilleros = montoNumero;
+    guardarDatos();
+    actualizarResumenFinanciero();
+}
 
 
 // Al final de tu script.js, agrega:
@@ -9801,5 +9822,6 @@ window.addEventListener('beforeunload', function(e) {
 });
 
 console.log('✅ Sistema de Gestión Financiera cargado completamente con todas las mejoras');
+
 
 
