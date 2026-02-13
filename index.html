@@ -1093,21 +1093,17 @@
                             <div class="d-flex align-items-center justify-content-center">
                                 <h1 class="contador-cobros me-2" id="totalGeneralCasilleros">Bs 0.00</h1>
                                 <!-- AQUÍ ESTÁ EL BOTÓN DE EDICIÓN -->
-                                <button class="btn btn-sm btn-outline-warning btn-editar-total" 
-                                        onclick="editarMontoGeneralCasilleros()" 
-                                        title="Editar monto general"
-                                        style="padding: 5px 8px; border-radius: 50%;">
-                                    <i class="fas fa-pencil-alt"></i>
-                                </button>
+                                
                             </div>
-                            <div class="mt-2">
+                            
+                                <div class="mt-2">
                                 <button class="btn btn-sm btn-info" onclick="generarReporteCasillerosPDF()">
-                                    <i class="fas fa-file-pdf"></i> Reporte PDF
-                                </button>
-                                <!-- Botón para cambiar monto predeterminado -->
-                                <button class="btn btn-sm btn-outline-info ms-2" onclick="cambiarMontoPredeterminado()">
-                                    <i class="fas fa-cog"></i> Predeterminado
-                                </button>
+        <i class="fas fa-file-pdf"></i> Reporte PDF
+    </button>
+
+    <button class="btn btn-sm btn-success ms-2" onclick="establecerDineroInicialCasilleros()">
+        <i class="fas fa-coins"></i> Dinero Inicial
+    </button>
                             </div>
                         </div>
                     </div>
@@ -2254,3 +2250,4 @@
     <script src="script.js"></script>
 </body>
 </html>
+
