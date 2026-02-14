@@ -5,10 +5,11 @@ class SincronizadorFederacion {
         this.usuarioId = null;
         this.ultimoCambio = null;
         this.config = null;
-        this.apiUrl = 'https://your-region.tidbcloud.com/api/v1beta'; // Cambiar por tu región
-        this.apiKey = 'tu-api-key'; // Necesitas obtenerla
-        this.projectId = 'tu-project-id'; // Necesitas obtenerlo
-        this.clusterId = 'tu-cluster-id'; // Necesitas obtenerlo
+        this.apiUrl = 'https://api.tidbcloud.com/api/v1beta';
+    this.publicKey = 'S2U0EBR0';                          // ← TU PUBLIC KEY
+    this.privateKey = 'd3e6d417-ad41-49f6-8399-e9240fa11b74'; // ← TU PRIVATE KEY
+    this.clusterId = '10734662047227311583';               // ← TU CLUSTER ID
+    this.projectId = '1372813089454622094';
     }
 
     async conectar(configTiDB) {
@@ -129,3 +130,4 @@ window.verEstadoSincronizacion = function() {
         console.log('❌ Sincronizador no disponible');
     }
 };
+
