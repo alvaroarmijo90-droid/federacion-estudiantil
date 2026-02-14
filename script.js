@@ -158,16 +158,17 @@ document.addEventListener('DOMContentLoaded', async function() {
     console.log('Sistema de Gestión Financiera - Inicializando...');
     
     // INICIAR SISTEMA DE SINCRONIZACIÓN
-    if (window.sincronizador) {
-        sincronizacionActiva = await window.sincronizador.conectar();
-        if (sincronizacionActiva) {
-            console.log('✅ Modo multiusuario ACTIVADO');
-            mostrarMensaje('Conectado - Los cambios se verán en todos los dispositivos', 'success');
-        } else {
-            console.log('⚠️ Usando modo local');
-            mostrarMensaje('Modo local activado - Sin conexión a internet', 'info');
-        }
+if (window.sincronizador) {
+    // Usar la configuración de JSONBin.io
+    sincronizacionActiva = await window.sincronizador.conectar();
+    if (sincronizacionActiva) {
+        console.log('✅ Modo multiusuario ACTIVADO (JSONBin.io)');
+        mostrarMensaje('Conectado a JSONBin.io - Los cambios se verán en todos los dispositivos', 'success');
+    } else {
+        console.log('⚠️ Usando modo local');
+        mostrarMensaje('Modo local activado - Sin conexión a la nube', 'info');
     }
+}
     
     // Configurar login
     const loginForm = document.getElementById('loginForm');
@@ -9822,6 +9823,7 @@ window.addEventListener('beforeunload', function(e) {
 });
 
 console.log('✅ Sistema de Gestión Financiera cargado completamente con todas las mejoras');
+
 
 
 
