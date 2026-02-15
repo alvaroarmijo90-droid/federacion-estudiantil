@@ -1888,7 +1888,7 @@ function actualizarDashboard() {
     
     // 2. TOTAL APORTES ESTUDIANTES (de la pestaña Cursos)
     let totalAportesEstudiantes = 0;
-    for (const curso of Object.values(datos.cursos || {})) {
+    for (const curso of Object.values(datos.cursos)) {
         if (curso.estudiantes) {
             for (const estudiante of curso.estudiantes) {
                 if (estudiante.pagos) {
@@ -1903,51 +1903,46 @@ function actualizarDashboard() {
     }
     datos.totalAportesEstudiantes = totalAportesEstudiantes;
     
-    // 3. TOTAL GASTOS - CORREGIDO: verificar que datos.gastos existe y es array
+    // 3. TOTAL GASTOS
     let totalGastosCalculado = 0;
-    if (datos.gastos && Array.isArray(datos.gastos)) {
-        for (const gasto of datos.gastos) {
-            totalGastosCalculado += gasto.monto || 0;
-        }
-    } else {
-        // Si no existe, crearlo como array vacío
-        datos.gastos = [];
+    for (const gasto of datos.gastos) {
+        totalGastosCalculado += gasto.monto || 0;
     }
     datos.totalGastos = totalGastosCalculado;
     
     // 4. DINERO FINAL
-    const dineroFinal = (datos.dineroInicial || 0) + datos.totalAportesEstudiantes - datos.totalGastos;
+    const dineroFinal = datos.dineroInicial + datos.totalAportesEstudiantes - datos.totalGastos;
     datos.dineroFinal = dineroFinal;
     
     // Actualizar los valores en el dashboard
     if (document.getElementById('dineroInicial')) {
-        document.getElementById('dineroInicial').textContent = `Bs ${(datos.dineroInicial || 0).toFixed(2)}`;
+        document.getElementById('dineroInicial').textContent = `Bs ${datos.dineroInicial.toFixed(2)}`;
     }
     if (document.getElementById('dineroFinal')) {
-        document.getElementById('dineroFinal').textContent = `Bs ${(datos.dineroFinal || 0).toFixed(2)}`;
+        document.getElementById('dineroFinal').textContent = `Bs ${datos.dineroFinal.toFixed(2)}`;
     }
     if (document.getElementById('totalAportesEstudiantes')) {
-        document.getElementById('totalAportesEstudiantes').textContent = `Bs ${(datos.totalAportesEstudiantes || 0).toFixed(2)}`;
+        document.getElementById('totalAportesEstudiantes').textContent = `Bs ${datos.totalAportesEstudiantes.toFixed(2)}`;
     }
     if (document.getElementById('totalGastos')) {
-        document.getElementById('totalGastos').textContent = `Bs ${(datos.totalGastos || 0).toFixed(2)}`;
+        document.getElementById('totalGastos').textContent = `Bs ${datos.totalGastos.toFixed(2)}`;
     }
     
     // Panel de caja
     if (document.getElementById('totalCajaDisplay')) {
-        document.getElementById('totalCajaDisplay').textContent = `Bs ${(datos.dineroFinal || 0).toFixed(2)}`;
+        document.getElementById('totalCajaDisplay').textContent = `Bs ${datos.dineroFinal.toFixed(2)}`;
     }
     if (document.getElementById('totalIngresosCaja')) {
-        document.getElementById('totalIngresosCaja').textContent = `Bs ${(datos.totalIngresosCaja || 0).toFixed(2)}`;
+        document.getElementById('totalIngresosCaja').textContent = `Bs ${datos.totalIngresosCaja.toFixed(2)}`;
     }
     if (document.getElementById('totalEgresosCaja')) {
-        document.getElementById('totalEgresosCaja').textContent = `Bs ${(datos.totalEgresosCaja || 0).toFixed(2)}`;
+        document.getElementById('totalEgresosCaja').textContent = `Bs ${datos.totalEgresosCaja.toFixed(2)}`;
     }
     if (document.getElementById('totalAportesCaja')) {
-        document.getElementById('totalAportesCaja').textContent = `Bs ${(datos.totalAportesEstudiantes || 0).toFixed(2)}`;
+        document.getElementById('totalAportesCaja').textContent = `Bs ${datos.totalAportesEstudiantes.toFixed(2)}`;
     }
     if (document.getElementById('saldoCaja')) {
-        document.getElementById('saldoCaja').textContent = `Bs ${(datos.dineroFinal || 0).toFixed(2)}`;
+        document.getElementById('saldoCaja').textContent = `Bs ${datos.dineroFinal.toFixed(2)}`;
     }
     
     // Actualizar últimos pagos registrados
@@ -9828,6 +9823,7 @@ window.addEventListener('beforeunload', function(e) {
 });
 
 console.log('✅ Sistema de Gestión Financiera cargado completamente con todas las mejoras');
+
 
 
 
