@@ -554,6 +554,7 @@ async function cargarDatos() {
     actualizarTablaGastosCasilleros();
     actualizarResumenOtrosCobros();
     actualizarResumenCasilleros();
+    actualizarResumenCursosSeguimiento();
     
 const hoy = new Date().toISOString().split('T')[0];
 const fechaGastoOtroCobro = document.getElementById('fechaGastoOtroCobro');
@@ -9824,6 +9825,7 @@ window.addEventListener('beforeunload', function(e) {
 });
 
 console.log('✅ Sistema de Gestión Financiera cargado completamente con todas las mejoras');
+
 
 
 
