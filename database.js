@@ -1,4 +1,4 @@
-// database.js - SISTEMA DE SINCRONIZACIÓN CON FIREBASE (VERSIÓN COMPLETA)
+// database.js - SISTEMA DE SINCRONIZACIÓN CON FIREBASE (VERSIÓN CORREGIDA)
 class SincronizadorFederacion {
     constructor() {
         this.db = null;
@@ -62,7 +62,7 @@ class SincronizadorFederacion {
             .onSnapshot((doc) => {
                 if (doc.exists) {
                     const data = doc.data();
-                    console.log('📢 Cambio detectado en Firebase:', data);
+                    console.log('📢 Cambio detectado en Firebase');
                     
                     // Evitar procesar cambios propios
                     if (data.ultimoUsuario === this.usuarioId) {
@@ -158,13 +158,12 @@ class SincronizadorFederacion {
         try {
             console.log('☁️ Guardando en Firebase...');
             
-            const fechaActual = new Date();
             const totalEstudiantes = Object.values(datosCompletos.cursos || {}).reduce((total, curso) => total + (curso.estudiantes?.length || 0), 0);
             
-            // Guardar en Firestore
+            // Guardar en Firestore - USAR SERVER TIMESTAMP
             await this.db.collection('datosFederacion').doc('configuracion').set({
                 datosJSON: JSON.stringify(datosCompletos),
-                ultimaActualizacion: fechaActual,
+                ultimaActualizacion: firebase.firestore.FieldValue.serverTimestamp(),
                 ultimoUsuario: this.usuarioId,
                 totalEstudiantes: totalEstudiantes
             });
@@ -204,8 +203,21 @@ class SincronizadorFederacion {
             
             if (docSnap.exists) {
                 const data = docSnap.data();
+                
+                // CORRECCIÓN: Manejar la fecha correctamente
+                let fechaMostrar = 'desconocida';
+                if (data.ultimaActualizacion) {
+                    if (typeof data.ultimaActualizacion === 'object' && data.ultimaActualizacion.toDate) {
+                        // Es un objeto Timestamp de Firebase
+                        fechaMostrar = data.ultimaActualizacion.toDate().toLocaleString();
+                    } else {
+                        // Es un string o algo más
+                        fechaMostrar = String(data.ultimaActualizacion);
+                    }
+                }
+                
                 console.log('✅ Datos cargados de Firebase');
-                console.log('- Última actualización:', data.ultimaActualizacion?.toDate?.() || 'desconocida');
+                console.log('- Última actualización:', fechaMostrar);
                 console.log('- Último usuario:', data.ultimoUsuario || 'desconocido');
                 
                 // Parsear el JSON
@@ -229,7 +241,7 @@ class SincronizadorFederacion {
                 
                 await this.db.collection('datosFederacion').doc('configuracion').set({
                     datosJSON: JSON.stringify(datosIniciales),
-                    ultimaActualizacion: new Date(),
+                    ultimaActualizacion: firebase.firestore.FieldValue.serverTimestamp(),
                     ultimoUsuario: this.usuarioId,
                     totalEstudiantes: 0
                 });
