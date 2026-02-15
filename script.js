@@ -158,15 +158,16 @@ document.addEventListener('DOMContentLoaded', async function() {
     console.log('Sistema de Gestión Financiera - Inicializando...');
     
  // INICIAR SISTEMA DE SINCRONIZACIÓN
+// INICIAR SISTEMA DE SINCRONIZACIÓN
 if (window.sincronizador) {
-    // CAMBIA ESTO: de CONFIG_TIDB a CONFIG_FIREBASE
+    // ✅ CORREGIDO: Ahora pasa CONFIG_FIREBASE como parámetro
     sincronizacionActiva = await window.sincronizador.conectar(CONFIG_FIREBASE);
     if (sincronizacionActiva) {
-        console.log('✅ Modo multiusuario ACTIVADO (Firebase)');
-        mostrarMensaje('Conectado a Firebase - Los cambios se verán en todos los dispositivos en tiempo real', 'success');
+        console.log('✅ Modo multiusuario ACTIVADO');
+        mostrarMensaje('Conectado - Los cambios se verán en todos los dispositivos', 'success');
     } else {
         console.log('⚠️ Usando modo local');
-        mostrarMensaje('Modo local activado - Sin conexión a la nube', 'info');
+        mostrarMensaje('Modo local activado - Sin conexión a internet', 'info');
     }
 }
     
@@ -10171,6 +10172,7 @@ window.addEventListener('beforeunload', function(e) {
 });
 
 console.log('✅ Sistema de Gestión Financiera cargado completamente con todas las mejoras');
+
 
 
 
