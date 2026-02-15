@@ -157,16 +157,16 @@ const ADMIN_PASSWORD = "admin123";
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('Sistema de Gestión Financiera - Inicializando...');
     
-   // INICIAR SISTEMA DE SINCRONIZACIÓN
+  // INICIAR SISTEMA DE SINCRONIZACIÓN
 if (window.sincronizador) {
-    // Usar la configuración de TiDB
-    sincronizacionActiva = await window.sincronizador.conectar(CONFIG_TIDB);
+    // Usar la configuración de Firebase
+    sincronizacionActiva = await window.sincronizador.conectar(CONFIG_FIREBASE);
     if (sincronizacionActiva) {
-        console.log('✅ Modo multiusuario ACTIVADO (TiDB API)');
-        mostrarMensaje('Conectado a TiDB - Los cambios se verán en todos los dispositivos', 'success');
+        console.log('✅ Modo multiusuario ACTIVADO (Firebase)');
+        mostrarMensaje('Conectado a Firebase - Los cambios se verán en todos los dispositivos en tiempo real', 'success');
     } else {
         console.log('⚠️ Usando modo local');
-        mostrarMensaje('Modo local activado - Sin conexión a internet', 'info');
+        mostrarMensaje('Modo local activado - Sin conexión a la nube', 'info');
     }
 }
     
@@ -9823,6 +9823,7 @@ window.addEventListener('beforeunload', function(e) {
 });
 
 console.log('✅ Sistema de Gestión Financiera cargado completamente con todas las mejoras');
+
 
 
 
