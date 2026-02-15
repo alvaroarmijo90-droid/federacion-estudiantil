@@ -38,56 +38,68 @@ class SincronizadorFederacion {
             }
             this.usuarioId = userId;
             
-            this.conectado = true;
-            console.log('✅ Conectado a Firebase Firestore');
+            // PROBAR CONEXIÓN - equivalente a la prueba de Supabase
+            console.log('🔄 Probando conexión...');
+            try {
+                const testDoc = await this.db.collection('datosFederacion').doc('test').get();
+                console.log('✅ Conexión a Firebase exitosa');
+                this.conectado = true;
+            } catch (testError) {
+                console.error('❌ Error de conexión:', testError.message);
+                this.conectado = false;
+                return false;
+            }
+            
+            console.log('✅ Conectado a base de datos compartida (Firebase)');
             console.log('👤 Usuario ID:', this.usuarioId);
             
-            // Escuchar cambios en tiempo real
+            // Escuchar cambios de otros (equivalente a Supabase realtime)
             this.escucharCambios();
-            
-            // Cargar datos iniciales
-            await this.cargarDeNube();
             
             return true;
             
         } catch (error) {
-            console.error('❌ Error conectando a Firebase:', error);
+            console.error('❌ Error conectando:', error);
             this.conectado = false;
             return false;
         }
     }
 
     escucharCambios() {
-        if (!this.conectado || !this.db) return;
+        if (!this.conectado || !this.db) {
+            console.log('⚠️ No se puede escuchar cambios - sin conexión');
+            return;
+        }
         
         console.log('👂 Escuchando cambios en tiempo real...');
         
+        // Equivalente a Supabase Realtime
         this.db.collection('datosFederacion').doc('configuracion')
             .onSnapshot((doc) => {
                 if (doc.exists) {
                     console.log('📢 Cambio detectado en Firebase');
                     
+                    // Evitar procesar nuestros propios cambios
                     const data = doc.data();
-                    
-                    // Ignorar cambios propios
-                    if (data.ultimoUsuario === this.usuarioId) {
+                    if (this.ultimoCambio && data.ultimoUsuario === this.usuarioId) {
                         console.log('🔄 Ignorando cambio propio');
                         return;
                     }
                     
+                    // Mostrar notificación
                     this.mostrarNotificacionCambio();
-                    this.cargarDeNube();
                 }
             }, (error) => {
-                console.error('❌ Error en escucha:', error);
+                console.error('❌ Error escuchando cambios:', error);
             });
     }
 
     mostrarNotificacionCambio() {
-        if (document.getElementById('notificacion-firebase')) return;
+        console.log('🔔 Mostrando notificación de cambio...');
         
+        // Crear notificación (exactamente igual que en Supabase)
         const notificacion = document.createElement('div');
-        notificacion.id = 'notificacion-firebase';
+        notificacion.id = 'notificacion-cambio';
         notificacion.style.cssText = `
             position: fixed;
             top: 20px;
@@ -96,131 +108,159 @@ class SincronizadorFederacion {
             color: white;
             padding: 15px 20px;
             border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
             z-index: 99999;
             min-width: 300px;
+            animation: slideIn 0.5s ease;
             border-left: 5px solid #00ff00;
+            font-family: Arial, sans-serif;
         `;
         
+        // Agregar animación CSS si no existe
+        if (!document.querySelector('#estilo-notificacion')) {
+            const estilo = document.createElement('style');
+            estilo.id = 'estilo-notificacion';
+            estilo.textContent = `
+                @keyframes slideIn {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+                @keyframes fadeOut {
+                    from { opacity: 1; }
+                    to { opacity: 0; }
+                }
+            `;
+            document.head.appendChild(estilo);
+        }
+        
         notificacion.innerHTML = `
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <i class="fas fa-sync-alt fa-spin" style="color: #00ff00;"></i>
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                <i class="fas fa-sync-alt fa-spin" style="color: #00ff00; font-size: 1.2em;"></i>
                 <div>
-                    <strong>¡Nuevos cambios disponibles!</strong>
-                    <p style="margin: 5px 0 0 0;">Otro usuario actualizó los datos</p>
+                    <strong style="font-size: 1.1em;">¡Nuevos cambios disponibles!</strong>
+                    <p style="margin: 5px 0 0 0; font-size: 0.9em; opacity: 0.9;">
+                        Otro usuario actualizó los datos de la federación
+                    </p>
                 </div>
             </div>
-            <div style="display: flex; gap: 10px; margin-top: 10px;">
-                <button id="btn-recargar-firebase" style="background: #00ff00; color: black; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">Recargar</button>
-                <button id="btn-cerrar-firebase" style="background: transparent; color: white; border: 1px solid white; padding: 5px 10px; border-radius: 3px; cursor: pointer;">Cerrar</button>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button id="btn-recargar-ahora" 
+                        style="background: #00ff00; color: black; 
+                               border: none; padding: 8px 15px; 
+                               border-radius: 5px; cursor: pointer;
+                               font-weight: bold; font-size: 0.9em;">
+                    🔄 Recargar ahora
+                </button>
+                <button id="btn-cerrar-notificacion" 
+                        style="background: transparent; color: white; 
+                               border: 1px solid white; padding: 8px 15px; 
+                               border-radius: 5px; cursor: pointer;
+                               font-size: 0.9em;">
+                    ✕ Cerrar
+                </button>
             </div>
         `;
         
         document.body.appendChild(notificacion);
         
-        document.getElementById('btn-recargar-firebase').onclick = () => window.location.reload();
-        document.getElementById('btn-cerrar-firebase').onclick = () => notificacion.remove();
+        // Agregar eventos a los botones
+        document.getElementById('btn-recargar-ahora').onclick = function() {
+            console.log('🔄 Recargando por notificación...');
+            window.location.reload();
+        };
         
-        setTimeout(() => notificacion.remove(), 30000);
+        document.getElementById('btn-cerrar-notificacion').onclick = function() {
+            notificacion.style.animation = 'fadeOut 0.3s ease';
+            setTimeout(() => {
+                if (notificacion.parentElement) {
+                    notificacion.remove();
+                }
+            }, 300);
+        };
+        
+        // Auto-eliminar después de 30 segundos
+        setTimeout(() => {
+            if (notificacion.parentElement) {
+                notificacion.style.animation = 'fadeOut 0.3s ease';
+                setTimeout(() => {
+                    if (notificacion.parentElement) {
+                        notificacion.remove();
+                    }
+                }, 300);
+            }
+        }, 30000);
+        
+        console.log('✅ Notificación mostrada');
     }
 
     async guardarEnNube(datosCompletos) {
         if (!this.conectado || !this.db) {
-            console.log('⚠️ No conectado, guardando localmente');
-            this.guardarLocales(datosCompletos);
+            console.log('⚠️ No conectado, no se guarda en nube');
             return false;
         }
-
+        
         try {
-            console.log('☁️ Guardando en Firebase...');
+            console.log('☁️ Guardando en la nube...');
             
-            const totalEstudiantes = Object.values(datosCompletos.cursos || {}).reduce((total, curso) => total + (curso.estudiantes?.length || 0), 0);
+            const datosParaGuardar = {
+                datos: datosCompletos,
+                fecha_actualizacion: new Date().toISOString(),
+                usuario: this.usuarioId,
+                total_estudiantes: Object.values(datosCompletos.cursos || {}).reduce((total, curso) => total + (curso.estudiantes?.length || 0), 0)
+            };
             
-            await this.db.collection('datosFederacion').doc('configuracion').set({
-                datosJSON: JSON.stringify(datosCompletos),
-                ultimaActualizacion: firebase.firestore.FieldValue.serverTimestamp(),
-                ultimoUsuario: this.usuarioId,
-                totalEstudiantes: totalEstudiantes
+            console.log('📤 Enviando datos:', {
+                usuario: this.usuarioId,
+                estudiantes: datosParaGuardar.total_estudiantes,
+                aportes: datosCompletos.aportes?.length || 0
             });
             
-            console.log('✅ Datos guardados en Firebase');
+            // Guardar en Firebase (equivalente a upsert de Supabase)
+            await this.db.collection('datosFederacion').doc('configuracion').set(datosParaGuardar);
             
-            // Guardar localmente también
-            this.guardarLocales(datosCompletos);
+            // Guardar timestamp para evitar procesar nuestro propio cambio
+            this.ultimoCambio = new Date();
             
-            this.ultimoCambio = Date.now();
-            
+            console.log('✅ Datos guardados en la nube (Firebase)');
             return true;
-            
         } catch (error) {
-            console.error('❌ Error guardando en Firebase:', error);
-            this.guardarLocales(datosCompletos);
+            console.error('❌ Error guardando en nube:', error);
             return false;
         }
     }
 
     async cargarDeNube() {
         if (!this.conectado || !this.db) {
-            console.log('⚠️ No conectado, cargando local');
-            return this.cargarLocales();
+            console.log('⚠️ No conectado, no se carga de nube');
+            return null;
         }
-
+        
         try {
-            console.log('📂 Cargando desde Firebase...');
+            console.log('☁️ Cargando desde la nube...');
             
             const docRef = this.db.collection('datosFederacion').doc('configuracion');
             const docSnap = await docRef.get();
             
             if (docSnap.exists) {
                 const data = docSnap.data();
+                console.log('✅ Datos cargados de la nube');
+                console.log('- Usuario:', data.usuario || 'desconocido');
+                console.log('- Fecha:', data.fecha_actualizacion || 'desconocida');
                 
-                if (data.datosJSON) {
-                    const datosParseados = JSON.parse(data.datosJSON);
-                    console.log('✅ Datos cargados de Firebase');
-                    
-                    // IMPORTANTE: Asegurar que todas las estructuras existan
-                    if (!datosParseados.gastos) datosParseados.gastos = [];
-                    if (!datosParseados.movimientosCaja) datosParseados.movimientosCaja = [];
-                    if (!datosParseados.casilleros) datosParseados.casilleros = {};
-                    if (!datosParseados.cursos) datosParseados.cursos = {};
-                    
-                    // Guardar localmente
-                    this.guardarLocales(datosParseados);
-                    
-                    return datosParseados;
-                }
-            }
-            
-            console.log('ℹ️ No hay datos en Firebase, cargando locales');
-            return this.cargarLocales();
-            
-        } catch (error) {
-            console.error('❌ Error cargando de Firebase:', error);
-            return this.cargarLocales();
-        }
-    }
-
-    cargarLocales() {
-        const guardado = localStorage.getItem('datosFederacion');
-        if (guardado) {
-            try {
-                this.datosLocales = JSON.parse(guardado);
-                console.log('📂 Datos cargados desde localStorage');
-                return this.datosLocales;
-            } catch (e) {
-                console.error('Error parseando localStorage:', e);
+                // IMPORTANTE: Asegurar que todas las estructuras existan
+                if (!data.datos.gastos) data.datos.gastos = [];
+                if (!data.datos.movimientosCaja) data.datos.movimientosCaja = [];
+                if (!data.datos.casilleros) data.datos.casilleros = {};
+                if (!data.datos.sectoresCobro) data.datos.sectoresCobro = [];
+                
+                return data.datos;
+            } else {
+                console.log('ℹ️ No hay datos en la nube');
                 return null;
             }
-        }
-        return null;
-    }
-
-    guardarLocales(datos) {
-        try {
-            localStorage.setItem('datosFederacion', JSON.stringify(datos));
-            this.datosLocales = datos;
-            console.log('💾 Datos guardados en localStorage');
-        } catch (e) {
-            console.error('Error guardando en localStorage:', e);
+        } catch (error) {
+            console.error('❌ Error cargando de nube:', error);
+            return null;
         }
     }
 
