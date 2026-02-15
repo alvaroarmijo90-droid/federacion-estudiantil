@@ -8,11 +8,6 @@ const CONFIG_FIREBASE = {
     appId: "1:776623574249:web:bd1ef98b867a8928987478"
 };
 
-// IMPORTANTE: También definimos CONFIG_SUPABASE como vacío para evitar errores
-const CONFIG_SUPABASE = {
-    URL: '',
-    KEY: ''
-};
 
 const CONFIG_APP = {
     ADMIN_PASSWORD: "admin123",
@@ -21,3 +16,4 @@ const CONFIG_APP = {
 };
 
 console.log('⚙️ Config.js cargado');
+
