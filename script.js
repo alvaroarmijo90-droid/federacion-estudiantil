@@ -2581,6 +2581,353 @@ function actualizarUltimosGastosSeguimiento() {
 // ============================================
 // FUNCIÓN ACTUALIZADA PARA ACTUALIZACIÓN AUTOMÁTICA
 // ============================================
+function actualizarTablaSeguimientoEstudiantes() {
+    const tbody = document.getElementById('tablaSeguimientoEstudiantes');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    let contador = 1;
+    for (const cursoNombre of ordenCursos) {
+        const datosCurso = datos.cursos[cursoNombre];
+        if (datosCurso.estudiantes) {
+            datosCurso.estudiantes.forEach((estudiante, index) => {
+                let totalPagado = 0;
+                let totalDeuda = 0;
+                
+                const montoReq2026 = obtenerMontoCurso(cursoNombre, '2026');
+                const montoReq2027 = obtenerMontoCurso(cursoNombre, '2027');
+                
+                const pago2026 = estudiante.pagos ? estudiante.pagos['2026'] || { monto: 0, fecha: '', pagado: false } : { monto: 0, fecha: '', pagado: false };
+                const pago2027 = estudiante.pagos ? estudiante.pagos['2027'] || { monto: 0, fecha: '', pagado: false } : { monto: 0, fecha: '', pagado: false };
+                
+                if (pago2026.pagado) totalPagado += pago2026.monto || 0;
+                if (pago2027.pagado) totalPagado += pago2027.monto || 0;
+                
+                if (!pago2026.pagado || pago2026.monto < montoReq2026) {
+                    totalDeuda += (montoReq2026 - (pago2026.pagado ? pago2026.monto : 0));
+                }
+                
+                if (!pago2027.pagado || pago2027.monto < montoReq2027) {
+                    totalDeuda += (montoReq2027 - (pago2027.pagado ? pago2027.monto : 0));
+                }
+                
+                const estado2026 = determinarEstadoPago(pago2026, montoReq2026);
+                const estado2027 = determinarEstadoPago(pago2027, montoReq2027);
+                
+                let estadoGeneral = 'al-dia';
+                if (totalDeuda === (montoReq2026 + montoReq2027)) {
+                    estadoGeneral = 'con-deuda';
+                } else if (totalDeuda > 0) {
+                    estadoGeneral = 'parcial';
+                }
+                
+                const fila = document.createElement('tr');
+                fila.setAttribute('data-curso', cursoNombre);
+                fila.setAttribute('data-estudiante', estudiante.nombre || `Estudiante ${index + 1}`);
+                fila.setAttribute('data-estado', estadoGeneral);
+                
+                fila.innerHTML = `
+    <td>${contador}</td>
+    <td><strong>${cursoNombre}</strong></td>
+    <td>${estudiante.nombre || `Estudiante ${index + 1}`}</td>
+    ${montoReq2026 > 0 ? `
+    <td>Bs ${montoReq2026.toFixed(2)}</td>
+    <td class="${pago2026.pagado ? 'text-success' : 'text-danger'}">
+        ${pago2026.pagado ? 'Bs ' + (pago2026.monto || 0).toFixed(2) : 'Bs 0.00'}
+    </td>
+    <td>
+        <span class="estado-${estado2026}">
+            ${estado2026 === 'pagado' ? 'COMPLETO' : estado2026 === 'deuda' ? 'DEUDA' : 'PARCIAL'}
+        </span>
+    </td>
+    ` : `
+    <td colspan="3" class="text-center text-muted">
+        <small>NO APLICA</small>
+    </td>
+    `}
+    ${montoReq2027 > 0 ? `
+    <td>Bs ${montoReq2027.toFixed(2)}</td>
+    <td class="${pago2027.pagado ? 'text-success' : 'text-danger'}">
+        ${pago2027.pagado ? 'Bs ' + (pago2027.monto || 0).toFixed(2) : 'Bs 0.00'}
+    </td>
+    <td>
+        <span class="estado-${estado2027}">
+            ${estado2027 === 'pagado' ? 'COMPLETO' : estado2027 === 'deuda' ? 'DEUDA' : 'PARCIAL'}
+        </span>
+    </td>
+    ` : `
+    <td colspan="3" class="text-center text-muted">
+        <small>NO APLICA</small>
+    </td>
+    `}
+    <td class="text-success">Bs ${totalPagado.toFixed(2)}</td>
+    <td class="${totalDeuda > 0 ? 'text-danger' : 'text-success'}">Bs ${totalDeuda.toFixed(2)}</td>
+    <td>
+        <span class="estado-${estadoGeneral}">
+            ${estadoGeneral === 'al-dia' ? 'AL DÍA' : estadoGeneral === 'con-deuda' ? 'CON DEUDA' : 'PARCIAL'}
+        </span>
+    </td>
+    <td>
+        ${isAdmin ? `
+        <button class="btn btn-pago btn-sm" onclick="abrirModalEditarPagoEspecifico('${cursoNombre}', ${index})">
+            <i class="fas fa-edit"></i>
+        </button>
+        ` : ''}
+        <button class="btn btn-recibo btn-sm" onclick="generarRecibo('${cursoNombre}', ${index})">
+            <i class="fas fa-receipt"></i>
+        </button>
+    </td>
+`;
+                tbody.appendChild(fila);
+                contador++;
+            });
+        }
+    }
+}
+
+
+// NUEVA FUNCIÓN: Mostrar resumen financiero en seguimiento
+function actualizarResumenFinancieroSeguimiento() {
+    const contenedor = document.getElementById('resumenFinancieroSeguimiento');
+    if (!contenedor) {
+        // Si no existe el contenedor, créalo
+        const tabSeguimiento = document.getElementById('seguimiento');
+        if (tabSeguimiento) {
+            // Buscar dónde insertar (después de la tabla de últimos pagos)
+            const ultimaSeccion = tabSeguimiento.querySelector('#tablaUltimosPagosSeguimiento');
+            if (ultimaSeccion) {
+                const nuevoContenedor = document.createElement('div');
+                nuevoContenedor.id = 'resumenFinancieroSeguimiento';
+                nuevoContenedor.className = 'mt-4';
+                nuevoContenedor.innerHTML = `
+                    <h4 class="neon-text mb-3"><i class="fas fa-chart-line"></i> Resumen Financiero Actual</h4>
+                    <div class="row" id="contenidoResumenFinanciero">
+                        <!-- Aquí se cargará el resumen -->
+                    </div>
+                `;
+                ultimaSeccion.parentNode.insertBefore(nuevoContenedor, ultimaSeccion.nextSibling);
+            }
+        }
+        return;
+    }
+    
+    // Calcular todos los datos financieros
+    const contenidoHTML = `
+        <div class="col-md-4 mb-3">
+            <div class="card-financiero card-ingresos">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-money-bill-wave text-success"></i> INGRESOS</h5>
+                    <div class="card-text">
+                        <div class="d-flex justify-content-between">
+                            <span>Aportes Estudiantes:</span>
+                            <strong class="text-success">Bs ${datos.totalAportesEstudiantes?.toFixed(2) || '0.00'}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Casilleros:</span>
+                            <strong class="text-success">Bs ${calcularTotalCasilleros().toFixed(2)}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Otros Ingresos:</span>
+                            <strong class="text-success">Bs ${calcularOtrosIngresos().toFixed(2)}</strong>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between">
+                            <strong>TOTAL INGRESOS:</strong>
+                            <strong class="text-success">Bs ${(datos.totalAportesEstudiantes + calcularTotalCasilleros() + calcularOtrosIngresos()).toFixed(2)}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-3">
+            <div class="card-financiero card-egresos">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-receipt text-danger"></i> GASTOS</h5>
+                    <div class="card-text">
+                        <div class="d-flex justify-content-between">
+                            <span>Gastos Operativos:</span>
+                            <strong class="text-danger">Bs ${datos.totalGastos?.toFixed(2) || '0.00'}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Egresos de Caja:</span>
+                            <strong class="text-danger">Bs ${datos.totalEgresosCaja?.toFixed(2) || '0.00'}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Gastos Casilleros:</span>
+                            <strong class="text-danger">Bs ${calcularGastosCasilleros().toFixed(2)}</strong>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between">
+                            <strong>TOTAL GASTOS:</strong>
+                            <strong class="text-danger">Bs ${(datos.totalGastos + datos.totalEgresosCaja + calcularGastosCasilleros()).toFixed(2)}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-3">
+            <div class="card-financiero card-saldo">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-piggy-bank text-primary"></i> SALDOS</h5>
+                    <div class="card-text">
+                        <div class="d-flex justify-content-between">
+                            <span>Dinero Inicial:</span>
+                            <strong>Bs ${datos.dineroInicial?.toFixed(2) || '0.00'}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Total Recaudado:</span>
+                            <strong class="text-success">Bs ${(datos.totalAportesEstudiantes + calcularTotalCasilleros() + calcularOtrosIngresos()).toFixed(2)}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Total Gastado:</span>
+                            <strong class="text-danger">Bs ${(datos.totalGastos + datos.totalEgresosCaja + calcularGastosCasilleros()).toFixed(2)}</strong>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between">
+                            <strong>SALDO ACTUAL:</strong>
+                            <strong class="text-primary" style="font-size: 1.2rem;">Bs ${datos.dineroFinal?.toFixed(2) || '0.00'}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    contenedor.querySelector('#contenidoResumenFinanciero').innerHTML = contenidoHTML;
+    
+    // También agregar los últimos gastos
+    actualizarUltimosGastosSeguimiento();
+}
+
+// Funciones auxiliares para calcular
+function calcularTotalCasilleros() {
+    let total = datos.montoInicialCasilleros || 0;
+
+    datos.sectores.forEach(sector => {
+        if (sector.cobros) {
+            sector.cobros.forEach(cobro => {
+                total += cobro.monto || 0;
+            });
+        }
+    });
+
+    return total;
+}
+
+function calcularOtrosIngresos() {
+    let total = 0;
+    for (const movimiento of datos.movimientosCaja) {
+        if (movimiento.tipo === 'ingreso') {
+            const concepto = movimiento.concepto ? movimiento.concepto.toLowerCase() : '';
+            if (!concepto.includes('aporte') && 
+                !concepto.includes('casillero') &&
+                !concepto.includes('estudiante')) {
+                total += movimiento.monto || 0;
+            }
+        }
+    }
+    return total;
+}
+
+function calcularGastosCasilleros() {
+    let total = 0;
+    for (const gasto of datos.gastosCasilleros) {
+        total += gasto.monto || 0;
+    }
+    return total;
+}
+
+function actualizarUltimosGastosSeguimiento() {
+    const contenedor = document.getElementById('ultimosGastosSeguimiento');
+    if (!contenedor) {
+        // Crear contenedor si no existe
+        const resumenContainer = document.getElementById('resumenFinancieroSeguimiento');
+        if (resumenContainer) {
+            const nuevoContenedor = document.createElement('div');
+            nuevoContenedor.id = 'ultimosGastosSeguimiento';
+            nuevoContenedor.className = 'col-12 mt-3';
+            nuevoContenedor.innerHTML = `
+                <h5 class="neon-text-red mb-3"><i class="fas fa-history"></i> Últimos Gastos Registrados</h5>
+                <div class="table-responsive" id="tablaUltimosGastos">
+                    <!-- Los gastos se cargarán aquí -->
+                </div>
+            `;
+            resumenContainer.querySelector('.row').appendChild(nuevoContenedor);
+        }
+    }
+    
+    const tablaContainer = document.getElementById('tablaUltimosGastos');
+    if (!tablaContainer) return;
+    
+    // Obtener los últimos 10 gastos
+    const ultimosGastos = [...datos.gastos]
+        .sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
+        .slice(0, 10);
+    
+    if (ultimosGastos.length === 0) {
+        tablaContainer.innerHTML = `
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> No hay gastos registrados
+            </div>
+        `;
+        return;
+    }
+    
+    let html = `
+        <table class="table table-sm table-dark table-hover">
+            <thead>
+                <tr>
+                    <th width="15%">Fecha</th>
+                    <th width="20%">Categoría</th>
+                    <th width="40%">Descripción</th>
+                    <th width="15%" class="text-end">Monto</th>
+                    <th width="10%">Comprobante</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    
+    ultimosGastos.forEach(gasto => {
+        html += `
+            <tr>
+                <td>${gasto.fecha || '-'}</td>
+                <td>${gasto.categoria || '-'}</td>
+                <td>${(gasto.descripcion || '').substring(0, 40)}${(gasto.descripcion || '').length > 40 ? '...' : ''}</td>
+                <td class="text-danger text-end">Bs ${(gasto.monto || 0).toFixed(2)}</td>
+                <td>
+                    ${gasto.comprobante ? 
+                        `<button class="btn btn-sm btn-info" onclick="verComprobante(${gasto.id})">
+                            <i class="fas fa-eye"></i>
+                        </button>` : 
+                        '<span class="badge bg-secondary">No</span>'
+                    }
+                </td>
+            </tr>
+        `;
+    });
+    
+    html += `
+            </tbody>
+            <tfoot>
+                <tr class="table-danger">
+                    <td colspan="3" class="text-end"><strong>Total últimos 10 gastos:</strong></td>
+                    <td class="text-end"><strong>Bs ${ultimosGastos.reduce((sum, gasto) => sum + (gasto.monto || 0), 0).toFixed(2)}</strong></td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    `;
+    
+    tablaContainer.innerHTML = html;
+}
+// ACTUALIZAR RESUMEN DE CURSOS SEGUIMIENTO CON MONTOS FALTANTES
+// ACTUALIZAR RESUMEN DE CURSOS EN SEGUIMIENTO - SEPARADO POR AÑO
+// ============================================
+// FUNCIÓN ACTUALIZADA PARA ACTUALIZACIÓN AUTOMÁTICA
+// ============================================
 function actualizarResumenCursosSeguimiento() {
     console.log("🔄 ACTUALIZANDO RESUMEN DE CURSOS - AUTOMÁTICO");
     
@@ -2746,7 +3093,7 @@ function actualizarResumenCursosSeguimiento() {
                         </div>
                         <div class="d-flex justify-content-between">
                             <small>Faltante:</small>
-                            <strong class="text-danger">Bs ${faltante2026.toFixed(2)}</strong>
+                            ${!esObservador ? `<strong class="text-danger">Bs ${faltante2026.toFixed(2)}</strong>` : `<strong class="text-muted">---</strong>`}
                         </div>
                         <div class="d-flex justify-content-between">
                             <small>% Completado:</small>
@@ -2790,7 +3137,7 @@ function actualizarResumenCursosSeguimiento() {
                         </div>
                         <div class="d-flex justify-content-between">
                             <small>Faltante:</small>
-                            <strong class="text-danger">Bs ${faltante2027.toFixed(2)}</strong>
+                            ${!esObservador ? `<strong class="text-danger">Bs ${faltante2027.toFixed(2)}</strong>` : `<strong class="text-muted">---</strong>`}
                         </div>
                         <div class="d-flex justify-content-between">
                             <small>% Completado:</small>
@@ -2847,7 +3194,7 @@ function actualizarResumenCursosSeguimiento() {
                         </div>
                         <div class="d-flex justify-content-between">
                             <small>Total faltante:</small>
-                            <strong class="text-danger">Bs ${totalFaltante.toFixed(2)}</strong>
+                            ${!esObservador ? `<strong class="text-danger">Bs ${totalFaltante.toFixed(2)}</strong>` : `<strong class="text-muted">---</strong>`}
                         </div>
                         <div class="d-flex justify-content-between">
                             <small>% Total:</small>
@@ -9825,6 +10172,7 @@ window.addEventListener('beforeunload', function(e) {
 });
 
 console.log('✅ Sistema de Gestión Financiera cargado completamente con todas las mejoras');
+
 
 
 
