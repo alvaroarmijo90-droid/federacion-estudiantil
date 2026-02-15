@@ -9829,3 +9829,4 @@ console.log('✅ Sistema de Gestión Financiera cargado completamente con todas 
 
 
 
+
