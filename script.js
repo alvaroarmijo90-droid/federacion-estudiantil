@@ -157,9 +157,9 @@ const ADMIN_PASSWORD = "admin123";
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('Sistema de Gestión Financiera - Inicializando...');
     
-  // INICIAR SISTEMA DE SINCRONIZACIÓN
+ // INICIAR SISTEMA DE SINCRONIZACIÓN
 if (window.sincronizador) {
-    // Usar la configuración de Firebase
+    // CAMBIA ESTO: de CONFIG_TIDB a CONFIG_FIREBASE
     sincronizacionActiva = await window.sincronizador.conectar(CONFIG_FIREBASE);
     if (sincronizacionActiva) {
         console.log('✅ Modo multiusuario ACTIVADO (Firebase)');
@@ -9823,6 +9823,7 @@ window.addEventListener('beforeunload', function(e) {
 });
 
 console.log('✅ Sistema de Gestión Financiera cargado completamente con todas las mejoras');
+
 
 
 
