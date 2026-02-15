@@ -462,16 +462,16 @@ async function cargarDatos() {
     
     let datosCargados = null;
     
-    // Intentar cargar de Firebase
-    if (window.sincronizador && window.sincronizador.conectado) {
+    // 1. Intentar cargar de la nube si hay conexión
+    if (window.sincronizador && sincronizacionActiva) {
         console.log('🔍 Buscando datos en la nube...');
         datosCargados = await window.sincronizador.cargarDeNube();
         if (datosCargados) {
-            console.log('✅ Datos cargados desde Firebase');
+            console.log('✅ Datos cargados desde la nube');
         }
     }
     
-    // Si no hay datos de Firebase, cargar de localStorage
+    // 2. Si no hay datos de la nube, usar locales
     if (!datosCargados) {
         console.log('🔍 Buscando datos locales...');
         const datosGuardados = localStorage.getItem('datosFederacion');
@@ -485,39 +485,83 @@ async function cargarDatos() {
         }
     }
     
-    // Si NO HAY DATOS EN ABSOLUTO, usar estructura por defecto
+    // 3. Si NO HAY DATOS EN ABSOLUTO, usar estructura por defecto
     if (!datosCargados) {
         console.log('⚠️ No hay datos, usando estructura por defecto');
-        datosCargados = { ...datos }; // Copia de la estructura inicial
+        datosCargados = datos;
     }
     
-    // ASIGNAR LOS DATOS CARGADOS
-    window.datos = datosCargados;
+    // 4. ASIGNAR LOS DATOS CARGADOS A LA VARIABLE GLOBAL
+    datos = datosCargados;
     
-    // Asegurar que TODAS las propiedades existan
-    if (!window.datos.gastos) window.datos.gastos = [];
-    if (!window.datos.movimientosCaja) window.datos.movimientosCaja = [];
-    if (!window.datos.casilleros) window.datos.casilleros = {};
-    if (!window.datos.sectoresCobro) window.datos.sectoresCobro = [];
-    if (!window.datos.gastosCasilleros) window.datos.gastosCasilleros = [];
-    if (!window.datos.cursos) window.datos.cursos = {};
+    // 5. Asegurar que todos los cursos tengan la estructura correcta
+    if (!datos.cursos) {
+        datos.cursos = {};
+        ordenCursos.forEach(curso => {
+            datos.cursos[curso] = { estudiantes: [] };
+        });
+    }
+    
+    // 6. Asegurar que cada curso tenga estudiantes
+    for (const cursoNombre of ordenCursos) {
+        if (!datos.cursos[cursoNombre]) {
+            datos.cursos[cursoNombre] = { estudiantes: [] };
+        }
+        if (!datos.cursos[cursoNombre].estudiantes) {
+            datos.cursos[cursoNombre].estudiantes = [];
+        }
+    }
+    
+    // 7. Asegurar que casilleros exista
+    if (!datos.casilleros) {
+        datos.casilleros = {};
+    }
+    
+    // 8. Asegurar que sectoresCobro exista
+    if (!datos.sectoresCobro) {
+        datos.sectoresCobro = [];
+    }
+    
+    // 9. Asegurar que gastosCasilleros exista
+    if (!datos.gastosCasilleros) {
+        console.log("🔧 Creando gastosCasilleros porque no existe");
+        datos.gastosCasilleros = [];
+    }
+    
+    // 10. Inicializar estudiantes si no existen
+    inicializarEstudiantes();
+    
+    // 11. Inicializar casilleros si no existen
+    if (Object.keys(datos.casilleros).length === 0) {
+        inicializarCasilleros();
+    }
     
     console.log('📊 Datos cargados correctamente');
+    console.log('- Total estudiantes:', Object.values(datos.cursos || {}).reduce((total, curso) => total + (curso.estudiantes?.length || 0), 0));
+    console.log('- Total sectores cobro:', datos.sectoresCobro?.length || 0);
     
-    // Actualizar toda la interfaz
+    // 12. Actualizar toda la interfaz
     actualizarDashboard();
     actualizarTablaGastos();
     actualizarTablaMovimientosCaja();
     actualizarUltimosRegistros();
+    actualizarTotalOtrosCobros();
     actualizarDetalleCajaFuerte();
     actualizarSeguimiento();
     actualizarVistaCasilleros();
     actualizarEventos();
     actualizarSectoresCobro();
+    actualizarTablaGastosCasilleros();
     actualizarResumenOtrosCobros();
     actualizarResumenCasilleros();
+    actualizarResumenCursosSeguimiento();
     
-    return window.datos;
+const hoy = new Date().toISOString().split('T')[0];
+const fechaGastoOtroCobro = document.getElementById('fechaGastoOtroCobro');
+if (fechaGastoOtroCobro) fechaGastoOtroCobro.value = hoy;
+
+
+    return datos;
 }
 // Guardar datos en localStorage
 function guardarDatos() {
@@ -10127,6 +10171,7 @@ window.addEventListener('beforeunload', function(e) {
 });
 
 console.log('✅ Sistema de Gestión Financiera cargado completamente con todas las mejoras');
+
 
 
 
