@@ -1,4 +1,4 @@
-// database.js - SISTEMA DE SINCRONIZACIÓN CON FIREBASE
+// database.js - SISTEMA DE SINCRONIZACIÓN CON FIREBASE (VERSIÓN COMPLETA)
 class SincronizadorFederacion {
     constructor() {
         this.db = null;
@@ -12,25 +12,27 @@ class SincronizadorFederacion {
     async conectar(configFirebase) {
         try {
             console.log('🔌 Conectando a Firebase...');
+            console.log('📡 Proyecto:', configFirebase.projectId);
             
             // Inicializar Firebase si no está inicializado
             if (!this.firebaseInicializado) {
                 firebase.initializeApp(configFirebase);
                 this.firebaseInicializado = true;
+                console.log('✅ Firebase inicializado');
             }
             
             // Obtener referencia a Firestore
             this.db = firebase.firestore();
+            console.log('✅ Firestore listo');
             
-            console.log('✅ Firebase inicializado');
-            
-            // ID de usuario
+            // ID de usuario único para este navegador
             let userId = localStorage.getItem('federacion_user_id');
             if (!userId) {
                 userId = 'user_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
                 localStorage.setItem('federacion_user_id', userId);
             }
             this.usuarioId = userId;
+            console.log('👤 Usuario ID:', this.usuarioId);
             
             this.conectado = true;
             console.log('✅ Conectado a Firebase Firestore');
@@ -80,12 +82,16 @@ class SincronizadorFederacion {
     }
 
     mostrarNotificacionCambio() {
+        // Verificar si ya existe una notificación
+        if (document.getElementById('notificacion-firebase')) return;
+        
         const notificacion = document.createElement('div');
+        notificacion.id = 'notificacion-firebase';
         notificacion.style.cssText = `
             position: fixed;
             top: 20px;
             right: 20px;
-            background: linear-gradient(135deg, #FFA500, #FF4500);
+            background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
             padding: 15px 20px;
             border-radius: 10px;
@@ -103,7 +109,7 @@ class SincronizadorFederacion {
                 <div>
                     <strong style="font-size: 1.1em;">¡Nuevos cambios disponibles!</strong>
                     <p style="margin: 5px 0 0 0; font-size: 0.9em; opacity: 0.9;">
-                        Otro usuario actualizó los datos
+                        Otro usuario actualizó los datos de la federación
                     </p>
                 </div>
             </div>
@@ -164,6 +170,8 @@ class SincronizadorFederacion {
             });
             
             console.log('✅ Datos guardados en Firebase');
+            console.log('- Total estudiantes:', totalEstudiantes);
+            console.log('- Usuario:', this.usuarioId);
             
             // Guardar respaldo local
             this.guardarLocales(datosCompletos);
@@ -200,12 +208,34 @@ class SincronizadorFederacion {
                 console.log('- Última actualización:', data.ultimaActualizacion?.toDate?.() || 'desconocida');
                 console.log('- Último usuario:', data.ultimoUsuario || 'desconocido');
                 
+                // Parsear el JSON
                 const datosParseados = JSON.parse(data.datosJSON);
+                
+                // Guardar localmente
                 this.guardarLocales(datosParseados);
+                
                 return datosParseados;
             } else {
-                console.log('ℹ️ No hay datos en Firebase');
-                return this.cargarLocales();
+                console.log('ℹ️ No hay datos en Firebase, creando documento inicial...');
+                
+                // Crear documento inicial con los datos actuales
+                const datosIniciales = this.cargarLocales() || {
+                    totalAportesEstudiantes: 0,
+                    totalGastos: 0,
+                    dineroInicial: 0,
+                    dineroFinal: 0,
+                    cursos: {}
+                };
+                
+                await this.db.collection('datosFederacion').doc('configuracion').set({
+                    datosJSON: JSON.stringify(datosIniciales),
+                    ultimaActualizacion: new Date(),
+                    ultimoUsuario: this.usuarioId,
+                    totalEstudiantes: 0
+                });
+                
+                this.guardarLocales(datosIniciales);
+                return datosIniciales;
             }
             
         } catch (error) {
@@ -217,15 +247,26 @@ class SincronizadorFederacion {
     cargarLocales() {
         const guardado = localStorage.getItem('datosFederacion');
         if (guardado) {
-            this.datosLocales = JSON.parse(guardado);
-            return this.datosLocales;
+            try {
+                this.datosLocales = JSON.parse(guardado);
+                console.log('📂 Datos cargados desde localStorage');
+                return this.datosLocales;
+            } catch (e) {
+                console.error('Error parseando localStorage:', e);
+                return null;
+            }
         }
         return null;
     }
 
     guardarLocales(datos) {
-        localStorage.setItem('datosFederacion', JSON.stringify(datos));
-        this.datosLocales = datos;
+        try {
+            localStorage.setItem('datosFederacion', JSON.stringify(datos));
+            this.datosLocales = datos;
+            console.log('💾 Datos guardados en localStorage');
+        } catch (e) {
+            console.error('Error guardando en localStorage:', e);
+        }
     }
 
     getEstado() {
