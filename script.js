@@ -1948,6 +1948,7 @@ function actualizarDashboard() {
     // Actualizar últimos pagos registrados
     actualizarUltimosPagosDashboard();
     actualizarResumenOtrosCobros();
+    actualizarResumenCursosSeguimiento();
     actualizarResumenCasilleros();
 }
 
@@ -9823,6 +9824,7 @@ window.addEventListener('beforeunload', function(e) {
 });
 
 console.log('✅ Sistema de Gestión Financiera cargado completamente con todas las mejoras');
+
 
 
 
