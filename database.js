@@ -1,20 +1,28 @@
-// database.js - CONEXIÓN A TIDB DATA SERVICE (COMPARTIDO)
+// database.js - SISTEMA DE SINCRONIZACIÓN CON FIREBASE
 class SincronizadorFederacion {
     constructor() {
+        this.db = null;
         this.conectado = false;
         this.usuarioId = null;
         this.ultimoCambio = null;
         this.datosLocales = null;
-        
-        // TUS DATOS DE DATA SERVICE (cuando los crees)
-        this.apiUrl = 'https://your-data-app.tidbcloud.com/api/v1/'; // Reemplazar
-        this.apiKey = 'tu-api-key-del-data-app'; // Reemplazar
-        this.publicEndpoint = '/endpoint/datos'; // El que creaste
+        this.firebaseInicializado = false;
     }
 
-    async conectar() {
+    async conectar(configFirebase) {
         try {
-            console.log('🔌 Conectando a TiDB Data Service...');
+            console.log('🔌 Conectando a Firebase...');
+            
+            // Inicializar Firebase si no está inicializado
+            if (!this.firebaseInicializado) {
+                firebase.initializeApp(configFirebase);
+                this.firebaseInicializado = true;
+            }
+            
+            // Obtener referencia a Firestore
+            this.db = firebase.firestore();
+            
+            console.log('✅ Firebase inicializado');
             
             // ID de usuario
             let userId = localStorage.getItem('federacion_user_id');
@@ -25,126 +33,194 @@ class SincronizadorFederacion {
             this.usuarioId = userId;
             
             this.conectado = true;
-            console.log('✅ Conectado a TiDB Data Service');
+            console.log('✅ Conectado a Firebase Firestore');
             
-            // Cargar datos existentes
+            // Configurar escucha en tiempo real
+            this.escucharCambios();
+            
+            // Cargar datos iniciales
             await this.cargarDeNube();
             
             return true;
             
         } catch (error) {
-            console.error('❌ Error conectando:', error);
+            console.error('❌ Error conectando a Firebase:', error);
             this.conectado = false;
             return false;
         }
     }
 
+    escucharCambios() {
+        if (!this.conectado || !this.db) return;
+        
+        console.log('👂 Escuchando cambios en tiempo real...');
+        
+        // Escuchar el documento de configuración
+        this.db.collection('datosFederacion').doc('configuracion')
+            .onSnapshot((doc) => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    console.log('📢 Cambio detectado en Firebase:', data);
+                    
+                    // Evitar procesar cambios propios
+                    if (data.ultimoUsuario === this.usuarioId) {
+                        console.log('🔄 Ignorando cambio propio');
+                        return;
+                    }
+                    
+                    // Mostrar notificación
+                    this.mostrarNotificacionCambio();
+                    
+                    // Recargar datos
+                    this.cargarDeNube();
+                }
+            }, (error) => {
+                console.error('❌ Error en escucha:', error);
+            });
+    }
+
+    mostrarNotificacionCambio() {
+        const notificacion = document.createElement('div');
+        notificacion.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #FFA500, #FF4500);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            z-index: 99999;
+            min-width: 300px;
+            animation: slideIn 0.5s ease;
+            border-left: 5px solid #00ff00;
+            font-family: Arial, sans-serif;
+        `;
+        
+        notificacion.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                <i class="fas fa-sync-alt fa-spin" style="color: #00ff00; font-size: 1.2em;"></i>
+                <div>
+                    <strong style="font-size: 1.1em;">¡Nuevos cambios disponibles!</strong>
+                    <p style="margin: 5px 0 0 0; font-size: 0.9em; opacity: 0.9;">
+                        Otro usuario actualizó los datos
+                    </p>
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button id="btn-recargar-firebase" 
+                        style="background: #00ff00; color: black; 
+                               border: none; padding: 8px 15px; 
+                               border-radius: 5px; cursor: pointer;
+                               font-weight: bold; font-size: 0.9em;">
+                    🔄 Recargar ahora
+                </button>
+                <button id="btn-cerrar-notif-firebase" 
+                        style="background: transparent; color: white; 
+                               border: 1px solid white; padding: 8px 15px; 
+                               border-radius: 5px; cursor: pointer;
+                               font-size: 0.9em;">
+                    ✕ Cerrar
+                </button>
+            </div>
+        `;
+        
+        document.body.appendChild(notificacion);
+        
+        document.getElementById('btn-recargar-firebase').onclick = function() {
+            window.location.reload();
+        };
+        
+        document.getElementById('btn-cerrar-notif-firebase').onclick = function() {
+            notificacion.remove();
+        };
+        
+        setTimeout(() => {
+            if (notificacion.parentElement) {
+                notificacion.remove();
+            }
+        }, 30000);
+    }
+
     async guardarEnNube(datosCompletos) {
-        if (!this.conectado) {
+        if (!this.conectado || !this.db) {
             console.log('⚠️ No conectado, guardando localmente');
             this.guardarLocales(datosCompletos);
             return false;
         }
 
         try {
-            console.log('☁️ Guardando en TiDB Data Service...');
+            console.log('☁️ Guardando en Firebase...');
             
-            const fechaActual = new Date().toISOString().slice(0, 19).replace('T', ' ');
+            const fechaActual = new Date();
             const totalEstudiantes = Object.values(datosCompletos.cursos || {}).reduce((total, curso) => total + (curso.estudiantes?.length || 0), 0);
             
-            // Preparar datos para enviar
-            const datosParaGuardar = {
+            // Guardar en Firestore
+            await this.db.collection('datosFederacion').doc('configuracion').set({
                 datosJSON: JSON.stringify(datosCompletos),
-                fecha: fechaActual,
-                usuario: this.usuarioId,
+                ultimaActualizacion: fechaActual,
+                ultimoUsuario: this.usuarioId,
                 totalEstudiantes: totalEstudiantes
-            };
-            
-            // Enviar a la API
-            const response = await fetch(this.apiUrl + this.publicEndpoint, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.apiKey}`
-                },
-                body: JSON.stringify(datosParaGuardar)
             });
             
-            if (response.ok) {
-                console.log('✅ Datos guardados en la nube');
-                
-                // Guardar respaldo local
-                this.guardarLocales(datosCompletos);
-                
-                // Marcar último cambio
-                const timestamp = Date.now().toString();
-                localStorage.setItem('federacion_ultimo_cambio', timestamp);
-                this.ultimoCambio = timestamp;
-                
-                return true;
-            } else {
-                console.error('❌ Error en respuesta:', await response.text());
-                this.guardarLocales(datosCompletos);
-                return false;
-            }
+            console.log('✅ Datos guardados en Firebase');
+            
+            // Guardar respaldo local
+            this.guardarLocales(datosCompletos);
+            
+            // Marcar último cambio
+            const timestamp = Date.now().toString();
+            localStorage.setItem('federacion_ultimo_cambio', timestamp);
+            this.ultimoCambio = timestamp;
+            
+            return true;
             
         } catch (error) {
-            console.error('❌ Error guardando:', error);
+            console.error('❌ Error guardando en Firebase:', error);
             this.guardarLocales(datosCompletos);
             return false;
         }
     }
 
     async cargarDeNube() {
+        if (!this.conectado || !this.db) {
+            console.log('⚠️ No conectado, cargando local');
+            return this.cargarLocales();
+        }
+
         try {
-            console.log('📂 Cargando desde TiDB Data Service...');
+            console.log('📂 Cargando desde Firebase...');
             
-            // Intentar cargar de la nube
-            const response = await fetch(this.apiUrl + this.publicEndpoint, {
-                headers: {
-                    'Authorization': `Bearer ${this.apiKey}`
-                }
-            });
+            const docRef = this.db.collection('datosFederacion').doc('configuracion');
+            const docSnap = await docRef.get();
             
-            if (response.ok) {
-                const data = await response.json();
-                if (data && data.rows && data.rows.length > 0) {
-                    const row = data.rows[0];
-                    console.log('✅ Datos cargados de la nube');
-                    
-                    // Parsear JSON
-                    const datosParseados = JSON.parse(row.DatosJSON);
-                    
-                    // Guardar localmente
-                    this.guardarLocales(datosParseados);
-                    
-                    return datosParseados;
-                }
+            if (docSnap.exists) {
+                const data = docSnap.data();
+                console.log('✅ Datos cargados de Firebase');
+                console.log('- Última actualización:', data.ultimaActualizacion?.toDate?.() || 'desconocida');
+                console.log('- Último usuario:', data.ultimoUsuario || 'desconocido');
+                
+                const datosParseados = JSON.parse(data.datosJSON);
+                this.guardarLocales(datosParseados);
+                return datosParseados;
+            } else {
+                console.log('ℹ️ No hay datos en Firebase');
+                return this.cargarLocales();
             }
-            
-            // Si no hay datos en la nube, cargar local
-            const guardado = localStorage.getItem('datosFederacion');
-            if (guardado) {
-                console.log('📂 Cargando desde almacenamiento local');
-                this.datosLocales = JSON.parse(guardado);
-                return this.datosLocales;
-            }
-            
-            return null;
             
         } catch (error) {
-            console.error('❌ Error cargando de nube:', error);
-            
-            // Fallback a local
-            const guardado = localStorage.getItem('datosFederacion');
-            if (guardado) {
-                console.log('📂 Fallback: cargando desde local');
-                this.datosLocales = JSON.parse(guardado);
-                return this.datosLocales;
-            }
-            
-            return null;
+            console.error('❌ Error cargando de Firebase:', error);
+            return this.cargarLocales();
         }
+    }
+
+    cargarLocales() {
+        const guardado = localStorage.getItem('datosFederacion');
+        if (guardado) {
+            this.datosLocales = JSON.parse(guardado);
+            return this.datosLocales;
+        }
+        return null;
     }
 
     guardarLocales(datos) {
@@ -156,7 +232,7 @@ class SincronizadorFederacion {
         return {
             conectado: this.conectado,
             usuario: this.usuarioId,
-            modo: 'tidb-cloud-compartido',
+            modo: 'firebase-tiempo-real',
             ultimoCambio: this.ultimoCambio
         };
     }
@@ -170,7 +246,7 @@ window.verEstadoSincronizacion = function() {
     if (window.sincronizador) {
         const estado = window.sincronizador.getEstado();
         console.log('📊 Estado sincronización:', estado);
-        alert(`Estado: ${estado.conectado ? 'CONECTADO' : 'DESCONECTADO'}\nUsuario: ${estado.usuario}\nModo: ${estado.modo}`);
+        alert(`Estado: ${estado.conectado ? '✅ CONECTADO' : '❌ DESCONECTADO'}\nUsuario: ${estado.usuario}\nModo: ${estado.modo}`);
     } else {
         console.log('❌ Sincronizador no disponible');
     }
