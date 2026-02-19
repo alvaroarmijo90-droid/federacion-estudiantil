@@ -152,16 +152,16 @@ const ADMIN_PASSWORD = "admin123";
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('Sistema de Gestión Financiera - Inicializando...');
     
-    // INICIAR SISTEMA DE SINCRONIZACIÓN
-    if (window.sincronizador) {
-    // ✅ CORREGIDO: Ahora pasa CONFIG_FIREBASE como parámetro
+   // INICIAR SISTEMA DE SINCRONIZACIÓN
+if (window.sincronizador) {
+    // Usar la configuración de Firebase
     sincronizacionActiva = await window.sincronizador.conectar(CONFIG_FIREBASE);
     if (sincronizacionActiva) {
-        console.log('✅ Modo multiusuario ACTIVADO');
-        mostrarMensaje('Conectado - Los cambios se verán en todos los dispositivos', 'success');
+        console.log('✅ Modo multiusuario ACTIVADO (Firebase)');
+        mostrarMensaje('Conectado a Firebase - Los cambios se verán en todos los dispositivos en tiempo real', 'success');
     } else {
         console.log('⚠️ Usando modo local');
-        mostrarMensaje('Modo local activado - Sin conexión a internet', 'info');
+        mostrarMensaje('Modo local activado - Sin conexión a la nube', 'info');
     }
 }
     
@@ -9674,3 +9674,4 @@ document.addEventListener('DOMContentLoaded', function() {
 
 console.log('✅ Sistema de Gestión Financiera cargado completamente con todas las mejoras');
     
+
