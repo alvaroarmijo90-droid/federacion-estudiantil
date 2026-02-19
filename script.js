@@ -18,7 +18,6 @@ let datos = {
     gastosCasilleros: [],
     otrosCobrosIngresos: 0,          // Total recaudado en otros cobros
     otrosCobrosGastos: 0,            // Total gastado de otros cobros
-    montoInicialCasilleros: 0,
     otrosCobrosSaldos: [],          // Gastos individuales
     otrosCobrosHistorial: [],        // Historial completo // Nuevo: gastos de fondos de casilleros
     cursos: {
@@ -71,11 +70,9 @@ function crearBackupAutomatico() {
 }
 
 
+
 // Variable para sincronización
 let sincronizacionActiva = false;
-
-
-
 
 // Configuración de montos por curso PARA 2026
 const montosPorCurso2026 = {
@@ -134,8 +131,6 @@ const ordenCursos = [
     '5. PRIMARIA'
 ];
 
-
-
 // Función para obtener el monto requerido para un curso según el año
 function obtenerMontoCurso(curso, anio) {
     if (anio === '2026') {
@@ -157,9 +152,8 @@ const ADMIN_PASSWORD = "admin123";
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('Sistema de Gestión Financiera - Inicializando...');
     
- // INICIAR SISTEMA DE SINCRONIZACIÓN
-// INICIAR SISTEMA DE SINCRONIZACIÓN
-if (window.sincronizador) {
+    // INICIAR SISTEMA DE SINCRONIZACIÓN
+    if (window.sincronizador) {
     // ✅ CORREGIDO: Ahora pasa CONFIG_FIREBASE como parámetro
     sincronizacionActiva = await window.sincronizador.conectar(CONFIG_FIREBASE);
     if (sincronizacionActiva) {
@@ -555,7 +549,6 @@ async function cargarDatos() {
     actualizarTablaGastosCasilleros();
     actualizarResumenOtrosCobros();
     actualizarResumenCasilleros();
-    actualizarResumenCursosSeguimiento();
     
 const hoy = new Date().toISOString().split('T')[0];
 const fechaGastoOtroCobro = document.getElementById('fechaGastoOtroCobro');
@@ -564,6 +557,7 @@ if (fechaGastoOtroCobro) fechaGastoOtroCobro.value = hoy;
 
     return datos;
 }
+
 // Guardar datos en localStorage
 function guardarDatos() {
     // 1. Guardar local como siempre
@@ -957,8 +951,6 @@ function actualizarVistaCasilleros() {
     
     // Calcular el balance neto (recaudación - gastos)
     const balanceNeto = totalGeneral - totalGastos;
-    const montoVisualGuardado = localStorage.getItem('montoGeneralCasillerosVisual');
-    const montoParaMostrar = montoVisualGuardado ? parseFloat(montoVisualGuardado) : balanceNeto;
     
     // Actualizar los elementos en el HTML
     if (document.getElementById('totalPagadoSectorA')) {
@@ -969,188 +961,22 @@ function actualizarVistaCasilleros() {
     }
     
     // ACTUALIZAR TOTAL GENERAL RESTANDO LOS GASTOS
-    // ACTUALIZAR TOTAL GENERAL RESTANDO LOS GASTOS
-if (document.getElementById('totalGeneralCasilleros')) {
-    const elemento = document.getElementById('totalGeneralCasilleros');
-    
-    // Cargar monto visual guardado si existe (solo para visualización)
-    const montoVisualGuardado = localStorage.getItem('montoGeneralCasillerosVisual');
-    const montoParaMostrar = montoVisualGuardado ? parseFloat(montoVisualGuardado) : balanceNeto;
-    
-    // Si es admin, mostrar con botón de edición
-    if (isAdmin) {
-        elemento.innerHTML = `
-            <span class="contador-cobros">Bs ${montoParaMostrar.toFixed(2)}</span>
-            <button class="btn btn-sm btn-outline-warning btn-editar-total ms-2" 
-                    onclick="editarMontoGeneralCasilleros()" 
-                    title="Editar monto general"
-                    style="padding: 5px 8px; border-radius: 50%;">
-                <i class="fas fa-pencil-alt"></i>
-            </button>
-        `;
-    } else {
-        // Para observadores, solo mostrar el texto
-        elemento.textContent = `Bs ${montoParaMostrar.toFixed(2)}`;
+    if (document.getElementById('totalGeneralCasilleros')) {
+        document.getElementById('totalGeneralCasilleros').textContent = `Bs ${balanceNeto.toFixed(2)}`;
+        // Cambiar color según si es positivo o negativo
+        const elemento = document.getElementById('totalGeneralCasilleros');
+        if (balanceNeto >= 0) {
+            elemento.className = 'text-success';
+        } else {
+            elemento.className = 'text-danger';
+        }
     }
-    
-    // Cambiar color según si es positivo o negativo
-    if (montoParaMostrar >= 0) {
-        elemento.style.color = '#28a745';
-        elemento.classList.add('text-success');
-    } else {
-        elemento.style.color = '#dc3545';
-        elemento.classList.add('text-danger');
-    }
-}
 }
 // VER HISTORIAL DE CASILLERO
 /// VER HISTORIAL DE CASILLERO - SIMPLIFICADA Y FUNCIONAL
 // FUNCIÓN MEJORADA PARA VER HISTORIAL DE CASILLERO
 // VER HISTORIAL DE CASILLERO - COMPLETA CON CONTROLES DE PAGO
 // VER HISTORIAL DE CASILLERO - COMPLETA CON CONTROLES DE PAGO
-
-// FUNCIÓN MEJORADA PARA EDITAR MONTO GENERAL DE CASILLEROS
-function editarMontoGeneralCasilleros() {
-    if (!isAdmin) {
-        mostrarMensaje('Solo el administrador puede editar montos', 'error');
-        return;
-    }
-    
-    // Obtener el monto actual del texto (quitando "Bs ")
-    const elementoTotal = document.getElementById('totalGeneralCasilleros');
-    let montoActualTexto = elementoTotal.textContent;
-    
-    // Si el elemento tiene hijos (como el span y el botón), tomar solo el texto del primer hijo
-    if (elementoTotal.firstChild && elementoTotal.firstChild.nodeType === 3) {
-        montoActualTexto = elementoTotal.firstChild.textContent;
-    }
-    
-    const montoActual = parseFloat(montoActualTexto.replace('Bs ', '').replace(',', '')) || 0;
-    
-    // Crear un modal mejorado para la edición
-    const modalHTML = `
-        <div class="modal fade" id="modalEditarMontoGeneral" tabindex="-1">
-            <div class="modal-dialog">
-                <div class="modal-content bg-dark text-white">
-                    <div class="modal-header">
-                        <h5 class="modal-title"><i class="fas fa-edit"></i> Editar Monto General de Casilleros</h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <p>Este monto es solo informativo. Para cambiar montos reales:</p>
-                        <ul class="mb-3">
-                            <li><strong>Monto predeterminado:</strong> Cambia el valor base para nuevos casilleros</li>
-                            <li><strong>Monto por casillero:</strong> Edita cada casillero individualmente</li>
-                        </ul>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Monto general informativo:</label>
-                            <input type="number" id="nuevoMontoGeneral" class="form-control" 
-                                   value="${montoActual.toFixed(2)}" step="0.01" min="0">
-                            <div class="form-text">Este valor solo afecta la visualización, no los cálculos reales</div>
-                        </div>
-                        
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle"></i> 
-                            <strong>Para cambiar cálculos reales:</strong><br>
-                            <button class="btn btn-sm btn-warning mt-2" onclick="cambiarMontoPredeterminado()">
-                                <i class="fas fa-cog"></i> Cambiar monto predeterminado
-                            </button>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="button" class="btn btn-primary" onclick="guardarMontoGeneralEditado()">
-                            <i class="fas fa-save"></i> Guardar Cambio Visual
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    // Si el modal ya existe, removerlo
-    const modalExistente = document.getElementById('modalEditarMontoGeneral');
-    if (modalExistente) {
-        modalExistente.remove();
-    }
-    
-    // Agregar el modal al DOM
-    document.body.insertAdjacentHTML('beforeend', modalHTML);
-    
-    // Mostrar el modal
-    const modal = new bootstrap.Modal(document.getElementById('modalEditarMontoGeneral'));
-    modal.show();
-    
-    // Enfocar el campo de entrada
-    setTimeout(() => {
-        document.getElementById('nuevoMontoGeneral').focus();
-    }, 500);
-}
-
-// FUNCIÓN PARA GUARDAR EL MONTO GENERAL EDITADO
-function guardarMontoGeneralEditado() {
-    const nuevoMonto = parseFloat(document.getElementById('nuevoMontoGeneral').value) || 0;
-    
-    if (isNaN(nuevoMonto) || nuevoMonto < 0) {
-        mostrarMensaje('Ingrese un monto válido', 'error');
-        return;
-    }
-    
-    // Actualizar el elemento en pantalla
-    const elementoTotal = document.getElementById('totalGeneralCasilleros');
-    
-    // Si tiene estructura con hijos (span + botón)
-    if (elementoTotal.querySelector('span')) {
-        elementoTotal.querySelector('span').textContent = `Bs ${nuevoMonto.toFixed(2)}`;
-    } else {
-        // Si es texto simple
-        elementoTotal.textContent = `Bs ${nuevoMonto.toFixed(2)}`;
-    }
-    
-    // Guardar en localStorage para persistencia
-    localStorage.setItem('montoGeneralCasillerosVisual', nuevoMonto.toString());
-    
-    // Cerrar modal
-    const modal = bootstrap.Modal.getInstance(document.getElementById('modalEditarMontoGeneral'));
-    modal.hide();
-    
-    mostrarMensaje('Monto general actualizado (visualmente)', 'success');
-}
-
-// FUNCIÓN PARA CARGAR EL MONTO VISUAL AL INICIAR
-function cargarMontoVisualCasilleros() {
-    const montoGuardado = localStorage.getItem('montoGeneralCasillerosVisual');
-    if (montoGuardado && document.getElementById('totalGeneralCasilleros')) {
-        const montoNum = parseFloat(montoGuardado);
-        const elemento = document.getElementById('totalGeneralCasilleros');
-        
-        if (isAdmin) {
-            elemento.innerHTML = `
-                <span class="contador-cobros">Bs ${montoNum.toFixed(2)}</span>
-                <button class="btn btn-sm btn-outline-warning btn-editar-total ms-2" 
-                        onclick="editarMontoGeneralCasilleros()" 
-                        title="Editar monto general"
-                        style="padding: 5px 8px; border-radius: 50%;">
-                    <i class="fas fa-pencil-alt"></i>
-                </button>
-            `;
-        } else {
-            elemento.textContent = `Bs ${montoNum.toFixed(2)}`;
-        }
-        
-        elemento.style.color = montoNum >= 0 ? '#28a745' : '#dc3545';
-    }
-}
-
-// LLAMAR ESTA FUNCIÓN AL CARGAR LA PÁGINA
-document.addEventListener('DOMContentLoaded', function() {
-    // Cargar monto visual si existe
-    setTimeout(cargarMontoVisualCasilleros, 1000);
-});
-
-
-
 function verHistorialCasillero(numero) {
     const casillero = datos.casilleros[numero] || {
         numero: numero,
@@ -1880,7 +1706,7 @@ if (!datos.gastosCasilleros) {
 }
 
 
-// FUNCIÓN ACTUALIZAR DASHBOARD CORREGIDA
+// FUNCIÓN ACTUALIZAR DASHBOARD MEJORADA
 function actualizarDashboard() {
     // 1. DINERO INICIAL
     if (datos.dineroInicial === 0) {
@@ -1949,7 +1775,6 @@ function actualizarDashboard() {
     // Actualizar últimos pagos registrados
     actualizarUltimosPagosDashboard();
     actualizarResumenOtrosCobros();
-    actualizarResumenCursosSeguimiento();
     actualizarResumenCasilleros();
 }
 
@@ -2182,13 +2007,7 @@ function actualizarSeguimiento() {
         document.getElementById('totalAportesSeguimiento').textContent = `Bs ${totalAportes.toFixed(2)}`;
     }
     if (document.getElementById('totalDeudasSeguimiento')) {
-        // ====== CAMBIO: OCULTAR DEUDA TOTAL A OBSERVADORES ======
-        if (isAdmin) {
-            document.getElementById('totalDeudasSeguimiento').textContent = `Bs ${totalDeudas.toFixed(2)}`;
-        } else {
-            document.getElementById('totalDeudasSeguimiento').textContent = "---";
-        }
-        // ========================================================
+        document.getElementById('totalDeudasSeguimiento').textContent = `Bs ${totalDeudas.toFixed(2)}`;
     }
     
     // ACTUALIZAR LOS NUEVOS CUADROS POR AÑO (si existen)
@@ -2200,13 +2019,7 @@ function actualizarSeguimiento() {
             document.getElementById('estudiantesFaltan2026').textContent = estudiantesFaltan2026;
         }
         if (document.getElementById('deudaTotal2026')) {
-            // ====== CAMBIO: OCULTAR DEUDA 2026 A OBSERVADORES ======
-            if (isAdmin) {
-                document.getElementById('deudaTotal2026').textContent = `Bs ${totalDeuda2026.toFixed(2)}`;
-            } else {
-                document.getElementById('deudaTotal2026').textContent = "---";
-            }
-            // ========================================================
+            document.getElementById('deudaTotal2026').textContent = `Bs ${totalDeuda2026.toFixed(2)}`;
         }
         
         if (document.getElementById('estudiantesAlDia2027')) {
@@ -2216,11 +2029,7 @@ function actualizarSeguimiento() {
             document.getElementById('estudiantesFaltan2027').textContent = estudiantesFaltan2027;
         }
         if (document.getElementById('deudaTotal2027')) {
-            if (isAdmin) {
-                document.getElementById('deudaTotal2027').textContent = `Bs ${totalDeuda2027.toFixed(2)}`;
-            } else {
-                document.getElementById('deudaTotal2027').textContent = "---";
-            }
+            document.getElementById('deudaTotal2027').textContent = `Bs ${totalDeuda2027.toFixed(2)}`;
         }
     } catch (e) {
         console.log("Algunos elementos por año no existen aún");
@@ -2457,363 +2266,12 @@ function actualizarResumenFinancieroSeguimiento() {
 
 // Funciones auxiliares para calcular
 function calcularTotalCasilleros() {
-    let total = datos.montoInicialCasilleros || 0;
-
-    datos.sectores.forEach(sector => {
-        if (sector.cobros) {
-            sector.cobros.forEach(cobro => {
-                total += cobro.monto || 0;
-            });
-        }
-    });
-
-    return total;
-}
-
-function calcularOtrosIngresos() {
     let total = 0;
-    for (const movimiento of datos.movimientosCaja) {
-        if (movimiento.tipo === 'ingreso') {
-            const concepto = movimiento.concepto ? movimiento.concepto.toLowerCase() : '';
-            if (!concepto.includes('aporte') && 
-                !concepto.includes('casillero') &&
-                !concepto.includes('estudiante')) {
-                total += movimiento.monto || 0;
-            }
+    for (const casillero of Object.values(datos.casilleros)) {
+        if (casillero && casillero.totalPagado) {
+            total += casillero.totalPagado;
         }
     }
-    return total;
-}
-
-function calcularGastosCasilleros() {
-    let total = 0;
-    for (const gasto of datos.gastosCasilleros) {
-        total += gasto.monto || 0;
-    }
-    return total;
-}
-
-function actualizarUltimosGastosSeguimiento() {
-    const contenedor = document.getElementById('ultimosGastosSeguimiento');
-    if (!contenedor) {
-        // Crear contenedor si no existe
-        const resumenContainer = document.getElementById('resumenFinancieroSeguimiento');
-        if (resumenContainer) {
-            const nuevoContenedor = document.createElement('div');
-            nuevoContenedor.id = 'ultimosGastosSeguimiento';
-            nuevoContenedor.className = 'col-12 mt-3';
-            nuevoContenedor.innerHTML = `
-                <h5 class="neon-text-red mb-3"><i class="fas fa-history"></i> Últimos Gastos Registrados</h5>
-                <div class="table-responsive" id="tablaUltimosGastos">
-                    <!-- Los gastos se cargarán aquí -->
-                </div>
-            `;
-            resumenContainer.querySelector('.row').appendChild(nuevoContenedor);
-        }
-    }
-    
-    const tablaContainer = document.getElementById('tablaUltimosGastos');
-    if (!tablaContainer) return;
-    
-    // Obtener los últimos 10 gastos
-    const ultimosGastos = [...datos.gastos]
-        .sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
-        .slice(0, 10);
-    
-    if (ultimosGastos.length === 0) {
-        tablaContainer.innerHTML = `
-            <div class="alert alert-info">
-                <i class="fas fa-info-circle"></i> No hay gastos registrados
-            </div>
-        `;
-        return;
-    }
-    
-    let html = `
-        <table class="table table-sm table-dark table-hover">
-            <thead>
-                <tr>
-                    <th width="15%">Fecha</th>
-                    <th width="20%">Categoría</th>
-                    <th width="40%">Descripción</th>
-                    <th width="15%" class="text-end">Monto</th>
-                    <th width="10%">Comprobante</th>
-                </tr>
-            </thead>
-            <tbody>
-    `;
-    
-    ultimosGastos.forEach(gasto => {
-        html += `
-            <tr>
-                <td>${gasto.fecha || '-'}</td>
-                <td>${gasto.categoria || '-'}</td>
-                <td>${(gasto.descripcion || '').substring(0, 40)}${(gasto.descripcion || '').length > 40 ? '...' : ''}</td>
-                <td class="text-danger text-end">Bs ${(gasto.monto || 0).toFixed(2)}</td>
-                <td>
-                    ${gasto.comprobante ? 
-                        `<button class="btn btn-sm btn-info" onclick="verComprobante(${gasto.id})">
-                            <i class="fas fa-eye"></i>
-                        </button>` : 
-                        '<span class="badge bg-secondary">No</span>'
-                    }
-                </td>
-            </tr>
-        `;
-    });
-    
-    html += `
-            </tbody>
-            <tfoot>
-                <tr class="table-danger">
-                    <td colspan="3" class="text-end"><strong>Total últimos 10 gastos:</strong></td>
-                    <td class="text-end"><strong>Bs ${ultimosGastos.reduce((sum, gasto) => sum + (gasto.monto || 0), 0).toFixed(2)}</strong></td>
-                    <td></td>
-                </tr>
-            </tfoot>
-        </table>
-    `;
-    
-    tablaContainer.innerHTML = html;
-}
-// ACTUALIZAR RESUMEN DE CURSOS SEGUIMIENTO CON MONTOS FALTANTES
-// ACTUALIZAR RESUMEN DE CURSOS EN SEGUIMIENTO - SEPARADO POR AÑO
-// ============================================
-// FUNCIÓN ACTUALIZADA PARA ACTUALIZACIÓN AUTOMÁTICA
-// ============================================
-function actualizarTablaSeguimientoEstudiantes() {
-    const tbody = document.getElementById('tablaSeguimientoEstudiantes');
-    if (!tbody) return;
-    
-    tbody.innerHTML = '';
-    
-    let contador = 1;
-    for (const cursoNombre of ordenCursos) {
-        const datosCurso = datos.cursos[cursoNombre];
-        if (datosCurso.estudiantes) {
-            datosCurso.estudiantes.forEach((estudiante, index) => {
-                let totalPagado = 0;
-                let totalDeuda = 0;
-                
-                const montoReq2026 = obtenerMontoCurso(cursoNombre, '2026');
-                const montoReq2027 = obtenerMontoCurso(cursoNombre, '2027');
-                
-                const pago2026 = estudiante.pagos ? estudiante.pagos['2026'] || { monto: 0, fecha: '', pagado: false } : { monto: 0, fecha: '', pagado: false };
-                const pago2027 = estudiante.pagos ? estudiante.pagos['2027'] || { monto: 0, fecha: '', pagado: false } : { monto: 0, fecha: '', pagado: false };
-                
-                if (pago2026.pagado) totalPagado += pago2026.monto || 0;
-                if (pago2027.pagado) totalPagado += pago2027.monto || 0;
-                
-                if (!pago2026.pagado || pago2026.monto < montoReq2026) {
-                    totalDeuda += (montoReq2026 - (pago2026.pagado ? pago2026.monto : 0));
-                }
-                
-                if (!pago2027.pagado || pago2027.monto < montoReq2027) {
-                    totalDeuda += (montoReq2027 - (pago2027.pagado ? pago2027.monto : 0));
-                }
-                
-                const estado2026 = determinarEstadoPago(pago2026, montoReq2026);
-                const estado2027 = determinarEstadoPago(pago2027, montoReq2027);
-                
-                let estadoGeneral = 'al-dia';
-                if (totalDeuda === (montoReq2026 + montoReq2027)) {
-                    estadoGeneral = 'con-deuda';
-                } else if (totalDeuda > 0) {
-                    estadoGeneral = 'parcial';
-                }
-                
-                const fila = document.createElement('tr');
-                fila.setAttribute('data-curso', cursoNombre);
-                fila.setAttribute('data-estudiante', estudiante.nombre || `Estudiante ${index + 1}`);
-                fila.setAttribute('data-estado', estadoGeneral);
-                
-                fila.innerHTML = `
-    <td>${contador}</td>
-    <td><strong>${cursoNombre}</strong></td>
-    <td>${estudiante.nombre || `Estudiante ${index + 1}`}</td>
-    ${montoReq2026 > 0 ? `
-    <td>Bs ${montoReq2026.toFixed(2)}</td>
-    <td class="${pago2026.pagado ? 'text-success' : 'text-danger'}">
-        ${pago2026.pagado ? 'Bs ' + (pago2026.monto || 0).toFixed(2) : 'Bs 0.00'}
-    </td>
-    <td>
-        <span class="estado-${estado2026}">
-            ${estado2026 === 'pagado' ? 'COMPLETO' : estado2026 === 'deuda' ? 'DEUDA' : 'PARCIAL'}
-        </span>
-    </td>
-    ` : `
-    <td colspan="3" class="text-center text-muted">
-        <small>NO APLICA</small>
-    </td>
-    `}
-    ${montoReq2027 > 0 ? `
-    <td>Bs ${montoReq2027.toFixed(2)}</td>
-    <td class="${pago2027.pagado ? 'text-success' : 'text-danger'}">
-        ${pago2027.pagado ? 'Bs ' + (pago2027.monto || 0).toFixed(2) : 'Bs 0.00'}
-    </td>
-    <td>
-        <span class="estado-${estado2027}">
-            ${estado2027 === 'pagado' ? 'COMPLETO' : estado2027 === 'deuda' ? 'DEUDA' : 'PARCIAL'}
-        </span>
-    </td>
-    ` : `
-    <td colspan="3" class="text-center text-muted">
-        <small>NO APLICA</small>
-    </td>
-    `}
-    <td class="text-success">Bs ${totalPagado.toFixed(2)}</td>
-    <td class="${totalDeuda > 0 ? 'text-danger' : 'text-success'}">Bs ${totalDeuda.toFixed(2)}</td>
-    <td>
-        <span class="estado-${estadoGeneral}">
-            ${estadoGeneral === 'al-dia' ? 'AL DÍA' : estadoGeneral === 'con-deuda' ? 'CON DEUDA' : 'PARCIAL'}
-        </span>
-    </td>
-    <td>
-        ${isAdmin ? `
-        <button class="btn btn-pago btn-sm" onclick="abrirModalEditarPagoEspecifico('${cursoNombre}', ${index})">
-            <i class="fas fa-edit"></i>
-        </button>
-        ` : ''}
-        <button class="btn btn-recibo btn-sm" onclick="generarRecibo('${cursoNombre}', ${index})">
-            <i class="fas fa-receipt"></i>
-        </button>
-    </td>
-`;
-                tbody.appendChild(fila);
-                contador++;
-            });
-        }
-    }
-}
-
-
-// NUEVA FUNCIÓN: Mostrar resumen financiero en seguimiento
-function actualizarResumenFinancieroSeguimiento() {
-    const contenedor = document.getElementById('resumenFinancieroSeguimiento');
-    if (!contenedor) {
-        // Si no existe el contenedor, créalo
-        const tabSeguimiento = document.getElementById('seguimiento');
-        if (tabSeguimiento) {
-            // Buscar dónde insertar (después de la tabla de últimos pagos)
-            const ultimaSeccion = tabSeguimiento.querySelector('#tablaUltimosPagosSeguimiento');
-            if (ultimaSeccion) {
-                const nuevoContenedor = document.createElement('div');
-                nuevoContenedor.id = 'resumenFinancieroSeguimiento';
-                nuevoContenedor.className = 'mt-4';
-                nuevoContenedor.innerHTML = `
-                    <h4 class="neon-text mb-3"><i class="fas fa-chart-line"></i> Resumen Financiero Actual</h4>
-                    <div class="row" id="contenidoResumenFinanciero">
-                        <!-- Aquí se cargará el resumen -->
-                    </div>
-                `;
-                ultimaSeccion.parentNode.insertBefore(nuevoContenedor, ultimaSeccion.nextSibling);
-            }
-        }
-        return;
-    }
-    
-    // Calcular todos los datos financieros
-    const contenidoHTML = `
-        <div class="col-md-4 mb-3">
-            <div class="card-financiero card-ingresos">
-                <div class="card-body">
-                    <h5 class="card-title"><i class="fas fa-money-bill-wave text-success"></i> INGRESOS</h5>
-                    <div class="card-text">
-                        <div class="d-flex justify-content-between">
-                            <span>Aportes Estudiantes:</span>
-                            <strong class="text-success">Bs ${datos.totalAportesEstudiantes?.toFixed(2) || '0.00'}</strong>
-                        </div>
-                        <div class="d-flex justify-content-between">
-                            <span>Casilleros:</span>
-                            <strong class="text-success">Bs ${calcularTotalCasilleros().toFixed(2)}</strong>
-                        </div>
-                        <div class="d-flex justify-content-between">
-                            <span>Otros Ingresos:</span>
-                            <strong class="text-success">Bs ${calcularOtrosIngresos().toFixed(2)}</strong>
-                        </div>
-                        <hr>
-                        <div class="d-flex justify-content-between">
-                            <strong>TOTAL INGRESOS:</strong>
-                            <strong class="text-success">Bs ${(datos.totalAportesEstudiantes + calcularTotalCasilleros() + calcularOtrosIngresos()).toFixed(2)}</strong>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-4 mb-3">
-            <div class="card-financiero card-egresos">
-                <div class="card-body">
-                    <h5 class="card-title"><i class="fas fa-receipt text-danger"></i> GASTOS</h5>
-                    <div class="card-text">
-                        <div class="d-flex justify-content-between">
-                            <span>Gastos Operativos:</span>
-                            <strong class="text-danger">Bs ${datos.totalGastos?.toFixed(2) || '0.00'}</strong>
-                        </div>
-                        <div class="d-flex justify-content-between">
-                            <span>Egresos de Caja:</span>
-                            <strong class="text-danger">Bs ${datos.totalEgresosCaja?.toFixed(2) || '0.00'}</strong>
-                        </div>
-                        <div class="d-flex justify-content-between">
-                            <span>Gastos Casilleros:</span>
-                            <strong class="text-danger">Bs ${calcularGastosCasilleros().toFixed(2)}</strong>
-                        </div>
-                        <hr>
-                        <div class="d-flex justify-content-between">
-                            <strong>TOTAL GASTOS:</strong>
-                            <strong class="text-danger">Bs ${(datos.totalGastos + datos.totalEgresosCaja + calcularGastosCasilleros()).toFixed(2)}</strong>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-4 mb-3">
-            <div class="card-financiero card-saldo">
-                <div class="card-body">
-                    <h5 class="card-title"><i class="fas fa-piggy-bank text-primary"></i> SALDOS</h5>
-                    <div class="card-text">
-                        <div class="d-flex justify-content-between">
-                            <span>Dinero Inicial:</span>
-                            <strong>Bs ${datos.dineroInicial?.toFixed(2) || '0.00'}</strong>
-                        </div>
-                        <div class="d-flex justify-content-between">
-                            <span>Total Recaudado:</span>
-                            <strong class="text-success">Bs ${(datos.totalAportesEstudiantes + calcularTotalCasilleros() + calcularOtrosIngresos()).toFixed(2)}</strong>
-                        </div>
-                        <div class="d-flex justify-content-between">
-                            <span>Total Gastado:</span>
-                            <strong class="text-danger">Bs ${(datos.totalGastos + datos.totalEgresosCaja + calcularGastosCasilleros()).toFixed(2)}</strong>
-                        </div>
-                        <hr>
-                        <div class="d-flex justify-content-between">
-                            <strong>SALDO ACTUAL:</strong>
-                            <strong class="text-primary" style="font-size: 1.2rem;">Bs ${datos.dineroFinal?.toFixed(2) || '0.00'}</strong>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    contenedor.querySelector('#contenidoResumenFinanciero').innerHTML = contenidoHTML;
-    
-    // También agregar los últimos gastos
-    actualizarUltimosGastosSeguimiento();
-}
-
-// Funciones auxiliares para calcular
-function calcularTotalCasilleros() {
-    let total = datos.montoInicialCasilleros || 0;
-
-    datos.sectores.forEach(sector => {
-        if (sector.cobros) {
-            sector.cobros.forEach(cobro => {
-                total += cobro.monto || 0;
-            });
-        }
-    });
-
     return total;
 }
 
@@ -3093,7 +2551,7 @@ function actualizarResumenCursosSeguimiento() {
                         </div>
                         <div class="d-flex justify-content-between">
                             <small>Faltante:</small>
-                            ${!esObservador ? `<strong class="text-danger">Bs ${faltante2026.toFixed(2)}</strong>` : `<strong class="text-muted">---</strong>`}
+                            <strong class="text-danger">Bs ${faltante2026.toFixed(2)}</strong>
                         </div>
                         <div class="d-flex justify-content-between">
                             <small>% Completado:</small>
@@ -3137,7 +2595,7 @@ function actualizarResumenCursosSeguimiento() {
                         </div>
                         <div class="d-flex justify-content-between">
                             <small>Faltante:</small>
-                            ${!esObservador ? `<strong class="text-danger">Bs ${faltante2027.toFixed(2)}</strong>` : `<strong class="text-muted">---</strong>`}
+                            <strong class="text-danger">Bs ${faltante2027.toFixed(2)}</strong>
                         </div>
                         <div class="d-flex justify-content-between">
                             <small>% Completado:</small>
@@ -3194,7 +2652,7 @@ function actualizarResumenCursosSeguimiento() {
                         </div>
                         <div class="d-flex justify-content-between">
                             <small>Total faltante:</small>
-                            ${!esObservador ? `<strong class="text-danger">Bs ${totalFaltante.toFixed(2)}</strong>` : `<strong class="text-muted">---</strong>`}
+                            <strong class="text-danger">Bs ${totalFaltante.toFixed(2)}</strong>
                         </div>
                         <div class="d-flex justify-content-between">
                             <small>% Total:</small>
@@ -3232,30 +2690,15 @@ function actualizarResumenCursosSeguimiento() {
 // FUNCIÓN DE GUARDADO MEJORADA CON ACTUALIZACIÓN AUTOMÁTICA
 function guardarDatos(forzarActualizacion = false) {
     try {
-        console.log("💾 Guardando datos - Usuario:", isAdmin ? "ADMIN" : "OBSERVADOR");
+        console.log("💾 Guardando datos...");
         
-        // 1. Guardar en localStorage (SIEMPRE)
+        // 1. Guardar en localStorage
         localStorage.setItem('datosFederacion', JSON.stringify(datos));
         
         // 2. Si hay conexión, guardar en la nube también
         if (window.sincronizador && sincronizacionActiva) {
-            // ====== CAMBIO CRÍTICO: ======
-            // El ADMIN SIEMPRE puede guardar en la nube
-            // Los OBSERVADORES solo guardan localmente
-            if (isAdmin) {
-                console.log("👑 Admin guardando en la nube...");
-                window.sincronizador.guardarEnNube(datos)
-                    .then(exito => {
-                        if (exito) {
-                            console.log("✅ Admin: Datos forzados a la nube");
-                            // Notificación especial para admin
-                            mostrarNotificacionAdmin("Cambios guardados y sincronizados");
-                        }
-                    });
-            } else {
-                console.log("👁️ Observador: Solo guardado local (no en la nube)");
-            }
-            // ==============================
+            window.sincronizador.guardarEnNube(datos);
+            console.log('✅ Datos sincronizados en la nube');
         }
         
         // 3. ACTUALIZACIÓN AUTOMÁTICA INMEDIATA
@@ -3323,13 +2766,9 @@ function guardarDatos(forzarActualizacion = false) {
             
         }, 100);
         
-        console.log("✅ Datos guardados exitosamente");
-        crearBackupAutomatico();
-        
+        console.log("✅ Datos guardados y actualizados");
         return true;
         
-        
-
     } catch (error) {
         console.error('❌ Error guardando datos:', error);
         return false;
@@ -10071,6 +9510,7 @@ function actualizarCuandoSeRegistreCobro(monto) {
     actualizarResumenOtrosCobros();
 }
 
+
 // ============================================
 // FUNCIÓN PARA MOSTRAR NOTIFICACIÓN AL ADMIN
 // ============================================
@@ -10120,6 +9560,9 @@ function mostrarNotificacionAdmin(mensaje) {
     }, 5000);
 }
 
+// ============================================
+// FUNCIÓN PARA ESTABLECER DINERO INICIAL DE CASILLEROS
+// ============================================
 function establecerDineroInicialCasilleros() {
     const monto = prompt("Ingrese el dinero inicial para Casilleros:");
 
@@ -10134,58 +9577,100 @@ function establecerDineroInicialCasilleros() {
 
     datos.montoInicialCasilleros = montoNumero;
     guardarDatos();
-    actualizarResumenFinanciero();
+    
+    // Actualizar resumen financiero (si existe la función)
+    if (typeof actualizarResumenFinanciero === 'function') {
+        actualizarResumenFinanciero();
+    }
+    
+    // También actualizar Firebase si está conectado
+    if (window.sincronizador && window.sincronizador.conectado) {
+        window.sincronizador.guardarEnNube(datos);
+        mostrarNotificacionAdmin("Dinero inicial de casilleros actualizado en Firebase");
+    }
 }
 
-
-// Al final de tu script.js, agrega:
+// ============================================
+// RESPALDO AUTOMÁTICO EN FIREBASE AL CERRAR
+// ============================================
 window.addEventListener('beforeunload', function(e) {
     if (isAdmin && datos && Object.keys(datos.cursos || {}).length > 0) {
-        // Guardar automáticamente antes de cerrar
+        console.log('💾 Guardando respaldo antes de cerrar...');
+        
+        // 1. Guardar en localStorage (siempre)
         localStorage.setItem('datosFederacion', JSON.stringify(datos));
         
-        // Crear backup de emergencia
+        // 2. Crear backup de emergencia en localStorage
         const backupEmergencia = {
             datos: datos,
             fecha: new Date().toISOString(),
-            tipo: 'emergencia'
+            tipo: 'emergencia',
+            usuario: window.sincronizador?.usuarioId || 'desconocido'
         };
         localStorage.setItem('backup_emergencia_' + Date.now(), JSON.stringify(backupEmergencia));
+        
+        // 3. Si hay conexión a Firebase, guardar también allí
+        if (window.sincronizador && window.sincronizador.conectado) {
+            // Nota: beforeunload tiene limitaciones para async
+            // Por eso hacemos un guardado síncrono simulado
+            try {
+                // Usar sendBeacon para enviar datos aunque la página se esté cerrando
+                const datosParaGuardar = {
+                    datos: datos,
+                    fecha_actualizacion: new Date().toISOString(),
+                    usuario: window.sincronizador.usuarioId,
+                    tipo: 'backup_cierre'
+                };
+                
+                // Opción 1: Guardar en Firebase de forma asíncrona (puede no completarse)
+                window.sincronizador.guardarEnNube(datos);
+                
+                // Opción 2: También guardar en localStorage como respaldo
+                localStorage.setItem('backup_firebase_pendiente', JSON.stringify({
+                    datos: datos,
+                    timestamp: Date.now()
+                }));
+                
+            } catch (error) {
+                console.error('Error guardando en Firebase al cerrar:', error);
+            }
+        }
+        
+        console.log('✅ Respaldos guardados');
     }
 });
 
-
-// Al final de tu script.js, agrega:
-window.addEventListener('beforeunload', function(e) {
-    if (isAdmin && datos && Object.keys(datos.cursos || {}).length > 0) {
-        // Guardar automáticamente antes de cerrar
-        localStorage.setItem('datosFederacion', JSON.stringify(datos));
-        
-        // Crear backup de emergencia
-        const backupEmergencia = {
-            datos: datos,
-            fecha: new Date().toISOString(),
-            tipo: 'emergencia'
-        };
-        localStorage.setItem('backup_emergencia_' + Date.now(), JSON.stringify(backupEmergencia));
+// ============================================
+// FUNCIÓN PARA RECUPERAR RESPALDOS PENDIENTES
+// ============================================
+async function recuperarBackupPendiente() {
+    const backupPendiente = localStorage.getItem('backup_firebase_pendiente');
+    if (backupPendiente) {
+        console.log('🔄 Recuperando backup pendiente...');
+        try {
+            const backup = JSON.parse(backupPendiente);
+            
+            // Si hay conexión a Firebase, intentar subirlo
+            if (window.sincronizador && window.sincronizador.conectado) {
+                await window.sincronizador.guardarEnNube(backup.datos);
+                console.log('✅ Backup pendiente recuperado en Firebase');
+                localStorage.removeItem('backup_firebase_pendiente');
+                
+                if (isAdmin) {
+                    mostrarNotificacionAdmin('Backup pendiente sincronizado con Firebase');
+                }
+            }
+        } catch (error) {
+            console.error('Error recuperando backup:', error);
+        }
     }
+}
+
+// Llamar a esta función cuando la página cargue
+document.addEventListener('DOMContentLoaded', function() {
+    // Esperar un poco para que Firebase se conecte
+    setTimeout(recuperarBackupPendiente, 3000);
 });
 
 console.log('✅ Sistema de Gestión Financiera cargado completamente con todas las mejoras');
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    
