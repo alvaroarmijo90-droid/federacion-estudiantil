@@ -537,7 +537,7 @@
                                     <label for="conceptoCaja" class="form-label neon-text">Concepto</label>
                                     <textarea class="form-control neon-input" id="conceptoCaja" rows="2" required></textarea>
                                 </div>
-                               <button type="button" class="btn neon-btn" onclick="registrarMovimientoCaja(event)">Registrar Movimiento</button>
+                               <button type="submit" class="btn neon-btn">Registrar Movimiento</button>
 </form>
                             
                             <div class="mt-4">
@@ -1373,7 +1373,7 @@
                             <input type="file" class="form-control neon-input" id="comprobante" accept="image/*,.pdf" style="padding: 3px;">
                             <small class="text-muted">Puede subir imágenes o archivos PDF</small>
                         </div>
-                        <button type="button" class="btn neon-btn" onclick="registrarGasto(event)">Registrar Gasto</button>
+                        <button type="submit" class="btn neon-btn">Registrar Gasto</button>
                     </form>
                     
                     <div class="mt-4">
@@ -1442,9 +1442,7 @@
                                             <div class="col-md-2">
                                                 <div class="mb-3">
                                                     <label class="form-label neon-text">&nbsp;</label>
-                                                    <button type="button" class="btn neon-btn w-100" onclick="crearNuevoSector(event)">
-    <i class="fas fa-plus"></i> Crear
-</button>
+                                                    <button type="submit" class="btn neon-btn w-100">Crear</button>
                                                 </div>
                                             </div>
                                         </div>
@@ -1720,9 +1718,7 @@
                                             <small class="text-muted">Puede subir múltiples fotos para mostrar en la publicación</small>
                                         </div>
                                         <div class="text-center">
-                                           <button type="button" class="btn neon-btn" style="padding: 12px 30px; font-size: 1.1rem;" onclick="registrarEvento(event)">
-    <i class="fas fa-paper-plane"></i> Publicar Evento
-</button>
+                                           <button type="submit" class="btn neon-btn">Publicar Evento</button>
                                         </div>
                                     </form>
                                 </div>
@@ -2243,4 +2239,3 @@
 <script src="script.js"></script>
 </body>
 </html>
-
