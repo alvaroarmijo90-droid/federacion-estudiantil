@@ -37,19 +37,37 @@ let datos = {
 };
 
 
+// FUNCIÓN MEJORADA PARA BACKUPS - SE EJECUTA EN CADA CAMBIO
 function crearBackupAutomatico() {
     try {
-        const backupKey = 'backup_' + new Date().toISOString().split('T')[0];
+        const fecha = new Date();
+        const fechaStr = fecha.toISOString().split('T')[0];
+        const horaStr = fecha.toTimeString().split(' ')[0].replace(/:/g, '-');
+        
+        // Crear backup con timestamp único
+        const backupKey = `backup_${fechaStr}_${horaStr}`;
+        
+        // Crear backup completo
         const backup = {
-            datos: JSON.parse(JSON.stringify(datos)),
-            fecha: new Date().toISOString(),
-            version: "1.0"
+            datos: JSON.parse(JSON.stringify(datos)), // Copia profunda
+            fecha: fecha.toISOString(),
+            version: "1.0",
+            tipo: 'automatico',
+            hash: Date.now() // Identificador único
         };
         
+        // Guardar en localStorage
         localStorage.setItem(backupKey, JSON.stringify(backup));
         console.log("💾 Backup creado:", backupKey);
         
-        // Mantener solo últimos 7 backups
+        // También guardar en Firebase si está conectado
+        if (window.sincronizador && window.sincronizador.conectado) {
+            // Guardar backup en una colección separada
+            const backupRef = `backups/${backupKey}`;
+            window.sincronizador.guardarEnRuta(backupRef, backup);
+        }
+        
+        // Mantener solo últimos 20 backups (más seguro)
         const backups = [];
         for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
@@ -58,14 +76,50 @@ function crearBackupAutomatico() {
             }
         }
         
-        if (backups.length > 7) {
+        if (backups.length > 20) {
             backups.sort();
-            const eliminar = backups.slice(0, backups.length - 7);
+            const eliminar = backups.slice(0, backups.length - 20);
             eliminar.forEach(key => localStorage.removeItem(key));
         }
         
     } catch (error) {
         console.error("Error creando backup:", error);
+    }
+}
+
+// NUEVA FUNCIÓN: Backup forzado (para el botón Probar Sync)
+function crearBackupForzado() {
+    try {
+        const fecha = new Date();
+        const fechaStr = fecha.toISOString().split('T')[0];
+        const horaStr = fecha.toTimeString().split(' ')[0].replace(/:/g, '-');
+        
+        // Backup manual con indicador especial
+        const backupKey = `backup_MANUAL_${fechaStr}_${horaStr}`;
+        
+        const backup = {
+            datos: JSON.parse(JSON.stringify(datos)),
+            fecha: fecha.toISOString(),
+            version: "1.0",
+            tipo: 'manual',
+            usuario: 'admin',
+            hash: Date.now()
+        };
+        
+        localStorage.setItem(backupKey, JSON.stringify(backup));
+        
+        // También guardar en Firebase
+        if (window.sincronizador && window.sincronizador.conectado) {
+            window.sincronizador.guardarEnRuta(`backups_manuales/${backupKey}`, backup);
+        }
+        
+        mostrarMensaje('✅ Backup manual creado exitosamente', 'success');
+        return backupKey;
+        
+    } catch (error) {
+        console.error("Error creando backup forzado:", error);
+        mostrarMensaje('❌ Error creando backup manual', 'error');
+        return null;
     }
 }
 
@@ -176,6 +230,26 @@ if (window.sincronizador) {
     if (viewerAccess) {
         viewerAccess.addEventListener('click', accederComoObservador);
     }
+
+    // 🔴 NUEVAS LÍNEAS - AGREGAR AQUÍ 🔴
+    // Verificar datos pendientes
+    setTimeout(() => {
+        verificarDatosPendientes();
+    }, 2000);
+
+    // Configurar guardado automático más frecuente
+    setInterval(() => {
+        if (isAdmin || isViewer) {
+            guardarDatos();
+            console.log('📊 Guardado automático (30s)');
+        }
+    }, 30000); // Cada 30 segundos
+
+    // Guardar también cuando el usuario está inactivo pero antes de cerrar
+    let ultimoCambio = Date.now();
+    document.addEventListener('keyup', function() {
+        ultimoCambio = Date.now();
+    });
     
     cargarImagenes();
     cargarDatos();
@@ -186,7 +260,7 @@ if (window.sincronizador) {
     inicializarCursosEspeciales(); // ← AGREGAR ESTA LÍNEA
 
     // Configurar fecha actual en los formularios
-    const hoy = new Date().toISOString().split('T')[0];
+   const hoy = new Date().toISOString().split('T')[0];
     ['fechaGasto', 'fechaCaja', 'fechaPago', 'fechaGastoCasillero', 'fechaOtroCobro', 'fechaEvento', 'fechaLimiteSector'].forEach(id => {
         const elem = document.getElementById(id);
         if (elem) elem.value = hoy;
@@ -556,6 +630,47 @@ if (fechaGastoOtroCobro) fechaGastoOtroCobro.value = hoy;
 
 
     return datos;
+}
+
+// NUEVA FUNCIÓN: Verificar y recuperar datos pendientes de sincronización
+async function verificarDatosPendientes() {
+    console.log('🔄 Verificando datos pendientes de sincronización...');
+    
+    // 1. Verificar si hay datos pendientes de sincronizar
+    const pendiente = localStorage.getItem('pendiente_sincronizar');
+    if (pendiente) {
+        console.log('📦 Hay datos pendientes de sincronización');
+        try {
+            const datosPendientes = JSON.parse(pendiente);
+            
+            if (window.sincronizador && window.sincronizador.conectado) {
+                console.log('📤 Reintentando sincronización...');
+                const exito = await window.sincronizador.guardarEnNube(datosPendientes.datos);
+                
+                if (exito) {
+                    localStorage.removeItem('pendiente_sincronizar');
+                    console.log('✅ Datos pendientes sincronizados');
+                    mostrarMensaje('✅ Datos pendientes sincronizados con la nube', 'success');
+                }
+            }
+        } catch (error) {
+            console.error('Error procesando datos pendientes:', error);
+        }
+    }
+    
+    // 2. Verificar el último backup
+    const backups = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key.startsWith('backup_')) {
+            backups.push(key);
+        }
+    }
+    
+    if (backups.length > 0) {
+        backups.sort().reverse();
+        console.log(`📚 ${backups.length} backups disponibles. Último: ${backups[0]}`);
+    }
 }
 
 // Guardar datos en localStorage
@@ -2688,20 +2803,47 @@ function actualizarResumenCursosSeguimiento() {
 // FUNCIÓN MEJORADA PARA GUARDAR DATOS (con actualización automática)
 // ============================================
 // FUNCIÓN DE GUARDADO MEJORADA CON ACTUALIZACIÓN AUTOMÁTICA
+// FUNCIÓN DE GUARDADO MEJORADA CON SINCRONIZACIÓN OBLIGATORIA
 function guardarDatos(forzarActualizacion = false) {
     try {
         console.log("💾 Guardando datos...");
         
-        // 1. Guardar en localStorage
+        // 1. Agregar timestamp siempre
+        datos.ultimaModificacion = new Date().toISOString();
+        datos.versionBackup = Date.now();
+        
+        // 2. Guardar en localStorage (siempre)
         localStorage.setItem('datosFederacion', JSON.stringify(datos));
         
-        // 2. Si hay conexión, guardar en la nube también
-        if (window.sincronizador && sincronizacionActiva) {
-            window.sincronizador.guardarEnNube(datos);
-            console.log('✅ Datos sincronizados en la nube');
+        // 3. Crear backup incremental (cada cambio)
+        crearBackupAutomatico();
+        
+        // 4. Si hay conexión, guardar en la nube SIEMPRE
+        if (window.sincronizador) {
+            // Guardar en la nube de forma asíncrona
+            window.sincronizador.guardarEnNube(datos)
+                .then(exito => {
+                    if (exito) {
+                        console.log('✅ Datos sincronizados en la nube');
+                    } else {
+                        console.warn('⚠️ No se pudo sincronizar, guardado localmente');
+                        // Guardar para reintentar después
+                        localStorage.setItem('pendiente_sincronizar', JSON.stringify({
+                            datos: datos,
+                            timestamp: Date.now()
+                        }));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error sincronizando:', error);
+                    localStorage.setItem('pendiente_sincronizar', JSON.stringify({
+                        datos: datos,
+                        timestamp: Date.now()
+                    }));
+                });
         }
         
-        // 3. ACTUALIZACIÓN AUTOMÁTICA INMEDIATA
+        // 5. ACTUALIZACIÓN AUTOMÁTICA INMEDIATA
         setTimeout(() => {
             // Determinar qué pestaña está activa
             const tabs = document.querySelectorAll('.tab-content');
@@ -2759,10 +2901,10 @@ function guardarDatos(forzarActualizacion = false) {
             // SIEMPRE actualizar el dashboard (números principales)
             actualizarDashboardRapido();
             actualizarResumenCursosSeguimiento();
-            actualizarTablaGastosCasilleros(); // ← AÑADE ESTA LÍNEA
+            actualizarTablaGastosCasilleros();
             actualizarResumenCasilleros();
             actualizarResumenOtrosCobros();
-    actualizarTablaGastosOtrosCobros();
+            actualizarTablaGastosOtrosCobros();
             
         }, 100);
         
@@ -6666,99 +6808,112 @@ function generarReporteCompleto() {
     }
 }
 
-// FUNCIÓN PARA PROBAR SINCRONIZACIÓN
-function probarSincronizacion() {
+// FUNCIÓN PARA PROBAR SINCRONIZACIÓN - MEJORADA
+async function probarSincronizacion() {
     console.log('🧪 Probando sincronización...');
+    mostrarMensaje('Verificando conexión con la nube...', 'info');
     
     if (!window.sincronizador) {
         console.error('❌ Sincronizador no disponible');
-        mostrarMensaje('Sincronizador no cargado', 'error');
+        mostrarMensaje('❌ Sincronizador no disponible - recargue la página', 'error');
         return;
     }
     
+    // 1. Verificar estado actual
     const estado = window.sincronizador.getEstado();
-    console.log('Estado:', estado);
+    console.log('Estado actual:', estado);
     
-    // Crear un cambio de prueba
-    const datosPrueba = {
+    // 2. Verificar conexión
+    if (!window.sincronizador.conectado) {
+        console.log('⚠️ Intentando reconectar...');
+        sincronizacionActiva = await window.sincronizador.conectar(CONFIG_FIREBASE);
+        
+        if (!sincronizacionActiva) {
+            mostrarMensaje('❌ No se pudo conectar a Firebase. Modo local activado', 'error');
+            return;
+        }
+    }
+    
+    // 3. Guardar datos actuales con marca de tiempo
+    const datosConTimestamp = {
         ...datos,
-        prueba: new Date().toISOString(),
-        numero_prueba: Math.random()
+        ultimaActualizacion: new Date().toISOString(),
+        usuarioSincronizacion: window.sincronizador.usuarioId || 'admin',
+        versionBackup: Date.now()
     };
     
-    // Guardar en la nube
-    window.sincronizador.guardarEnNube(datosPrueba)
-        .then(exito => {
-            if (exito) {
-                mostrarMensaje('✅ Prueba enviada a la nube', 'success');
-                console.log('✅ Prueba exitosa');
+    // 4. Intentar guardar en la nube
+    try {
+        const exito = await window.sincronizador.guardarEnNube(datosConTimestamp);
+        
+        if (exito) {
+            // 5. Crear backup local inmediato
+            crearBackupForzado();
+            
+            // 6. Verificar que se guardó correctamente
+            const datosRecuperados = await window.sincronizador.cargarDeNube();
+            
+            if (datosRecuperados) {
+                console.log('✅ Datos verificados en la nube');
+                mostrarMensaje('✅ Conexión exitosa - Datos sincronizados en la nube', 'success');
+                
+                // Mostrar información adicional
+                const fechaNube = datosRecuperados.ultimaActualizacion || 'desconocida';
+                mostrarNotificacionAdmin(`Última sincronización: ${new Date(fechaNube).toLocaleString()}`);
             } else {
-                mostrarMensaje('❌ Error en prueba', 'error');
+                mostrarMensaje('⚠️ Datos guardados pero no se pudo verificar', 'warning');
             }
-        });
+        } else {
+            mostrarMensaje('❌ Error guardando en la nube', 'error');
+        }
+    } catch (error) {
+        console.error('❌ Error en sincronización:', error);
+        mostrarMensaje('❌ Error de conexión: ' + error.message, 'error');
+    }
 }
 
 // AGREGAR BOTÓN DE PRUEBA EN EL NAVBAR
+// AGREGAR BOTÓN DE PRUEBA EN EL NAVBAR - MEJORADO
 function agregarBotonPrueba() {
     const navbar = document.querySelector('nav');
     if (!navbar) return;
     
+    // Verificar si ya existe
+    if (document.getElementById('btnProbarSync')) return;
+    
     const boton = document.createElement('button');
+    boton.id = 'btnProbarSync';
     boton.className = 'btn btn-outline-info btn-sm ms-2';
-    boton.innerHTML = '<i class="fas fa-vial"></i> Probar Sync';
+    boton.innerHTML = '<i class="fas fa-sync-alt"></i> Sincronizar';
     boton.onclick = probarSincronizacion;
-    boton.title = 'Probar sincronización';
+    boton.title = 'Sincronizar con la nube y crear backup';
+    
+    // Agregar indicador de estado
+    const estadoSpan = document.createElement('span');
+    estadoSpan.id = 'estadoSync';
+    estadoSpan.className = 'ms-2 badge';
+    estadoSpan.style.display = 'none';
     
     navbar.appendChild(boton);
-}
-
-// GUARDAR DATOS AUTOMÁTICAMENTE
-setInterval(() => {
-    if (isAdmin || isViewer) {
-        guardarDatos();
-        console.log('Datos guardados automáticamente');
-    }
-}, 30000);
-
-// LLAMAR DESPUÉS DE CARGAR
-setTimeout(agregarBotonPrueba, 2000);
-
-// INICIALIZAR SELECTOR DE CURSOS
-function inicializarSelectorCursos() {
-    const selectorCurso = document.getElementById('selectorCurso');
-    if (selectorCurso) {
-        selectorCurso.innerHTML = '<option value="">Seleccione un curso</option>';
-        ordenCursos.forEach(curso => {
-            const option = document.createElement('option');
-            option.value = curso;
-            option.textContent = curso;
-            selectorCurso.appendChild(option);
-        });
-    }
+    navbar.appendChild(estadoSpan);
     
-    // Inicializar también filtros de seguimiento
-    const filtroCursoSeguimiento = document.getElementById('filtroCursoSeguimiento');
-    if (filtroCursoSeguimiento) {
-        filtroCursoSeguimiento.innerHTML = '<option value="todos">Todos los cursos</option>';
-        ordenCursos.forEach(curso => {
-            const option = document.createElement('option');
-            option.value = curso;
-            option.textContent = curso;
-            filtroCursoSeguimiento.appendChild(option);
-        });
-    }
-    
-    // Inicializar también selector de curso para otros cobros
-    const cursoOtroCobro = document.getElementById('cursoOtroCobro');
-    if (cursoOtroCobro) {
-        cursoOtroCobro.innerHTML = '<option value="">Seleccione curso</option>';
-        ordenCursos.forEach(curso => {
-            const option = document.createElement('option');
-            option.value = curso;
-            option.textContent = curso;
-            cursoOtroCobro.appendChild(option);
-        });
-    }
+    // Actualizar estado cada 10 segundos
+    setInterval(() => {
+        if (window.sincronizador) {
+            const conectado = window.sincronizador.conectado;
+            const estadoSpan = document.getElementById('estadoSync');
+            if (estadoSpan) {
+                estadoSpan.style.display = 'inline-block';
+                if (conectado) {
+                    estadoSpan.className = 'ms-2 badge bg-success';
+                    estadoSpan.innerHTML = '<i class="fas fa-wifi"></i> Online';
+                } else {
+                    estadoSpan.className = 'ms-2 badge bg-danger';
+                    estadoSpan.innerHTML = '<i class="fas fa-wifi-slash"></i> Offline';
+                }
+            }
+        }
+    }, 10000);
 }
 
 
@@ -9672,6 +9827,96 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(recuperarBackupPendiente, 3000);
 });
 
+// ============================================
+// FUNCIÓN PARA MOSTRAR NOTIFICACIÓN AL ADMIN
+// ============================================
+function mostrarNotificacionAdmin(mensaje) {
+    if (!isAdmin) return;
+    
+    // Crear notificación
+    const notificacion = document.createElement('div');
+    notificacion.id = 'notificacion-admin-' + Date.now();
+    notificacion.style.cssText = `
+        position: fixed;
+        top: 100px;
+        right: 20px;
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        padding: 15px;
+        border-radius: 10px;
+        border-left: 5px solid gold;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        z-index: 9999;
+        max-width: 300px;
+        animation: slideIn 0.5s ease;
+    `;
+    
+    notificacion.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-crown" style="color: gold;"></i>
+            <div>
+                <strong>ADMIN:</strong>
+                <div>${mensaje}</div>
+                <small style="opacity: 0.8;">${new Date().toLocaleTimeString()}</small>
+            </div>
+            <button onclick="this.parentElement.parentElement.remove()" 
+                    style="margin-left: auto; background: transparent; border: none; color: white; cursor: pointer;">
+                ✕
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(notificacion);
+    
+    // Auto-eliminar después de 5 segundos
+    setTimeout(() => {
+        if (notificacion.parentElement) {
+            notificacion.remove();
+        }
+    }, 5000);
+}
+
+
+// ============================================
+// RESPALDO AUTOMÁTICO EN FIREBASE AL CERRAR
+// ============================================
+window.addEventListener('beforeunload', function(e) {
+    if (isAdmin && datos && Object.keys(datos.cursos || {}).length > 0) {
+        console.log('💾 Guardando respaldo antes de cerrar...');
+        
+        // 1. Guardar en localStorage (siempre)
+        localStorage.setItem('datosFederacion', JSON.stringify(datos));
+        
+        // 2. Crear backup de emergencia en localStorage
+        const backupEmergencia = {
+            datos: datos,
+            fecha: new Date().toISOString(),
+            tipo: 'emergencia',
+            usuario: window.sincronizador?.usuarioId || 'desconocido'
+        };
+        localStorage.setItem('backup_emergencia_' + Date.now(), JSON.stringify(backupEmergencia));
+        
+        // 3. Si hay conexión a Firebase, guardar también allí
+        if (window.sincronizador && window.sincronizador.conectado) {
+            try {
+                window.sincronizador.guardarEnNube(datos);
+                localStorage.setItem('backup_firebase_pendiente', JSON.stringify({
+                    datos: datos,
+                    timestamp: Date.now()
+                }));
+            } catch (error) {
+                console.error('Error guardando en Firebase al cerrar:', error);
+            }
+        }
+        
+        console.log('✅ Respaldos guardados');
+    }
+});
+
+// Llamar a esta función cuando la página cargue
+setTimeout(recuperarBackupPendiente, 3000);
+
 console.log('✅ Sistema de Gestión Financiera cargado completamente con todas las mejoras');
     
+
 
