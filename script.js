@@ -341,6 +341,9 @@ function accederComoObservador() {
     iniciarSesion();
 }
 
+// Variable para controlar el intervalo de guardado
+let intervaloGuardado = null;
+
 function iniciarSesion() {
     console.log('Iniciando sesión...');
     
@@ -356,19 +359,26 @@ function iniciarSesion() {
     const mainContent = document.querySelector('.main-content');
     if (mainContent) mainContent.style.display = 'block';
 
-    // Event listener para gastos de otros cobros
-const formGastoOtroCobro = document.getElementById('formGastoOtroCobro');
-if (formGastoOtroCobro) {
-    formGastoOtroCobro.addEventListener('submit', registrarGastoOtroCobro);
-}
-    
-    // Actualizar interfaz según tipo de usuario
-    actualizarInterfazPorUsuario();
-    // Actualizar resumen de otros cobros
-actualizarResumenOtrosCobros();
-actualizarResumenCasilleros();
+    // ============================================
+    // 1. Event listeners para gastos de otros cobros
+    // ============================================
+    const formGastoOtroCobro = document.getElementById('formGastoOtroCobro');
+    if (formGastoOtroCobro) {
+        formGastoOtroCobro.removeEventListener('submit', registrarGastoOtroCobro);
+        formGastoOtroCobro.addEventListener('submit', registrarGastoOtroCobro);
+        console.log("✅ Event listener de gastos otros cobros configurado");
+    }
 
-    // Inicializar datos
+    // ============================================
+    // 2. Actualizar interfaz según tipo de usuario
+    // ============================================
+    actualizarInterfazPorUsuario();
+    actualizarResumenOtrosCobros();
+    actualizarResumenCasilleros();
+
+    // ============================================
+    // 3. Inicializar datos
+    // ============================================
     cargarDatos();
     inicializarGraficos();
     actualizarDashboard();
@@ -379,36 +389,110 @@ actualizarResumenCasilleros();
     actualizarEventos();
     actualizarSectoresCobro();
     actualizarTablaGastosCasilleros();
-    // Agregar botones de administración de cursos
-agregarBotonesAdministracionCursos();
+    agregarBotonesAdministracionCursos();
+
+    // ============================================
+    // 4. Event listeners para formularios - CORREGIDOS
+    // ============================================
     
-    // Event listeners para formularios
+    // GASTOS
     const formGasto = document.getElementById('formGasto');
+    if (formGasto) {
+        formGasto.removeEventListener('submit', registrarGasto);
+        formGasto.addEventListener('submit', registrarGasto);
+        console.log("✅ Event listener de gastos configurado");
+    }
+    
+    // MOVIMIENTO CAJA
     const formMovimientoCaja = document.getElementById('formMovimientoCaja');
+    if (formMovimientoCaja) {
+        formMovimientoCaja.removeEventListener('submit', registrarMovimientoCaja);
+        formMovimientoCaja.addEventListener('submit', registrarMovimientoCaja);
+        console.log("✅ Event listener de caja configurado");
+    }
+    
+    // OTROS COBROS
     const formOtroCobro = document.getElementById('formOtroCobro');
+    if (formOtroCobro) {
+        formOtroCobro.removeEventListener('submit', registrarOtroCobro);
+        formOtroCobro.addEventListener('submit', registrarOtroCobro);
+        console.log("✅ Event listener de otros cobros configurado");
+    }
+    
+    // EVENTOS
     const formEvento = document.getElementById('formEvento');
+    if (formEvento) {
+        formEvento.removeEventListener('submit', registrarEvento);
+        formEvento.addEventListener('submit', registrarEvento);
+        console.log("✅ Event listener de eventos configurado");
+    }
+    
+    // NUEVO SECTOR
     const formNuevoSector = document.getElementById('formNuevoSector');
+    if (formNuevoSector) {
+        formNuevoSector.removeEventListener('submit', crearNuevoSector);
+        formNuevoSector.addEventListener('submit', crearNuevoSector);
+        console.log("✅ Event listener de nuevo sector configurado");
+    }
+    
+    // GASTO CASILLERO
     const formGastoCasillero = document.getElementById('formGastoCasillero');
-    
-    if (formGasto) formGasto.addEventListener('submit', registrarGasto);
-    if (formMovimientoCaja) formMovimientoCaja.addEventListener('submit', registrarMovimientoCaja);
-    if (formOtroCobro) formOtroCobro.addEventListener('submit', registrarOtroCobro);
-    if (formEvento) formEvento.addEventListener('submit', registrarEvento);
-    if (formNuevoSector) formNuevoSector.addEventListener('submit', crearNuevoSector);
-    if (formGastoCasillero) formGastoCasillero.addEventListener('submit', registrarGastoCasillero);
-    
-    // Event listeners para filtros
+    if (formGastoCasillero) {
+        formGastoCasillero.removeEventListener('submit', registrarGastoCasillero);
+        formGastoCasillero.addEventListener('submit', registrarGastoCasillero);
+        console.log("✅ Event listener de gasto casillero configurado");
+    }
+
+    // ============================================
+    // 5. Event listeners para filtros
+    // ============================================
     const filtroAnio = document.getElementById('filtroAnio');
     const filtroMes = document.getElementById('filtroMes');
     
-    if (filtroAnio) filtroAnio.addEventListener('change', actualizarReportes);
-    if (filtroMes) filtroMes.addEventListener('change', actualizarReportes);
+    if (filtroAnio) {
+        filtroAnio.removeEventListener('change', actualizarReportes);
+        filtroAnio.addEventListener('change', actualizarReportes);
+    }
+    if (filtroMes) {
+        filtroMes.removeEventListener('change', actualizarReportes);
+        filtroMes.addEventListener('change', actualizarReportes);
+    }
+
+    // ============================================
+    // 6. Configurar guardado automático y respaldo
+    // ============================================
     
-    // Mostrar mensaje de bienvenida
+    // Verificar datos pendientes de sincronización
+    setTimeout(() => {
+        if (typeof verificarDatosPendientes === 'function') {
+            verificarDatosPendientes();
+        }
+    }, 2000);
+
+    // Guardado automático cada 30 segundos
+    if (!window.guardadoAutomatico) {
+        window.guardadoAutomatico = setInterval(() => {
+            if (isAdmin || isViewer) {
+                guardarDatos();
+                console.log('📊 Guardado automático (30s)');
+            }
+        }, 30000);
+    }
+
+    // ============================================
+    // 7. Mostrar mensaje de bienvenida
+    // ============================================
     if (isAdmin) {
         mostrarMensaje('Bienvenido Administrador', 'success');
         const userTypeBadge = document.getElementById('userTypeBadge');
         if (userTypeBadge) userTypeBadge.innerHTML = '<span class="badge bg-danger">Administrador</span>';
+        
+        // Mostrar notificación de admin
+        if (typeof mostrarNotificacionAdmin === 'function') {
+            setTimeout(() => {
+                mostrarNotificacionAdmin('Sistema listo - Todos los cambios se guardarán automáticamente');
+            }, 1000);
+        }
     } else {
         mostrarMensaje('Bienvenido Observador', 'info');
         const userTypeBadge = document.getElementById('userTypeBadge');
@@ -9915,6 +9999,21 @@ window.addEventListener('beforeunload', function(e) {
 
 // Llamar a esta función cuando la página cargue
 setTimeout(recuperarBackupPendiente, 3000);
+
+// ============================================
+// DEPURACIÓN - Mostrar en consola cuando algo falla
+// ============================================
+window.addEventListener('error', function(e) {
+    console.error('❌ Error detectado:', e.message);
+    console.error('En archivo:', e.filename, 'línea:', e.lineno);
+});
+
+// Mostrar estado de Firebase
+setInterval(() => {
+    if (window.sincronizador) {
+        console.log('📡 Estado Firebase:', window.sincronizador.conectado ? 'Conectado' : 'Desconectado');
+    }
+}, 10000);
 
 console.log('✅ Sistema de Gestión Financiera cargado completamente con todas las mejoras');
     
