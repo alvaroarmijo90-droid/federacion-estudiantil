@@ -612,127 +612,87 @@ function inicializarNavegacion() {
 
 // Cargar datos desde localStorage
 // Cargar datos desde localStorage
+// Cargar datos desde localStorage - SIN ESPERAR A FIREBASE
 async function cargarDatos() {
     console.log('📥 Cargando datos...');
     
-    let datosCargados = null;
+    // ========== PASO 1: CARGAR DE LOCALSTORAGE INMEDIATAMENTE ==========
+    console.log('🔍 Cargando desde localStorage...');
+    const datosGuardados = localStorage.getItem('datosFederacion');
     
-    // 1. Intentar cargar de la nube si hay conexión
-    if (window.sincronizador && sincronizacionActiva) {
-        console.log('🔍 Buscando datos en la nube...');
-        datosCargados = await window.sincronizador.cargarDeNube();
-        if (datosCargados) {
-            console.log('✅ Datos cargados desde la nube');
+    if (datosGuardados) {
+        try {
+            datos = JSON.parse(datosGuardados);
+            console.log('✅ Datos cargados desde localStorage');
+            console.log('  - gastos:', datos.gastos?.length || 0);
+            console.log('  - eventos:', datos.eventos?.length || 0);
+            console.log('  - sectoresCobro:', datos.sectoresCobro?.length || 0);
+        } catch (e) {
+            console.error('❌ Error cargando datos locales:', e);
+            datos = JSON.parse(JSON.stringify(datos)); // Usar por defecto
         }
+    } else {
+        console.log('⚠️ No hay datos locales, usando estructura por defecto');
+        datos = JSON.parse(JSON.stringify(datos)); // Usar por defecto
     }
     
-    // 2. Si no hay datos de la nube, usar locales
-    if (!datosCargados) {
-        console.log('🔍 Buscando datos locales...');
-        const datosGuardados = localStorage.getItem('datosFederacion');
-        if (datosGuardados) {
-            try {
-                datosCargados = JSON.parse(datosGuardados);
-                console.log('✅ Datos cargados desde localStorage');
-            } catch (e) {
-                console.error('❌ Error cargando datos locales:', e);
-            }
-        }
-    }
-    
-    // 3. Si NO HAY DATOS EN ABSOLUTO, usar estructura por defecto
-    if (!datosCargados) {
-        console.log('⚠️ No hay datos, usando estructura por defecto');
-        datosCargados = JSON.parse(JSON.stringify(datos)); // Copia profunda
-    }
-    
-    // 4. ASIGNAR LOS DATOS CARGADOS A LA VARIABLE GLOBAL
-    datos = datosCargados;
-    
-    // ========== 🔴 PARTE CRÍTICA: GARANTIZAR QUE LOS ARRAYS EXISTEN ==========
-    // GASTOS
+    // ========== PASO 2: VERIFICAR ARRAYS ==========
     if (!datos.gastos || !Array.isArray(datos.gastos)) {
-        console.log('🔧 Creando array gastos porque no existe');
+        console.log('🔧 Creando array gastos');
         datos.gastos = [];
     }
     
-    // EVENTOS
     if (!datos.eventos || !Array.isArray(datos.eventos)) {
-        console.log('🔧 Creando array eventos porque no existe');
+        console.log('🔧 Creando array eventos');
         datos.eventos = [];
     }
     
-    // SECTORES DE COBRO (para otros cobros)
     if (!datos.sectoresCobro || !Array.isArray(datos.sectoresCobro)) {
-        console.log('🔧 Creando array sectoresCobro porque no existe');
+        console.log('🔧 Creando array sectoresCobro');
         datos.sectoresCobro = [];
     }
     
-    // COBROS DENTRO DE CADA SECTOR (crítico)
+    // Verificar cobros en sectores
     if (datos.sectoresCobro && Array.isArray(datos.sectoresCobro)) {
         datos.sectoresCobro.forEach((sector, index) => {
             if (!sector.cobros || !Array.isArray(sector.cobros)) {
-                console.log(`🔧 Creando array cobros para sector ${index}`);
+                console.log(`🔧 Creando cobros para sector ${index}`);
                 sector.cobros = [];
             }
         });
     }
     
-    // OTROS COBROS (legacy)
-    if (!datos.otrosCobros || !Array.isArray(datos.otrosCobros)) {
-        datos.otrosCobros = [];
-    }
-    
-    // GASTOS DE CASILLEROS
-    if (!datos.gastosCasilleros || !Array.isArray(datos.gastosCasilleros)) {
-        console.log("🔧 Creando gastosCasilleros porque no existe");
-        datos.gastosCasilleros = [];
-    }
-    
-    // MOVIMIENTOS DE CAJA
     if (!datos.movimientosCaja || !Array.isArray(datos.movimientosCaja)) {
         datos.movimientosCaja = [];
     }
-    // ========================================================================
     
-    // 5. Asegurar que todos los cursos tengan la estructura correcta
-    if (!datos.cursos) {
-        datos.cursos = {};
-        ordenCursos.forEach(curso => {
-            datos.cursos[curso] = { estudiantes: [] };
-        });
+    if (!datos.gastosCasilleros || !Array.isArray(datos.gastosCasilleros)) {
+        datos.gastosCasilleros = [];
     }
     
-    // 6. Asegurar que cada curso tenga estudiantes
-    for (const cursoNombre of ordenCursos) {
-        if (!datos.cursos[cursoNombre]) {
-            datos.cursos[cursoNombre] = { estudiantes: [] };
+    // ========== PASO 3: ACTUALIZAR INTERFAZ ==========
+    actualizarTodo();
+    
+    // ========== PASO 4: EN SEGUNDO PLANO, VERIFICAR FIREBASE ==========
+    setTimeout(async () => {
+        if (window.sincronizador && window.sincronizador.conectado) {
+            console.log('🔄 Verificando Firebase en segundo plano...');
+            const datosFirebase = await window.sincronizador.cargarDeNube();
+            
+            if (datosFirebase) {
+                // Solo mostrar notificación, no reemplazar automáticamente
+                mostrarMensaje('✅ Datos disponibles en Firebase. Usa el botón "Sincronizar" si quieres cargarlos.', 'info');
+            }
         }
-        if (!datos.cursos[cursoNombre].estudiantes) {
-            datos.cursos[cursoNombre].estudiantes = [];
-        }
-    }
+    }, 5000);
     
-    // 7. Asegurar que casilleros exista
-    if (!datos.casilleros) {
-        datos.casilleros = {};
-    }
+    return datos;
+}
+
+// Función para actualizar TODO
+function actualizarTodo() {
+    console.log('🔄 Actualizando toda la interfaz...');
     
-    // 8. Inicializar estudiantes si no existen
-    inicializarEstudiantes();
-    
-    // 9. Inicializar casilleros si no existen
-    if (Object.keys(datos.casilleros).length === 0) {
-        inicializarCasilleros();
-    }
-    
-    console.log('📊 Datos cargados correctamente');
-    console.log('- Total gastos:', datos.gastos?.length || 0);
-    console.log('- Total eventos:', datos.eventos?.length || 0);
-    console.log('- Total sectores cobro:', datos.sectoresCobro?.length || 0);
-    console.log('- Total estudiantes:', Object.values(datos.cursos || {}).reduce((total, curso) => total + (curso.estudiantes?.length || 0), 0));
-    
-    // 10. Actualizar toda la interfaz
     actualizarDashboard();
     actualizarTablaGastos();
     actualizarTablaMovimientosCaja();
@@ -746,12 +706,6 @@ async function cargarDatos() {
     actualizarTablaGastosCasilleros();
     actualizarResumenOtrosCobros();
     actualizarResumenCasilleros();
-    
-    const hoy = new Date().toISOString().split('T')[0];
-    const fechaGastoOtroCobro = document.getElementById('fechaGastoOtroCobro');
-    if (fechaGastoOtroCobro) fechaGastoOtroCobro.value = hoy;
-
-    return datos;
 }
 
 // NUEVA FUNCIÓN: Verificar y recuperar datos pendientes de sincronización
@@ -10241,7 +10195,74 @@ function agregarBotonDepuracion() {
 // Llamar después del login
 setTimeout(agregarBotonDepuracion, 2000);
 
+// ============================================
+// FUNCIÓN DE PRUEBA PARA VERIFICAR GUARDADO
+// ============================================
+function probarGuardadoGastos() {
+    console.log("🧪 Probando guardado de gastos...");
+    
+    // Verificar estado actual
+    console.log("Estado actual:");
+    console.log("- gastos en memoria:", datos.gastos?.length || 0);
+    
+    // Verificar localStorage
+    const local = localStorage.getItem('datosFederacion');
+    if (local) {
+        const localData = JSON.parse(local);
+        console.log("- gastos en localStorage:", localData.gastos?.length || 0);
+    }
+    
+    // Crear gasto de prueba
+    const testGasto = {
+        id: Date.now(),
+        categoria: "TEST",
+        monto: 1,
+        fecha: new Date().toISOString().split('T')[0],
+        descripcion: "Gasto de prueba",
+        timestamp: Date.now()
+    };
+    
+    // Agregar a memoria
+    if (!datos.gastos) datos.gastos = [];
+    datos.gastos.push(testGasto);
+    console.log("✅ Gasto agregado en memoria. Total ahora:", datos.gastos.length);
+    
+    // Guardar
+    guardarDatos();
+    
+    // Verificar después de guardar
+    setTimeout(() => {
+        const local2 = localStorage.getItem('datosFederacion');
+        if (local2) {
+            const localData2 = JSON.parse(local2);
+            console.log("✅ Verificación post-guardado:");
+            console.log("- gastos en localStorage:", localData2.gastos?.length || 0);
+            
+            if (localData2.gastos && localData2.gastos.length > 0) {
+                console.log("- Último gasto guardado:", localData2.gastos[localData2.gastos.length-1]);
+            }
+        }
+        
+        mostrarMensaje("Prueba completada - Revisa la consola (F12)", "info");
+    }, 1000);
+}
+
+// Agregar botón de prueba
+setTimeout(() => {
+    const navbar = document.querySelector('nav');
+    if (navbar && !document.getElementById('btnProbarGastos')) {
+        const btnPrueba = document.createElement('button');
+        btnPrueba.id = 'btnProbarGastos';
+        btnPrueba.className = 'btn btn-outline-warning btn-sm ms-2';
+        btnPrueba.innerHTML = '<i class="fas fa-flask"></i> Probar Gastos';
+        btnPrueba.onclick = probarGuardadoGastos;
+        btnPrueba.title = 'Probar guardado de gastos';
+        navbar.appendChild(btnPrueba);
+    }
+}, 3000);
+
 console.log('✅ Sistema de Gestión Financiera cargado completamente con todas las mejoras');
     
+
 
 
