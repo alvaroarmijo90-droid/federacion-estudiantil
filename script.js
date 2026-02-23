@@ -1,3 +1,4 @@
+
 // Variables globales MEJORADAS
 // Variables globales - INICIALMENTE VACÍAS
 let datos = {
@@ -610,6 +611,7 @@ function inicializarNavegacion() {
 }
 
 // Cargar datos desde localStorage
+// Cargar datos desde localStorage
 async function cargarDatos() {
     console.log('📥 Cargando datos...');
     
@@ -641,11 +643,57 @@ async function cargarDatos() {
     // 3. Si NO HAY DATOS EN ABSOLUTO, usar estructura por defecto
     if (!datosCargados) {
         console.log('⚠️ No hay datos, usando estructura por defecto');
-        datosCargados = datos;
+        datosCargados = JSON.parse(JSON.stringify(datos)); // Copia profunda
     }
     
     // 4. ASIGNAR LOS DATOS CARGADOS A LA VARIABLE GLOBAL
     datos = datosCargados;
+    
+    // ========== 🔴 PARTE CRÍTICA: GARANTIZAR QUE LOS ARRAYS EXISTEN ==========
+    // GASTOS
+    if (!datos.gastos || !Array.isArray(datos.gastos)) {
+        console.log('🔧 Creando array gastos porque no existe');
+        datos.gastos = [];
+    }
+    
+    // EVENTOS
+    if (!datos.eventos || !Array.isArray(datos.eventos)) {
+        console.log('🔧 Creando array eventos porque no existe');
+        datos.eventos = [];
+    }
+    
+    // SECTORES DE COBRO (para otros cobros)
+    if (!datos.sectoresCobro || !Array.isArray(datos.sectoresCobro)) {
+        console.log('🔧 Creando array sectoresCobro porque no existe');
+        datos.sectoresCobro = [];
+    }
+    
+    // COBROS DENTRO DE CADA SECTOR (crítico)
+    if (datos.sectoresCobro && Array.isArray(datos.sectoresCobro)) {
+        datos.sectoresCobro.forEach((sector, index) => {
+            if (!sector.cobros || !Array.isArray(sector.cobros)) {
+                console.log(`🔧 Creando array cobros para sector ${index}`);
+                sector.cobros = [];
+            }
+        });
+    }
+    
+    // OTROS COBROS (legacy)
+    if (!datos.otrosCobros || !Array.isArray(datos.otrosCobros)) {
+        datos.otrosCobros = [];
+    }
+    
+    // GASTOS DE CASILLEROS
+    if (!datos.gastosCasilleros || !Array.isArray(datos.gastosCasilleros)) {
+        console.log("🔧 Creando gastosCasilleros porque no existe");
+        datos.gastosCasilleros = [];
+    }
+    
+    // MOVIMIENTOS DE CAJA
+    if (!datos.movimientosCaja || !Array.isArray(datos.movimientosCaja)) {
+        datos.movimientosCaja = [];
+    }
+    // ========================================================================
     
     // 5. Asegurar que todos los cursos tengan la estructura correcta
     if (!datos.cursos) {
@@ -670,30 +718,21 @@ async function cargarDatos() {
         datos.casilleros = {};
     }
     
-    // 8. Asegurar que sectoresCobro exista
-    if (!datos.sectoresCobro) {
-        datos.sectoresCobro = [];
-    }
-    
-    // 9. Asegurar que gastosCasilleros exista
-    if (!datos.gastosCasilleros) {
-        console.log("🔧 Creando gastosCasilleros porque no existe");
-        datos.gastosCasilleros = [];
-    }
-    
-    // 10. Inicializar estudiantes si no existen
+    // 8. Inicializar estudiantes si no existen
     inicializarEstudiantes();
     
-    // 11. Inicializar casilleros si no existen
+    // 9. Inicializar casilleros si no existen
     if (Object.keys(datos.casilleros).length === 0) {
         inicializarCasilleros();
     }
     
     console.log('📊 Datos cargados correctamente');
-    console.log('- Total estudiantes:', Object.values(datos.cursos || {}).reduce((total, curso) => total + (curso.estudiantes?.length || 0), 0));
+    console.log('- Total gastos:', datos.gastos?.length || 0);
+    console.log('- Total eventos:', datos.eventos?.length || 0);
     console.log('- Total sectores cobro:', datos.sectoresCobro?.length || 0);
+    console.log('- Total estudiantes:', Object.values(datos.cursos || {}).reduce((total, curso) => total + (curso.estudiantes?.length || 0), 0));
     
-    // 12. Actualizar toda la interfaz
+    // 10. Actualizar toda la interfaz
     actualizarDashboard();
     actualizarTablaGastos();
     actualizarTablaMovimientosCaja();
@@ -708,10 +747,9 @@ async function cargarDatos() {
     actualizarResumenOtrosCobros();
     actualizarResumenCasilleros();
     
-const hoy = new Date().toISOString().split('T')[0];
-const fechaGastoOtroCobro = document.getElementById('fechaGastoOtroCobro');
-if (fechaGastoOtroCobro) fechaGastoOtroCobro.value = hoy;
-
+    const hoy = new Date().toISOString().split('T')[0];
+    const fechaGastoOtroCobro = document.getElementById('fechaGastoOtroCobro');
+    if (fechaGastoOtroCobro) fechaGastoOtroCobro.value = hoy;
 
     return datos;
 }
@@ -758,16 +796,55 @@ async function verificarDatosPendientes() {
 }
 
 // Guardar datos en localStorage
+// Guardar datos en localStorage
 function guardarDatos() {
-    // 1. Guardar local como siempre
+    console.log('💾 Guardando datos...');
+    console.log('- Gastos a guardar:', datos.gastos?.length || 0);
+    console.log('- Eventos a guardar:', datos.eventos?.length || 0);
+    console.log('- Sectores a guardar:', datos.sectoresCobro?.length || 0);
+    
+    // 1. Verificar que los arrays existen antes de guardar
+    if (!datos.gastos || !Array.isArray(datos.gastos)) {
+        console.warn('⚠️ gastos no es array, creándolo');
+        datos.gastos = [];
+    }
+    
+    if (!datos.eventos || !Array.isArray(datos.eventos)) {
+        console.warn('⚠️ eventos no es array, creándolo');
+        datos.eventos = [];
+    }
+    
+    if (!datos.sectoresCobro || !Array.isArray(datos.sectoresCobro)) {
+        console.warn('⚠️ sectoresCobro no es array, creándolo');
+        datos.sectoresCobro = [];
+    }
+    
+    // 2. Guardar local como siempre
     localStorage.setItem('datosFederacion', JSON.stringify(datos));
     
-    // 2. Si hay conexión, guardar en la nube también
+    // 3. Verificar que se guardó correctamente
+    const verificado = localStorage.getItem('datosFederacion');
+    if (verificado) {
+        try {
+            const datosVerificados = JSON.parse(verificado);
+            console.log('✅ Verificación localStorage:');
+            console.log('  - Gastos guardados:', datosVerificados.gastos?.length || 0);
+            console.log('  - Eventos guardados:', datosVerificados.eventos?.length || 0);
+            console.log('  - Sectores guardados:', datosVerificados.sectoresCobro?.length || 0);
+        } catch (e) {
+            console.error('❌ Error verificando guardado:', e);
+        }
+    }
+    
+    // 4. Si hay conexión, guardar en la nube también
     if (window.sincronizador && sincronizacionActiva) {
         window.sincronizador.guardarEnNube(datos);
     }
     
     console.log('💾 Datos guardados' + (sincronizacionActiva ? ' y sincronizados' : ''));
+    
+    // 5. Crear backup automático
+    crearBackupAutomatico();
 }
 
 // Inicializar estudiantes
@@ -3721,10 +3798,17 @@ function agregarEstudiante() {
 }
 
 // REGISTRAR GASTO
+// REGISTRAR GASTO - VERSIÓN MEJORADA CON VERIFICACIÓN
 function registrarGasto(e) {
     e.preventDefault();
+    e.stopPropagation();
     
-    if (!isAdmin) return;
+    if (!isAdmin) {
+        mostrarMensaje('Solo el administrador puede registrar gastos', 'error');
+        return false;
+    }
+    
+    console.log("📝 Intentando registrar gasto...");
     
     const categoria = document.getElementById('categoria').value;
     const montoGasto = parseFloat(document.getElementById('montoGasto').value) || 0;
@@ -3734,12 +3818,18 @@ function registrarGasto(e) {
     
     if (!categoria || !montoGasto || !fechaGasto || !descripcion) {
         mostrarMensaje('Complete todos los campos', 'error');
-        return;
+        return false;
     }
     
     if (isNaN(montoGasto) || montoGasto <= 0) {
         mostrarMensaje('Ingrese un monto válido', 'error');
-        return;
+        return false;
+    }
+    
+    // VERIFICAR QUE EL ARRAY EXISTE
+    if (!datos.gastos || !Array.isArray(datos.gastos)) {
+        console.warn('⚠️ gastos no es array, creándolo');
+        datos.gastos = [];
     }
     
     const nuevoGasto = {
@@ -3748,7 +3838,8 @@ function registrarGasto(e) {
         monto: montoGasto,
         fecha: fechaGasto,
         descripcion: descripcion,
-        comprobante: null
+        comprobante: null,
+        timestamp: Date.now()
     };
     
     if (comprobanteInput.files && comprobanteInput.files[0]) {
@@ -3762,8 +3853,14 @@ function registrarGasto(e) {
                 datos: e.target.result.split(',')[1]
             };
             
+            // AGREGAR AL ARRAY
             datos.gastos.push(nuevoGasto);
+            console.log("✅ Gasto agregado a datos.gastos. Total ahora:", datos.gastos.length);
+            
+            // GUARDAR INMEDIATAMENTE
             guardarDatos();
+            
+            // ACTUALIZAR INTERFAZ
             actualizarDashboard();
             actualizarTablaGastos();
             actualizarDetalleCajaFuerte();
@@ -3774,6 +3871,16 @@ function registrarGasto(e) {
             document.getElementById('fechaGasto').value = hoy;
             
             mostrarMensaje('Gasto registrado exitosamente con comprobante', 'success');
+            
+            // VERIFICAR QUE SE GUARDÓ
+            setTimeout(() => {
+                const verificado = localStorage.getItem('datosFederacion');
+                if (verificado) {
+                    const datosVerif = JSON.parse(verificado);
+                    console.log("🔍 VERIFICACIÓN POST-GUARDADO:");
+                    console.log("Gastos en localStorage:", datosVerif.gastos?.length || 0);
+                }
+            }, 500);
         };
         
         reader.onerror = function() {
@@ -3782,7 +3889,10 @@ function registrarGasto(e) {
         
         reader.readAsDataURL(file);
     } else {
+        // Sin comprobante
         datos.gastos.push(nuevoGasto);
+        console.log("✅ Gasto agregado a datos.gastos. Total ahora:", datos.gastos.length);
+        
         guardarDatos();
         actualizarDashboard();
         actualizarTablaGastos();
@@ -3794,7 +3904,19 @@ function registrarGasto(e) {
         document.getElementById('fechaGasto').value = hoy;
         
         mostrarMensaje('Gasto registrado exitosamente', 'success');
+        
+        // VERIFICAR
+        setTimeout(() => {
+            const verificado = localStorage.getItem('datosFederacion');
+            if (verificado) {
+                const datosVerif = JSON.parse(verificado);
+                console.log("🔍 VERIFICACIÓN POST-GUARDADO:");
+                console.log("Gastos en localStorage:", datosVerif.gastos?.length || 0);
+            }
+        }, 500);
     }
+    
+    return false;
 }
 
 // REGISTRAR MOVIMIENTO DE CAJA
@@ -4040,10 +4162,17 @@ function actualizarMontoSector() {
 }
 
 // REGISTRAR OTRO COBRO
+// REGISTRAR OTRO COBRO - VERSIÓN MEJORADA
 function registrarOtroCobro(e) {
     e.preventDefault();
+    e.stopPropagation();
     
-    if (!isAdmin) return;
+    if (!isAdmin) {
+        mostrarMensaje('Solo el administrador puede registrar cobros', 'error');
+        return false;
+    }
+    
+    console.log("📝 Intentando registrar otro cobro...");
     
     const sectorId = parseInt(document.getElementById('sectorCobro').value);
     const curso = document.getElementById('cursoOtroCobro').value;
@@ -4053,26 +4182,38 @@ function registrarOtroCobro(e) {
     
     if (!sectorId || !curso || !estudianteIndex || !fecha) {
         mostrarMensaje('Complete todos los campos', 'error');
-        return;
+        return false;
+    }
+    
+    // VERIFICAR QUE SECTORES EXISTE
+    if (!datos.sectoresCobro || !Array.isArray(datos.sectoresCobro)) {
+        console.warn('⚠️ sectoresCobro no es array, creándolo');
+        datos.sectoresCobro = [];
     }
     
     const sector = datos.sectoresCobro.find(s => s.id === sectorId);
     if (!sector) {
         mostrarMensaje('Sector no encontrado', 'error');
-        return;
+        return false;
+    }
+    
+    // VERIFICAR QUE EL SECTOR TENGA ARRAY COBROS
+    if (!sector.cobros || !Array.isArray(sector.cobros)) {
+        console.warn(`⚠️ sector.cobros no es array, creándolo para sector ${sectorId}`);
+        sector.cobros = [];
     }
     
     const estudiante = datos.cursos[curso].estudiantes[estudianteIndex];
+    const nombreEstudiante = estudiante.nombre || `Estudiante ${parseInt(estudianteIndex) + 1}`;
     
     // Verificar si ya está pagado
-    const nombreEstudiante = estudiante.nombre || `Estudiante ${parseInt(estudianteIndex) + 1}`;
     const yaPago = sector.cobros.some(cobro => 
         cobro.curso === curso && cobro.estudiante === nombreEstudiante
     );
     
     if (yaPago) {
         mostrarMensaje('Este estudiante ya está registrado como pagado en este sector', 'warning');
-        return;
+        return false;
     }
     
     const nuevoCobro = {
@@ -4086,10 +4227,14 @@ function registrarOtroCobro(e) {
     };
     
     sector.cobros.push(nuevoCobro);
+    
+    if (!datos.totalOtrosCobros) datos.totalOtrosCobros = 0;
     datos.totalOtrosCobros += sector.monto;
 
     if (!datos.otrosCobrosIngresos) datos.otrosCobrosIngresos = 0;
-datos.otrosCobrosIngresos += sector.monto;
+    datos.otrosCobrosIngresos += sector.monto;
+    
+    console.log(`✅ Cobro agregado. Sector ${sectorId} ahora tiene ${sector.cobros.length} cobros`);
     
     guardarDatos();
     actualizarSectoresCobro();
@@ -4106,6 +4251,8 @@ datos.otrosCobrosIngresos += sector.monto;
     document.getElementById('fechaOtroCobro').value = hoy;
     
     mostrarMensaje('Cobro registrado exitosamente', 'success');
+    
+    return false;
 }
 
 // VER REPORTE SECTOR
@@ -4155,10 +4302,17 @@ function eliminarSector(sectorId) {
 }
 
 // REGISTRAR EVENTO
+// REGISTRAR EVENTO - VERSIÓN MEJORADA
 function registrarEvento(e) {
     e.preventDefault();
+    e.stopPropagation();
     
-    if (!isAdmin) return;
+    if (!isAdmin) {
+        mostrarMensaje('Solo el administrador puede publicar eventos', 'error');
+        return false;
+    }
+    
+    console.log("📝 Intentando registrar evento...");
     
     const titulo = document.getElementById('tituloEvento').value;
     const descripcion = document.getElementById('descripcionEvento').value;
@@ -4168,7 +4322,13 @@ function registrarEvento(e) {
     
     if (!titulo || !descripcion || !fecha) {
         mostrarMensaje('Complete todos los campos obligatorios', 'error');
-        return;
+        return false;
+    }
+    
+    // VERIFICAR QUE EL ARRAY EXISTE
+    if (!datos.eventos || !Array.isArray(datos.eventos)) {
+        console.warn('⚠️ eventos no es array, creándolo');
+        datos.eventos = [];
     }
     
     const nuevoEvento = {
@@ -4178,7 +4338,8 @@ function registrarEvento(e) {
         fecha: fecha,
         lugar: lugar || 'No especificado',
         fotos: [],
-        fechaPublicacion: new Date().toISOString().split('T')[0]
+        fechaPublicacion: new Date().toISOString().split('T')[0],
+        timestamp: Date.now()
     };
     
     if (fotosInput.files && fotosInput.files.length > 0) {
@@ -4204,6 +4365,8 @@ function registrarEvento(e) {
         Promise.all(promises).then(fotos => {
             nuevoEvento.fotos = fotos;
             datos.eventos.push(nuevoEvento);
+            console.log("✅ Evento agregado. Total eventos:", datos.eventos.length);
+            
             guardarDatos();
             actualizarEventos();
             
@@ -4218,6 +4381,8 @@ function registrarEvento(e) {
         });
     } else {
         datos.eventos.push(nuevoEvento);
+        console.log("✅ Evento agregado. Total eventos:", datos.eventos.length);
+        
         guardarDatos();
         actualizarEventos();
         
@@ -4227,6 +4392,8 @@ function registrarEvento(e) {
         
         mostrarMensaje('Evento publicado exitosamente', 'success');
     }
+    
+    return false;
 }
 
 // ACTUALIZAR EVENTOS MEJORADO
@@ -10014,6 +10181,65 @@ setInterval(() => {
         console.log('📡 Estado Firebase:', window.sincronizador.conectado ? 'Conectado' : 'Desconectado');
     }
 }, 10000);
+
+
+// ============================================
+// FUNCIÓN DE DEPURACIÓN PARA VERIFICAR DATOS
+// ============================================
+function verificarDatosGuardados() {
+    console.log("🔍 VERIFICANDO DATOS GUARDADOS:");
+    
+    const datosGuardados = localStorage.getItem('datosFederacion');
+    if (!datosGuardados) {
+        console.log("❌ No hay datos en localStorage");
+        return;
+    }
+    
+    try {
+        const datosVerif = JSON.parse(datosGuardados);
+        console.log("✅ Datos encontrados en localStorage:");
+        console.log("  - gastos:", datosVerif.gastos?.length || 0);
+        console.log("  - eventos:", datosVerif.eventos?.length || 0);
+        console.log("  - sectoresCobro:", datosVerif.sectoresCobro?.length || 0);
+        
+        if (datosVerif.sectoresCobro && datosVerif.sectoresCobro.length > 0) {
+            datosVerif.sectoresCobro.forEach((sector, i) => {
+                console.log(`    Sector ${i}: ${sector.nombre} - cobros: ${sector.cobros?.length || 0}`);
+            });
+        }
+        
+        if (datosVerif.gastos && datosVerif.gastos.length > 0) {
+            console.log("    Último gasto:", datosVerif.gastos[datosVerif.gastos.length-1]);
+        }
+        
+        if (datosVerif.eventos && datosVerif.eventos.length > 0) {
+            console.log("    Último evento:", datosVerif.eventos[datosVerif.eventos.length-1]);
+        }
+        
+    } catch (e) {
+        console.error("❌ Error parseando localStorage:", e);
+    }
+}
+
+// Agregar botón de depuración (opcional)
+function agregarBotonDepuracion() {
+    const navbar = document.querySelector('nav');
+    if (!navbar) return;
+    
+    if (document.getElementById('btnVerificarDatos')) return;
+    
+    const boton = document.createElement('button');
+    boton.id = 'btnVerificarDatos';
+    boton.className = 'btn btn-outline-warning btn-sm ms-2';
+    boton.innerHTML = '<i class="fas fa-bug"></i> Verificar';
+    boton.onclick = verificarDatosGuardados;
+    boton.title = 'Verificar datos guardados';
+    
+    navbar.appendChild(boton);
+}
+
+// Llamar después del login
+setTimeout(agregarBotonDepuracion, 2000);
 
 console.log('✅ Sistema de Gestión Financiera cargado completamente con todas las mejoras');
     
