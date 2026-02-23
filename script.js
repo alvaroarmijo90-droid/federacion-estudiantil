@@ -3723,6 +3723,7 @@ function agregarEstudiante() {
 // REGISTRAR GASTO
 function registrarGasto(e) {
     e.preventDefault();
+    e.stopPropagation(); // ← TAMBIÉN AGREGAR ESTA
     
     if (!isAdmin) return;
     
@@ -3915,6 +3916,7 @@ function guardarEdicionCaja() {
 // CREAR NUEVO SECTOR DE COBRO
 function crearNuevoSector(e) {
     e.preventDefault();
+    e.stopPropagation(); // ← TAMBIÉN AGREGAR ESTA
     
     if (!isAdmin) return;
     
@@ -4157,6 +4159,8 @@ function eliminarSector(sectorId) {
 // REGISTRAR EVENTO
 function registrarEvento(e) {
     e.preventDefault();
+    e.stopPropagation(); // ← TAMBIÉN AGREGAR ESTA
+    
     
     if (!isAdmin) return;
     
