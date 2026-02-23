@@ -96,46 +96,40 @@ class SincronizadorFederacion {
     }
 
     async guardarEnNube(datosCompletos) {
-        if (!this.conectado || !this.db) {
-            console.log('⚠️ No conectado, guardando solo localmente');
-            this.guardarLocales(datosCompletos);
-            return true; // Considerar éxito para no bloquear
-        }
-
-        try {
-            console.log('☁️ Guardando en Firebase...');
-            
-            const fechaActual = new Date();
-            const timestamp = Date.now();
-            const totalEstudiantes = Object.values(datosCompletos.cursos || {}).reduce((total, curso) => total + (curso.estudiantes?.length || 0), 0);
-            
-            // Guardar en Firestore
-            await this.db.collection('datosFederacion').doc('configuracion').set({
-                datosJSON: JSON.stringify(datosCompletos),
-                ultimaActualizacion: fechaActual,
-                ultimoUsuario: this.usuarioId,
-                totalEstudiantes: totalEstudiantes,
-                timestamp: timestamp,
-                version: "2.0.0"
-            });
-            
-            console.log('✅ Datos guardados en Firebase');
-            
-            // Guardar respaldo local
-            this.guardarLocales(datosCompletos);
-            
-            // Marcar último cambio
-            localStorage.setItem('federacion_ultimo_cambio', timestamp.toString());
-            this.ultimoCambio = timestamp;
-            
-            return true;
-            
-        } catch (error) {
-            console.error('❌ Error guardando en Firebase:', error);
-            this.guardarLocales(datosCompletos);
-            return true; // No fallar aunque Firebase falle
-        }
+    if (!this.conectado || !this.db) {
+        console.log('⚠️ No conectado a Firebase');
+        return false;
     }
+
+    try {
+        console.log('☁️ Guardando en Firebase...');
+        
+        const fechaActual = new Date();
+        const timestamp = Date.now();
+        
+        // Guardar en Firestore
+        await this.db.collection('datosFederacion').doc('configuracion').set({
+            datosJSON: JSON.stringify(datosCompletos),
+            ultimaActualizacion: fechaActual,
+            ultimoUsuario: this.usuarioId,
+            timestamp: timestamp
+        });
+        
+        console.log('✅ Datos guardados en Firebase');
+        
+        // NO guardar en localStorage aquí para evitar el error
+        // this.guardarLocales(datosCompletos); ← ELIMINAR ESTA LÍNEA
+        
+        localStorage.setItem('federacion_ultimo_cambio', timestamp.toString());
+        this.ultimoCambio = timestamp;
+        
+        return true;
+        
+    } catch (error) {
+        console.error('❌ Error guardando en Firebase:', error);
+        return false;
+    }
+}
 
     async cargarDeNube() {
         // 🔴 NUEVA LÓGICA: SOLO CARGAR SI EL USUARIO LO PIDE EXPLÍCITAMENTE
@@ -261,3 +255,4 @@ window.verEstadoSincronizacion = function() {
 };
 
 console.log('✅ database.js corregido - Prioridad LOCAL sobre Firebase');
+
