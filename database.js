@@ -1,4 +1,4 @@
-// database.js - SISTEMA DE SINCRONIZACIÓN CON FIREBASE
+// database.js - SISTEMA DE SINCRONIZACIÓN CON FIREBASE - CORREGIDO
 class SincronizadorFederacion {
     constructor() {
         this.db = null;
@@ -7,6 +7,7 @@ class SincronizadorFederacion {
         this.ultimoCambio = null;
         this.datosLocales = null;
         this.firebaseInicializado = false;
+        this.primerCarga = true; // Para controlar la primera carga
     }
 
     async conectar(configFirebase) {
@@ -35,11 +36,10 @@ class SincronizadorFederacion {
             this.conectado = true;
             console.log('✅ Conectado a Firebase Firestore');
             
-            // Configurar escucha en tiempo real
-            this.escucharCambios();
-            
-            // Cargar datos iniciales
-            await this.cargarDeNube();
+            // Configurar escucha en tiempo real (con retraso para evitar sobrescritura)
+            setTimeout(() => {
+                this.escucharCambios();
+            }, 3000);
             
             return true;
             
@@ -68,11 +68,20 @@ class SincronizadorFederacion {
                         return;
                     }
                     
+                    // Verificar si tenemos datos locales más recientes
+                    const ultimoLocal = localStorage.getItem('federacion_ultimo_cambio');
+                    const ultimoFirebase = data.timestamp || 0;
+                    
+                    if (ultimoLocal && parseInt(ultimoLocal) > ultimoFirebase) {
+                        console.log('⚠️ Datos locales son más recientes, ignorando Firebase');
+                        return;
+                    }
+                    
                     // Mostrar notificación
                     this.mostrarNotificacionCambio();
                     
-                    // Recargar datos
-                    this.cargarDeNube();
+                    // Opcional: Recargar si el usuario quiere
+                    // No recargar automáticamente para no perder datos
                 }
             }, (error) => {
                 console.error('❌ Error en escucha:', error);
@@ -80,79 +89,24 @@ class SincronizadorFederacion {
     }
 
     mostrarNotificacionCambio() {
-        const notificacion = document.createElement('div');
-        notificacion.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: linear-gradient(135deg, #FFA500, #FF4500);
-            color: white;
-            padding: 15px 20px;
-            border-radius: 10px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
-            z-index: 99999;
-            min-width: 300px;
-            animation: slideIn 0.5s ease;
-            border-left: 5px solid #00ff00;
-            font-family: Arial, sans-serif;
-        `;
-        
-        notificacion.innerHTML = `
-            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                <i class="fas fa-sync-alt fa-spin" style="color: #00ff00; font-size: 1.2em;"></i>
-                <div>
-                    <strong style="font-size: 1.1em;">¡Nuevos cambios disponibles!</strong>
-                    <p style="margin: 5px 0 0 0; font-size: 0.9em; opacity: 0.9;">
-                        Otro usuario actualizó los datos
-                    </p>
-                </div>
-            </div>
-            <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                <button id="btn-recargar-firebase" 
-                        style="background: #00ff00; color: black; 
-                               border: none; padding: 8px 15px; 
-                               border-radius: 5px; cursor: pointer;
-                               font-weight: bold; font-size: 0.9em;">
-                    🔄 Recargar ahora
-                </button>
-                <button id="btn-cerrar-notif-firebase" 
-                        style="background: transparent; color: white; 
-                               border: 1px solid white; padding: 8px 15px; 
-                               border-radius: 5px; cursor: pointer;
-                               font-size: 0.9em;">
-                    ✕ Cerrar
-                </button>
-            </div>
-        `;
-        
-        document.body.appendChild(notificacion);
-        
-        document.getElementById('btn-recargar-firebase').onclick = function() {
-            window.location.reload();
-        };
-        
-        document.getElementById('btn-cerrar-notif-firebase').onclick = function() {
-            notificacion.remove();
-        };
-        
-        setTimeout(() => {
-            if (notificacion.parentElement) {
-                notificacion.remove();
-            }
-        }, 30000);
+        // Solo si existe la función
+        if (typeof mostrarMensaje === 'function') {
+            mostrarMensaje('🔄 Hay cambios en Firebase. ¿Recargar?', 'info');
+        }
     }
 
     async guardarEnNube(datosCompletos) {
         if (!this.conectado || !this.db) {
-            console.log('⚠️ No conectado, guardando localmente');
+            console.log('⚠️ No conectado, guardando solo localmente');
             this.guardarLocales(datosCompletos);
-            return false;
+            return true; // Considerar éxito para no bloquear
         }
 
         try {
             console.log('☁️ Guardando en Firebase...');
             
             const fechaActual = new Date();
+            const timestamp = Date.now();
             const totalEstudiantes = Object.values(datosCompletos.cursos || {}).reduce((total, curso) => total + (curso.estudiantes?.length || 0), 0);
             
             // Guardar en Firestore
@@ -160,7 +114,9 @@ class SincronizadorFederacion {
                 datosJSON: JSON.stringify(datosCompletos),
                 ultimaActualizacion: fechaActual,
                 ultimoUsuario: this.usuarioId,
-                totalEstudiantes: totalEstudiantes
+                totalEstudiantes: totalEstudiantes,
+                timestamp: timestamp,
+                version: "2.0.0"
             });
             
             console.log('✅ Datos guardados en Firebase');
@@ -169,8 +125,7 @@ class SincronizadorFederacion {
             this.guardarLocales(datosCompletos);
             
             // Marcar último cambio
-            const timestamp = Date.now().toString();
-            localStorage.setItem('federacion_ultimo_cambio', timestamp);
+            localStorage.setItem('federacion_ultimo_cambio', timestamp.toString());
             this.ultimoCambio = timestamp;
             
             return true;
@@ -178,33 +133,55 @@ class SincronizadorFederacion {
         } catch (error) {
             console.error('❌ Error guardando en Firebase:', error);
             this.guardarLocales(datosCompletos);
-            return false;
+            return true; // No fallar aunque Firebase falle
         }
     }
 
     async cargarDeNube() {
+        // 🔴 NUEVA LÓGICA: SOLO CARGAR SI EL USUARIO LO PIDE EXPLÍCITAMENTE
+        console.log('📂 Verificando Firebase...');
+        
         if (!this.conectado || !this.db) {
-            console.log('⚠️ No conectado, cargando local');
+            console.log('⚠️ No conectado, usando local');
             return this.cargarLocales();
         }
 
         try {
-            console.log('📂 Cargando desde Firebase...');
-            
             const docRef = this.db.collection('datosFederacion').doc('configuracion');
             const docSnap = await docRef.get();
             
             if (docSnap.exists) {
                 const data = docSnap.data();
-                console.log('✅ Datos cargados de Firebase');
+                console.log('✅ Datos encontrados en Firebase');
                 console.log('- Última actualización:', data.ultimaActualizacion?.toDate?.() || 'desconocida');
-                console.log('- Último usuario:', data.ultimoUsuario || 'desconocido');
                 
-                const datosParseados = JSON.parse(data.datosJSON);
-                this.guardarLocales(datosParseados);
-                return datosParseados;
+                // Verificar si tenemos datos locales
+                const datosLocales = this.cargarLocales();
+                
+                // Si NO hay datos locales, usar Firebase
+                if (!datosLocales) {
+                    console.log('📥 No hay datos locales, usando Firebase');
+                    const datosParseados = JSON.parse(data.datosJSON);
+                    this.guardarLocales(datosParseados);
+                    return datosParseados;
+                }
+                
+                // Si HAY datos locales, verificar cuál es más reciente
+                const timestampFirebase = data.timestamp || 0;
+                const timestampLocal = parseInt(localStorage.getItem('federacion_ultimo_cambio') || '0');
+                
+                if (timestampFirebase > timestampLocal) {
+                    console.log('📥 Firebase tiene datos más recientes, actualizando local');
+                    const datosParseados = JSON.parse(data.datosJSON);
+                    this.guardarLocales(datosParseados);
+                    return datosParseados;
+                } else {
+                    console.log('📥 Datos locales son más recientes, usando locales');
+                    return datosLocales;
+                }
+                
             } else {
-                console.log('ℹ️ No hay datos en Firebase');
+                console.log('ℹ️ No hay datos en Firebase, usando locales');
                 return this.cargarLocales();
             }
             
@@ -217,8 +194,13 @@ class SincronizadorFederacion {
     cargarLocales() {
         const guardado = localStorage.getItem('datosFederacion');
         if (guardado) {
-            this.datosLocales = JSON.parse(guardado);
-            return this.datosLocales;
+            try {
+                this.datosLocales = JSON.parse(guardado);
+                return this.datosLocales;
+            } catch (e) {
+                console.error('Error parseando localStorage:', e);
+                return null;
+            }
         }
         return null;
     }
@@ -241,13 +223,41 @@ class SincronizadorFederacion {
 // Crear instancia global
 window.sincronizador = new SincronizadorFederacion();
 
+// Función para forzar carga desde Firebase
+window.forzarCargaFirebase = async function() {
+    if (!window.sincronizador) {
+        alert('Sincronizador no disponible');
+        return;
+    }
+    
+    if (confirm('¿Cargar datos desde Firebase? Se perderán los cambios locales no guardados.')) {
+        const datosFirebase = await window.sincronizador.cargarDeNube(true);
+        if (datosFirebase) {
+            window.location.reload();
+        }
+    }
+};
+
 // Función para depuración
 window.verEstadoSincronizacion = function() {
     if (window.sincronizador) {
         const estado = window.sincronizador.getEstado();
         console.log('📊 Estado sincronización:', estado);
-        alert(`Estado: ${estado.conectado ? '✅ CONECTADO' : '❌ DESCONECTADO'}\nUsuario: ${estado.usuario}\nModo: ${estado.modo}`);
+        
+        // Verificar localStorage
+        const local = localStorage.getItem('datosFederacion');
+        const localData = local ? JSON.parse(local) : null;
+        
+        console.log('📊 Datos en localStorage:');
+        console.log('- gastos:', localData?.gastos?.length || 0);
+        console.log('- eventos:', localData?.eventos?.length || 0);
+        console.log('- sectoresCobro:', localData?.sectoresCobro?.length || 0);
+        
+        alert(`Estado: ${estado.conectado ? '✅ CONECTADO' : '❌ DESCONECTADO'}\nUsuario: ${estado.usuario}\n\nGastos locales: ${localData?.gastos?.length || 0}\nEventos locales: ${localData?.eventos?.length || 0}\nSectores: ${localData?.sectoresCobro?.length || 0}`);
     } else {
         console.log('❌ Sincronizador no disponible');
+        alert('❌ Sincronizador no disponible');
     }
 };
+
+console.log('✅ database.js corregido - Prioridad LOCAL sobre Firebase');
