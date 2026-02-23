@@ -612,11 +612,32 @@ function inicializarNavegacion() {
 
 // Cargar datos desde localStorage
 // Cargar datos desde localStorage
-// Cargar datos desde localStorage - SIN ESPERAR A FIREBASE
+// Cargar datos - PRIORIDAD A FIREBASE
 async function cargarDatos() {
     console.log('📥 Cargando datos...');
     
-    // ========== PASO 1: CARGAR DE LOCALSTORAGE INMEDIATAMENTE ==========
+    // 1. INTENTAR CARGAR DE FIREBASE PRIMERO
+    if (window.sincronizador && window.sincronizador.conectado) {
+        console.log('☁️ Cargando desde Firebase...');
+        const datosFirebase = await window.sincronizador.cargarDeNube();
+        
+        if (datosFirebase) {
+            datos = datosFirebase;
+            console.log('✅ Datos cargados desde Firebase');
+            console.log('  - gastos:', datos.gastos?.length || 0);
+            console.log('  - eventos:', datos.eventos?.length || 0);
+            
+            // Verificar arrays
+            if (!datos.gastos) datos.gastos = [];
+            if (!datos.eventos) datos.eventos = [];
+            if (!datos.sectoresCobro) datos.sectoresCobro = [];
+            
+            actualizarTodo();
+            return datos;
+        }
+    }
+    
+    // 2. SI NO HAY FIREBASE, INTENTAR LOCALSTORAGE
     console.log('🔍 Cargando desde localStorage...');
     const datosGuardados = localStorage.getItem('datosFederacion');
     
@@ -624,68 +645,31 @@ async function cargarDatos() {
         try {
             datos = JSON.parse(datosGuardados);
             console.log('✅ Datos cargados desde localStorage');
-            console.log('  - gastos:', datos.gastos?.length || 0);
-            console.log('  - eventos:', datos.eventos?.length || 0);
-            console.log('  - sectoresCobro:', datos.sectoresCobro?.length || 0);
         } catch (e) {
-            console.error('❌ Error cargando datos locales:', e);
-            datos = JSON.parse(JSON.stringify(datos)); // Usar por defecto
+            console.error('Error parseando:', e);
+            datos = JSON.parse(JSON.stringify(datos));
         }
     } else {
-        console.log('⚠️ No hay datos locales, usando estructura por defecto');
-        datos = JSON.parse(JSON.stringify(datos)); // Usar por defecto
-    }
-    
-    // ========== PASO 2: VERIFICAR ARRAYS ==========
-    if (!datos.gastos || !Array.isArray(datos.gastos)) {
-        console.log('🔧 Creando array gastos');
-        datos.gastos = [];
-    }
-    
-    if (!datos.eventos || !Array.isArray(datos.eventos)) {
-        console.log('🔧 Creando array eventos');
-        datos.eventos = [];
-    }
-    
-    if (!datos.sectoresCobro || !Array.isArray(datos.sectoresCobro)) {
-        console.log('🔧 Creando array sectoresCobro');
-        datos.sectoresCobro = [];
-    }
-    
-    // Verificar cobros en sectores
-    if (datos.sectoresCobro && Array.isArray(datos.sectoresCobro)) {
-        datos.sectoresCobro.forEach((sector, index) => {
-            if (!sector.cobros || !Array.isArray(sector.cobros)) {
-                console.log(`🔧 Creando cobros para sector ${index}`);
-                sector.cobros = [];
+        // Intentar el mini backup
+        const miniBackup = localStorage.getItem('datosFederacion_mini');
+        if (miniBackup) {
+            try {
+                datos = JSON.parse(miniBackup);
+                console.log('✅ Cargado desde backup mini');
+            } catch (e) {
+                datos = JSON.parse(JSON.stringify(datos));
             }
-        });
-    }
-    
-    if (!datos.movimientosCaja || !Array.isArray(datos.movimientosCaja)) {
-        datos.movimientosCaja = [];
-    }
-    
-    if (!datos.gastosCasilleros || !Array.isArray(datos.gastosCasilleros)) {
-        datos.gastosCasilleros = [];
-    }
-    
-    // ========== PASO 3: ACTUALIZAR INTERFAZ ==========
-    actualizarTodo();
-    
-    // ========== PASO 4: EN SEGUNDO PLANO, VERIFICAR FIREBASE ==========
-    setTimeout(async () => {
-        if (window.sincronizador && window.sincronizador.conectado) {
-            console.log('🔄 Verificando Firebase en segundo plano...');
-            const datosFirebase = await window.sincronizador.cargarDeNube();
-            
-            if (datosFirebase) {
-                // Solo mostrar notificación, no reemplazar automáticamente
-                mostrarMensaje('✅ Datos disponibles en Firebase. Usa el botón "Sincronizar" si quieres cargarlos.', 'info');
-            }
+        } else {
+            datos = JSON.parse(JSON.stringify(datos));
         }
-    }, 5000);
+    }
     
+    // Verificar arrays
+    if (!datos.gastos) datos.gastos = [];
+    if (!datos.eventos) datos.eventos = [];
+    if (!datos.sectoresCobro) datos.sectoresCobro = [];
+    
+    actualizarTodo();
     return datos;
 }
 
@@ -751,54 +735,99 @@ async function verificarDatosPendientes() {
 
 // Guardar datos en localStorage
 // Guardar datos en localStorage
+// Guardar datos - VERSIÓN QUE USA FIREBASE COMO PRINCIPAL
 function guardarDatos() {
     console.log('💾 Guardando datos...');
-    console.log('- Gastos a guardar:', datos.gastos?.length || 0);
-    console.log('- Eventos a guardar:', datos.eventos?.length || 0);
-    console.log('- Sectores a guardar:', datos.sectoresCobro?.length || 0);
     
-    // 1. Verificar que los arrays existen antes de guardar
-    if (!datos.gastos || !Array.isArray(datos.gastos)) {
-        console.warn('⚠️ gastos no es array, creándolo');
-        datos.gastos = [];
-    }
-    
-    if (!datos.eventos || !Array.isArray(datos.eventos)) {
-        console.warn('⚠️ eventos no es array, creándolo');
-        datos.eventos = [];
-    }
-    
-    if (!datos.sectoresCobro || !Array.isArray(datos.sectoresCobro)) {
-        console.warn('⚠️ sectoresCobro no es array, creándolo');
-        datos.sectoresCobro = [];
-    }
-    
-    // 2. Guardar local como siempre
-    localStorage.setItem('datosFederacion', JSON.stringify(datos));
-    
-    // 3. Verificar que se guardó correctamente
-    const verificado = localStorage.getItem('datosFederacion');
-    if (verificado) {
-        try {
-            const datosVerificados = JSON.parse(verificado);
-            console.log('✅ Verificación localStorage:');
-            console.log('  - Gastos guardados:', datosVerificados.gastos?.length || 0);
-            console.log('  - Eventos guardados:', datosVerificados.eventos?.length || 0);
-            console.log('  - Sectores guardados:', datosVerificados.sectoresCobro?.length || 0);
-        } catch (e) {
-            console.error('❌ Error verificando guardado:', e);
+    try {
+        // 1. VERIFICAR ARRAYS
+        if (!datos.gastos || !Array.isArray(datos.gastos)) datos.gastos = [];
+        if (!datos.eventos || !Array.isArray(datos.eventos)) datos.eventos = [];
+        if (!datos.sectoresCobro || !Array.isArray(datos.sectoresCobro)) datos.sectoresCobro = [];
+        
+        // 2. SI HAY FIREBASE, GUARDAR SOLO ALLÍ
+        if (window.sincronizador && window.sincronizador.conectado) {
+            console.log('☁️ Usando Firebase como almacenamiento principal');
+            
+            // Guardar en Firebase (sin intentar localStorage)
+            window.sincronizador.guardarEnNube(datos)
+                .then(exito => {
+                    if (exito) {
+                        console.log('✅ Datos guardados en Firebase');
+                        
+                        // SOLO como respaldo, intentar guardar una versión MINI en localStorage
+                        try {
+                            const datosMini = {
+                                gastos: datos.gastos.slice(-10),
+                                eventos: datos.eventos.slice(-10),
+                                sectoresCobro: datos.sectoresCobro.slice(-5),
+                                timestamp: Date.now(),
+                                soloReferencia: true
+                            };
+                            localStorage.setItem('datosFederacion_mini', JSON.stringify(datosMini));
+                        } catch (e) {
+                            // Ignorar error de localStorage
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error en Firebase:', error);
+                });
+            
+            return true;
         }
+        
+        // 3. SI NO HAY FIREBASE, INTENTAR LOCALSTORAGE CON COMPRESIÓN
+        console.log('⚠️ Sin Firebase, intentando localStorage...');
+        
+        // Versión COMPRIMIDA para localStorage
+        const datosComprimidos = {
+            gastos: datos.gastos.slice(-30), // Solo últimos 30
+            eventos: datos.eventos.slice(-20), // Solo últimos 20
+            sectoresCobro: datos.sectoresCobro.map(s => ({
+                id: s.id,
+                nombre: s.nombre,
+                monto: s.monto,
+                cobros: (s.cobros || []).slice(-50) // Solo últimos 50 cobros
+            })),
+            cursos: datos.cursos,
+            casilleros: Object.fromEntries(
+                Object.entries(datos.casilleros || {}).map(([k, v]) => [k, {
+                    ...v,
+                    historialPagos: (v.historialPagos || []).slice(-20)
+                }])
+            ),
+            timestamp: Date.now()
+        };
+        
+        // Intentar guardar
+        try {
+            localStorage.setItem('datosFederacion', JSON.stringify(datosComprimidos));
+            console.log('✅ Guardado comprimido en localStorage');
+        } catch (e) {
+            console.error('❌ localStorage lleno, limpiando...');
+            
+            // Limpiar TODO
+            localStorage.clear();
+            
+            // Guardar solo lo MÍNIMO
+            const datosMinimos = {
+                gastos: datos.gastos.slice(-10),
+                eventos: datos.eventos.slice(-10),
+                cursos: datos.cursos,
+                timestamp: Date.now()
+            };
+            
+            localStorage.setItem('datosFederacion', JSON.stringify(datosMinimos));
+            console.log('✅ Guardado mínimo en localStorage');
+        }
+        
+        return true;
+        
+    } catch (error) {
+        console.error('❌ Error en guardado:', error);
+        return false;
     }
-    
-    // 4. Si hay conexión, guardar en la nube también
-    if (window.sincronizador && sincronizacionActiva) {
-        window.sincronizador.guardarEnNube(datos);
-    }
-    
-    console.log('💾 Datos guardados' + (sincronizacionActiva ? ' y sincronizados' : ''));
-    
-    // 5. Crear backup automático
-    crearBackupAutomatico();
 }
 
 // Inicializar estudiantes
@@ -10263,6 +10292,7 @@ setTimeout(() => {
 
 console.log('✅ Sistema de Gestión Financiera cargado completamente con todas las mejoras');
     
+
 
 
 
