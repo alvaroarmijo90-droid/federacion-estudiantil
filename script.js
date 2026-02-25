@@ -3721,9 +3721,10 @@ function agregarEstudiante() {
 }
 
 // REGISTRAR GASTO
+// REGISTRAR GASTO - VERSIÓN CORREGIDA
 function registrarGasto(e) {
     e.preventDefault();
-    e.stopPropagation(); // ← TAMBIÉN AGREGAR ESTA
+    e.stopPropagation();
     
     if (!isAdmin) return;
     
@@ -3752,39 +3753,13 @@ function registrarGasto(e) {
         comprobante: null
     };
     
-    if (comprobanteInput.files && comprobanteInput.files[0]) {
-        const file = comprobanteInput.files[0];
-        const reader = new FileReader();
-        
-        reader.onload = function(e) {
-            nuevoGasto.comprobante = {
-                nombre: file.name,
-                tipo: file.type,
-                datos: e.target.result.split(',')[1]
-            };
-            
-            datos.gastos.push(nuevoGasto);
-            guardarDatos();
-            actualizarDashboard();
-            actualizarTablaGastos();
-            actualizarDetalleCajaFuerte();
-            actualizarSeguimiento();
-            
-            document.getElementById('formGasto').reset();
-            const hoy = new Date().toISOString().split('T')[0];
-            document.getElementById('fechaGasto').value = hoy;
-            
-            mostrarMensaje('Gasto registrado exitosamente con comprobante', 'success');
-        };
-        
-        reader.onerror = function() {
-            mostrarMensaje('Error al leer el archivo', 'error');
-        };
-        
-        reader.readAsDataURL(file);
-    } else {
+    // Función para guardar después de procesar el archivo
+    const guardarGasto = () => {
+        if (!datos.gastos) datos.gastos = [];
         datos.gastos.push(nuevoGasto);
-        guardarDatos();
+        
+        guardarDatos(); // ← ESTO ES LO QUE FALTABA EN TU CÓDIGO
+        
         actualizarDashboard();
         actualizarTablaGastos();
         actualizarDetalleCajaFuerte();
@@ -3795,6 +3770,28 @@ function registrarGasto(e) {
         document.getElementById('fechaGasto').value = hoy;
         
         mostrarMensaje('Gasto registrado exitosamente', 'success');
+    };
+    
+    if (comprobanteInput.files && comprobanteInput.files[0]) {
+        const file = comprobanteInput.files[0];
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            nuevoGasto.comprobante = {
+                nombre: file.name,
+                tipo: file.type,
+                datos: e.target.result.split(',')[1]
+            };
+            guardarGasto(); // ← GUARDAR DESPUÉS DE CARGAR EL ARCHIVO
+        };
+        
+        reader.onerror = function() {
+            mostrarMensaje('Error al leer el archivo', 'error');
+        };
+        
+        reader.readAsDataURL(file);
+    } else {
+        guardarGasto(); // ← GUARDAR INMEDIATAMENTE SI NO HAY ARCHIVO
     }
 }
 
@@ -4042,6 +4039,7 @@ function actualizarMontoSector() {
 }
 
 // REGISTRAR OTRO COBRO
+// REGISTRAR OTRO COBRO - VERSIÓN CORREGIDA
 function registrarOtroCobro(e) {
     e.preventDefault();
     
@@ -4065,15 +4063,15 @@ function registrarOtroCobro(e) {
     }
     
     const estudiante = datos.cursos[curso].estudiantes[estudianteIndex];
+    const nombreEstudiante = estudiante.nombre || `Estudiante ${parseInt(estudianteIndex) + 1}`;
     
     // Verificar si ya está pagado
-    const nombreEstudiante = estudiante.nombre || `Estudiante ${parseInt(estudianteIndex) + 1}`;
     const yaPago = sector.cobros.some(cobro => 
         cobro.curso === curso && cobro.estudiante === nombreEstudiante
     );
     
     if (yaPago) {
-        mostrarMensaje('Este estudiante ya está registrado como pagado en este sector', 'warning');
+        mostrarMensaje('Este estudiante ya está registrado como pagado', 'warning');
         return;
     }
     
@@ -4089,13 +4087,13 @@ function registrarOtroCobro(e) {
     
     sector.cobros.push(nuevoCobro);
     datos.totalOtrosCobros += sector.monto;
-
-    if (!datos.otrosCobrosIngresos) datos.otrosCobrosIngresos = 0;
-datos.otrosCobrosIngresos += sector.monto;
+    datos.otrosCobrosIngresos = (datos.otrosCobrosIngresos || 0) + sector.monto;
     
-    guardarDatos();
+    guardarDatos(); // ← ESTO ES LO QUE FALTABA
+    
     actualizarSectoresCobro();
     actualizarTotalOtrosCobros();
+    actualizarResumenOtrosCobros();
     
     // Actualizar la vista de marcado si está activa
     if (document.getElementById('contenedorMarcarPagos') && 
@@ -4157,10 +4155,10 @@ function eliminarSector(sectorId) {
 }
 
 // REGISTRAR EVENTO
+// REGISTRAR EVENTO - VERSIÓN CORREGIDA
 function registrarEvento(e) {
     e.preventDefault();
-    e.stopPropagation(); // ← TAMBIÉN AGREGAR ESTA
-    
+    e.stopPropagation();
     
     if (!isAdmin) return;
     
@@ -4185,6 +4183,19 @@ function registrarEvento(e) {
         fechaPublicacion: new Date().toISOString().split('T')[0]
     };
     
+    // Función para guardar después de procesar las fotos
+    const guardarEvento = () => {
+        datos.eventos.push(nuevoEvento);
+        guardarDatos(); // ← ESTO ES LO QUE FALTABA
+        actualizarEventos();
+        
+        document.getElementById('formEvento').reset();
+        const hoy = new Date().toISOString().split('T')[0];
+        document.getElementById('fechaEvento').value = hoy;
+        
+        mostrarMensaje('Evento publicado exitosamente', 'success');
+    };
+    
     if (fotosInput.files && fotosInput.files.length > 0) {
         const promises = [];
         
@@ -4207,29 +4218,13 @@ function registrarEvento(e) {
         
         Promise.all(promises).then(fotos => {
             nuevoEvento.fotos = fotos;
-            datos.eventos.push(nuevoEvento);
-            guardarDatos();
-            actualizarEventos();
-            
-            document.getElementById('formEvento').reset();
-            const hoy = new Date().toISOString().split('T')[0];
-            document.getElementById('fechaEvento').value = hoy;
-            
-            mostrarMensaje('Evento publicado exitosamente con ' + fotos.length + ' fotos', 'success');
+            guardarEvento(); // ← GUARDAR DESPUÉS DE CARGAR FOTOS
         }).catch(error => {
             console.error('Error al cargar fotos:', error);
             mostrarMensaje('Error al cargar algunas fotos', 'error');
         });
     } else {
-        datos.eventos.push(nuevoEvento);
-        guardarDatos();
-        actualizarEventos();
-        
-        document.getElementById('formEvento').reset();
-        const hoy = new Date().toISOString().split('T')[0];
-        document.getElementById('fechaEvento').value = hoy;
-        
-        mostrarMensaje('Evento publicado exitosamente', 'success');
+        guardarEvento(); // ← GUARDAR INMEDIATAMENTE SI NO HAY FOTOS
     }
 }
 
@@ -10020,3 +10015,4 @@ setInterval(() => {
 }, 10000);
 
 console.log('✅ Sistema de Gestión Financiera cargado completamente con todas las mejoras');
+
