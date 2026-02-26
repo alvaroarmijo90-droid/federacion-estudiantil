@@ -37,120 +37,44 @@ class SincronizadorFederacion {
         }
     }
 
-    async guardarEnNube(datosCompletos) {
-        if (!this.conectado || !this.db) {
-            console.log('⚠️ No conectado a Firebase');
-            return false;
-        }
+async guardarEnNube(datosCompletos) {
+    try {
+        const response = await fetch("https://soft-sea-95e1.alvaroarmijo90.workers.dev", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(datosCompletos)
+        });
 
-        try {
-            console.log('☁️ Guardando en Firebase...');
-            
-            const timestamp = Date.now();
-            const fechaActual = new Date();
-            
-            // ============================================
-            // CREAR UN SOLO OBJETO COMPLETO
-            // ============================================
-            const datosParaGuardar = {
-                // METADATOS
-                timestamp: timestamp,
-                ultimaActualizacion: fechaActual.toISOString(),
-                ultimoUsuario: this.usuarioId,
-                
-                // GASTOS - PESTAÑA COMPLETA
-                gastos: datosCompletos.gastos || [],
-                totalGastos: datosCompletos.totalGastos || 0,
-                
-                // EVENTOS - PESTAÑA COMPLETA
-                eventos: datosCompletos.eventos || [],
-                
-                // OTROS COBROS - PESTAÑA COMPLETA
-                sectoresCobro: datosCompletos.sectoresCobro || [],
-                totalOtrosCobros: datosCompletos.totalOtrosCobros || 0,
-                otrosCobrosSaldos: datosCompletos.otrosCobrosSaldos || [],
-                otrosCobrosGastos: datosCompletos.otrosCobrosGastos || 0,
-                
-                // CURSOS - PESTAÑA COMPLETA
-                cursos: datosCompletos.cursos || {},
-                totalAportesEstudiantes: datosCompletos.totalAportesEstudiantes || 0,
-                
-                // CASILLEROS - PESTAÑA COMPLETA
-                casilleros: datosCompletos.casilleros || {},
-                gastosCasilleros: datosCompletos.gastosCasilleros || [],
-                
-                // CAJA - PESTAÑA COMPLETA
-                movimientosCaja: datosCompletos.movimientosCaja || [],
-                totalIngresosCaja: datosCompletos.totalIngresosCaja || 0,
-                totalEgresosCaja: datosCompletos.totalEgresosCaja || 0,
-                dineroInicial: datosCompletos.dineroInicial || 0,
-                dineroFinal: datosCompletos.dineroFinal || 0
-            };
-            
-            // GUARDAR EN UN SOLO DOCUMENTO
-            await this.db.collection('datosFederacion').doc('datos_completos').set(datosParaGuardar);
-            
-            console.log('✅ Datos guardados en Firebase:');
-            console.log(`- Gastos: ${datosCompletos.gastos?.length || 0}`);
-            console.log(`- Eventos: ${datosCompletos.eventos?.length || 0}`);
-            console.log(`- Sectores: ${datosCompletos.sectoresCobro?.length || 0}`);
-            
-            localStorage.setItem('federacion_ultimo_cambio', timestamp.toString());
-            
-            return true;
-            
-        } catch (error) {
-            console.error('❌ Error guardando en Firebase:', error);
-            return false;
-        }
+        if (!response.ok) throw new Error("Error al guardar");
+
+        console.log("✅ Datos guardados en Cloudflare");
+        return true;
+
+    } catch (error) {
+        console.error("❌ Error guardando:", error);
+        return false;
     }
+}
 
-    async cargarDeNube() {
-        console.log('📂 Cargando desde Firebase...');
-        
-        if (!this.conectado || !this.db) {
-            console.log('⚠️ No conectado, usando local');
-            return this.cargarLocales();
+async cargarDeNube() {
+    try {
+        const response = await fetch("https://soft-sea-95e1.alvaroarmijo90.workers.dev");
+
+        if (!response.ok) throw new Error("Error al cargar");
+
+        const datos = await response.json();
+
+        if (datos && datos.contenido) {
+            return JSON.parse(datos.contenido);
         }
 
-        try {
-            const docRef = this.db.collection('datosFederacion').doc('datos_completos');
-            const docSnap = await docRef.get();
-            
-            if (!docSnap.exists) {
-                console.log('ℹ️ No hay datos en Firebase, usando locales');
-                return this.cargarLocales();
-            }
-            
-            const datosFirebase = docSnap.data();
-            
-            console.log('✅ Datos cargados de Firebase:');
-            console.log(`- Gastos: ${datosFirebase.gastos?.length || 0}`);
-            console.log(`- Eventos: ${datosFirebase.eventos?.length || 0}`);
-            console.log(`- Sectores: ${datosFirebase.sectoresCobro?.length || 0}`);
-            
-            // Verificar si tenemos locales más recientes
-            const datosLocales = this.cargarLocales();
-            const timestampFirebase = datosFirebase.timestamp || 0;
-            const timestampLocal = parseInt(localStorage.getItem('federacion_ultimo_cambio') || '0');
-            
-            if (timestampLocal > timestampFirebase) {
-                console.log('📥 Usando datos locales (más recientes)');
-                return datosLocales;
-            }
-            
-            // Guardar en localStorage
-            if (datosFirebase) {
-                localStorage.setItem('datosFederacion', JSON.stringify(datosFirebase));
-            }
-            
-            return datosFirebase;
-            
-        } catch (error) {
-            console.error('❌ Error cargando de Firebase:', error);
-            return this.cargarLocales();
-        }
+        return null;
+
+    } catch (error) {
+        console.error("❌ Error cargando:", error);
+        return null;
     }
+}
 
     cargarLocales() {
         const guardado = localStorage.getItem('datosFederacion');
@@ -222,3 +146,4 @@ window.verificarFirebase = async function() {
 };
 
 console.log('✅ database.js - VERSIÓN SIMPLE Y FUNCIONAL');
+
