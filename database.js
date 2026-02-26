@@ -7,35 +7,10 @@ class SincronizadorFederacion {
         this.firebaseInicializado = false;
     }
 
-    async conectar(configFirebase) {
-        try {
-            console.log('🔌 Conectando a Firebase...');
-            
-            if (!this.firebaseInicializado) {
-                firebase.initializeApp(configFirebase);
-                this.firebaseInicializado = true;
-            }
-            
-            this.db = firebase.firestore();
-            
-            let userId = localStorage.getItem('federacion_user_id');
-            if (!userId) {
-                userId = 'user_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
-                localStorage.setItem('federacion_user_id', userId);
-            }
-            this.usuarioId = userId;
-            
-            this.conectado = true;
-            console.log('✅ Conectado a Firebase Firestore');
-            
-            return true;
-            
-        } catch (error) {
-            console.error('❌ Error conectando a Firebase:', error);
-            this.conectado = false;
-            return false;
-        }
-    }
+async conectar() {
+    this.conectado = true;
+    return true;
+}
 
 async guardarEnNube(datosCompletos) {
     try {
@@ -146,4 +121,5 @@ window.verificarFirebase = async function() {
 };
 
 console.log('✅ database.js - VERSIÓN SIMPLE Y FUNCIONAL');
+
 
