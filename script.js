@@ -2316,11 +2316,13 @@ function actualizarUltimosGastosSeguimiento() {
                 <td class="text-danger text-end">Bs ${(gasto.monto || 0).toFixed(2)}</td>
                 <td>
                     ${gasto.comprobante ? 
-                        `<button class="btn btn-sm btn-info" onclick="verComprobante(${gasto.id})">
-                            <i class="fas fa-eye"></i>
-                        </button>` : 
-                        '<span class="badge bg-secondary">No</span>'
-                    }
+    `<a href="${gasto.comprobante}" target="_blank">
+        <img src="${gasto.comprobante.replace('/upload/', '/upload/w_150,f_auto,q_auto/')}" 
+             style="width:60px;height:60px;object-fit:cover;border-radius:6px;">
+     </a>` 
+    : 
+    '<span class="badge bg-secondary">No</span>'
+}
                 </td>
             </tr>
         `;
@@ -4537,11 +4539,14 @@ function actualizarTablaGastos() {
             <td>Bs ${(gasto.monto || 0).toFixed(2)}</td>
             <td>${gasto.fecha || 'Sin fecha'}</td>
             <td>
-                ${gasto.comprobante ? `
-                <button class="btn btn-comprobante btn-sm" onclick="verComprobante(${gasto.id})">
-                    <i class="fas fa-eye"></i> Ver
-                </button>
-                ` : 'Sin comprobante'}
+                ${gasto.comprobante ? 
+    `<a href="${gasto.comprobante}" target="_blank">
+        <img src="${gasto.comprobante.replace('/upload/', '/upload/w_150,f_auto,q_auto/')}" 
+             style="width:60px;height:60px;object-fit:cover;border-radius:6px;">
+     </a>` 
+    : 
+    '<span class="badge bg-secondary">No</span>'
+}
             </td>
             <td>
                 ${isAdmin ? `
@@ -8690,11 +8695,13 @@ function mostrarUltimosGastos() {
             <td class="text-danger">Bs ${(gasto.monto || 0).toFixed(2)}</td>
             <td>
                 ${gasto.comprobante ? 
-                    `<button class="btn btn-sm btn-info" onclick="verComprobante(${gasto.id})">
-                        <i class="fas fa-eye"></i>
-                    </button>` : 
-                    '<small class="text-muted">No</small>'
-                }
+    `<a href="${gasto.comprobante}" target="_blank">
+        <img src="${gasto.comprobante.replace('/upload/', '/upload/w_150,f_auto,q_auto/')}" 
+             style="width:60px;height:60px;object-fit:cover;border-radius:6px;">
+     </a>` 
+    : 
+    '<span class="badge bg-secondary">No</span>'
+}
             </td>
         `;
         tbody.appendChild(fila);
@@ -8734,11 +8741,13 @@ function actualizarUltimosGastosSeguimiento() {
             <td class="text-danger">Bs ${(gasto.monto || 0).toFixed(2)}</td>
             <td>
                 ${gasto.comprobante ? 
-                    `<button class="btn btn-sm btn-info" onclick="verComprobante(${gasto.id})">
-                        <i class="fas fa-eye"></i>
-                    </button>` : 
-                    '<span class="badge bg-secondary">No</span>'
-                }
+    `<a href="${gasto.comprobante}" target="_blank">
+        <img src="${gasto.comprobante.replace('/upload/', '/upload/w_150,f_auto,q_auto/')}" 
+             style="width:60px;height:60px;object-fit:cover;border-radius:6px;">
+     </a>` 
+    : 
+    '<span class="badge bg-secondary">No</span>'
+}
             </td>
         `;
         tbody.appendChild(fila);
