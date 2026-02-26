@@ -4569,13 +4569,18 @@ function verComprobante(id) {
         return;
     }
 
+    // Si es formato viejo (objeto base64)
+    if (typeof gasto.comprobante === "object") {
+        mostrarMensaje('Este comprobante es antiguo. Sube uno nuevo.', 'error');
+        return;
+    }
+
+    const url = gasto.comprobante;
+
     const modal = new bootstrap.Modal(document.getElementById('modalComprobante'));
     const imagen = document.getElementById('imagenComprobante');
     const pdfDiv = document.getElementById('pdfComprobante');
 
-    const url = gasto.comprobante;
-
-    // Detectar si es PDF por la extensión
     if (url.toLowerCase().endsWith(".pdf")) {
 
         imagen.style.display = 'none';
@@ -4583,9 +4588,8 @@ function verComprobante(id) {
 
         pdfDiv.innerHTML = `
             <div class="alert alert-info">
-                <p>Comprobante PDF</p>
                 <a href="${url}" target="_blank" class="btn btn-primary">
-                    <i class="fas fa-download"></i> Ver / Descargar PDF
+                    Ver / Descargar PDF
                 </a>
             </div>
         `;
@@ -4595,15 +4599,12 @@ function verComprobante(id) {
         pdfDiv.style.display = 'none';
         imagen.style.display = 'block';
 
-        // Imagen optimizada automática
         const urlOptimizada = url.replace(
             "/upload/",
             "/upload/f_auto,q_auto,w_800/"
         );
 
         imagen.src = urlOptimizada;
-        imagen.alt = "Comprobante";
-
     }
 
     modal.show();
@@ -9590,3 +9591,4 @@ async function subirImagenCloudinary(file) {
 
 
 console.log('✅ Sistema de Gestión Financiera cargado correctamente (Modo Local Estable)');
+
