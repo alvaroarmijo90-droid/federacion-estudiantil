@@ -3945,23 +3945,32 @@ function actualizarEventos() {
         
         let fotosHTML = '';
         if (evento.fotos && evento.fotos.length > 0) {
-            fotosHTML = '<div class="evento-imagenes mt-2">';
-            evento.fotos.forEach((foto, index) => {
-                if (index < 3) { // Mostrar máximo 3 fotos
-                    fotosHTML += `
-                        <img src="data:${foto.tipo};base64,${foto.datos}" 
-                             alt="${foto.nombre}" 
-                             class="evento-imagen"
-                             style="width: 100px; height: 100px; object-fit: cover; border-radius: 5px; margin-right: 5px; cursor: pointer;"
-                             onclick="ampliarImagen('data:${foto.tipo};base64,${foto.datos}')">
-                    `;
-                }
-            });
-            fotosHTML += '</div>';
-            if (evento.fotos.length > 3) {
-                fotosHTML += `<p class="fotos-count mt-1"><i class="fas fa-camera"></i> ${evento.fotos.length} foto(s)</p>`;
-            }
+    fotosHTML = '<div class="evento-imagenes mt-2">';
+    
+    evento.fotos.forEach((url, index) => {
+        if (index < 3) { // Mostrar máximo 3 fotos
+            
+            const urlOptimizada = url.replace(
+                "/upload/",
+                "/upload/f_auto,q_auto,w_300/"
+            );
+
+            fotosHTML += `
+                <img src="${urlOptimizada}" 
+                     alt="Foto evento" 
+                     class="evento-imagen"
+                     style="width: 100px; height: 100px; object-fit: cover; border-radius: 5px; margin-right: 5px; cursor: pointer;"
+                     onclick="window.open('${url}', '_blank')">
+            `;
         }
+    });
+    
+    fotosHTML += '</div>';
+    
+    if (evento.fotos.length > 3) {
+        fotosHTML += `<p class="fotos-count mt-1"><i class="fas fa-camera"></i> ${evento.fotos.length} foto(s)</p>`;
+    }
+}
         
         eventoDiv.innerHTML = `
             <div class="evento-fecha-mejorada">
@@ -4549,36 +4558,49 @@ function actualizarTablaGastos() {
 // VER COMPROBANTE
 function verComprobante(id) {
     const gasto = datos.gastos.find(g => g.id === id);
+
     if (!gasto || !gasto.comprobante) {
         mostrarMensaje('No hay comprobante disponible', 'error');
         return;
     }
-    
+
     const modal = new bootstrap.Modal(document.getElementById('modalComprobante'));
     const imagen = document.getElementById('imagenComprobante');
     const pdfDiv = document.getElementById('pdfComprobante');
-    
-    if (gasto.comprobante.tipo.includes('pdf')) {
+
+    const url = gasto.comprobante;
+
+    // Detectar si es PDF por la extensión
+    if (url.toLowerCase().endsWith(".pdf")) {
+
         imagen.style.display = 'none';
         pdfDiv.style.display = 'block';
-        
+
         pdfDiv.innerHTML = `
             <div class="alert alert-info">
-                <p>Comprobante PDF: ${gasto.comprobante.nombre}</p>
-                <a href="data:application/pdf;base64,${gasto.comprobante.datos}" 
-                   download="${gasto.comprobante.name}"
-                   class="btn btn-primary">
-                    <i class="fas fa-download"></i> Descargar PDF
+                <p>Comprobante PDF</p>
+                <a href="${url}" target="_blank" class="btn btn-primary">
+                    <i class="fas fa-download"></i> Ver / Descargar PDF
                 </a>
             </div>
         `;
+
     } else {
-        imagen.style.display = 'block';
+
         pdfDiv.style.display = 'none';
-        imagen.src = `data:${gasto.comprobante.tipo};base64,${gasto.comprobante.datos}`;
-        imagen.alt = `Comprobante ${gasto.comprobante.nombre}`;
+        imagen.style.display = 'block';
+
+        // Imagen optimizada automática
+        const urlOptimizada = url.replace(
+            "/upload/",
+            "/upload/f_auto,q_auto,w_800/"
+        );
+
+        imagen.src = urlOptimizada;
+        imagen.alt = "Comprobante";
+
     }
-    
+
     modal.show();
 }
 
