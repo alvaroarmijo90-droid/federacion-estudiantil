@@ -3454,7 +3454,7 @@ function agregarEstudiante() {
 }
 
 // REGISTRAR GASTO
-function registrarGasto(e) {
+async function registrarGasto(e) {
     e.preventDefault();
     
     if (!isAdmin) return;
@@ -3474,60 +3474,39 @@ function registrarGasto(e) {
         mostrarMensaje('Ingrese un monto válido', 'error');
         return;
     }
-    
+
+    let urlComprobante = null;
+
+    if (comprobanteInput.files && comprobanteInput.files[0]) {
+        try {
+            mostrarMensaje('Subiendo imagen...', 'info');
+            urlComprobante = await subirImagenCloudinary(comprobanteInput.files[0]);
+        } catch (error) {
+            mostrarMensaje('Error al subir imagen', 'error');
+            return;
+        }
+    }
+
     const nuevoGasto = {
         id: Date.now(),
-        categoria: categoria,
+        categoria,
         monto: montoGasto,
         fecha: fechaGasto,
-        descripcion: descripcion,
-        comprobante: null
+        descripcion,
+        comprobante: urlComprobante
     };
-    
-    if (comprobanteInput.files && comprobanteInput.files[0]) {
-        const file = comprobanteInput.files[0];
-        const reader = new FileReader();
-        
-        reader.onload = function(e) {
-            nuevoGasto.comprobante = {
-                nombre: file.name,
-                tipo: file.type,
-                datos: e.target.result.split(',')[1]
-            };
-            
-            datos.gastos.push(nuevoGasto);
-            guardarDatos();
-            actualizarDashboard();
-            actualizarTablaGastos();
-            actualizarDetalleCajaFuerte();
-            actualizarSeguimiento();
-            
-            document.getElementById('formGasto').reset();
-            const hoy = new Date().toISOString().split('T')[0];
-            document.getElementById('fechaGasto').value = hoy;
-            
-            mostrarMensaje('Gasto registrado exitosamente con comprobante', 'success');
-        };
-        
-        reader.onerror = function() {
-            mostrarMensaje('Error al leer el archivo', 'error');
-        };
-        
-        reader.readAsDataURL(file);
-    } else {
-        datos.gastos.push(nuevoGasto);
-        guardarDatos();
-        actualizarDashboard();
-        actualizarTablaGastos();
-        actualizarDetalleCajaFuerte();
-        actualizarSeguimiento();
-        
-        document.getElementById('formGasto').reset();
-        const hoy = new Date().toISOString().split('T')[0];
-        document.getElementById('fechaGasto').value = hoy;
-        
-        mostrarMensaje('Gasto registrado exitosamente', 'success');
-    }
+
+    datos.gastos.push(nuevoGasto);
+    guardarDatos();
+    actualizarDashboard();
+    actualizarTablaGastos();
+    actualizarDetalleCajaFuerte();
+    actualizarSeguimiento();
+
+    document.getElementById('formGasto').reset();
+    document.getElementById('fechaGasto').value = new Date().toISOString().split('T')[0];
+
+    mostrarMensaje('Gasto registrado exitosamente', 'success');
 }
 
 // REGISTRAR MOVIMIENTO DE CAJA
@@ -3888,7 +3867,7 @@ function eliminarSector(sectorId) {
 }
 
 // REGISTRAR EVENTO
-function registrarEvento(e) {
+async function registrarEvento(e) {
     e.preventDefault();
     
     if (!isAdmin) return;
@@ -3903,63 +3882,41 @@ function registrarEvento(e) {
         mostrarMensaje('Complete todos los campos obligatorios', 'error');
         return;
     }
-    
+
+    let urlsFotos = [];
+
+    if (fotosInput.files && fotosInput.files.length > 0) {
+        mostrarMensaje('Subiendo imágenes...', 'info');
+
+        try {
+            for (let file of fotosInput.files) {
+                const url = await subirImagenCloudinary(file);
+                urlsFotos.push(url);
+            }
+        } catch (error) {
+            mostrarMensaje('Error al subir imágenes', 'error');
+            return;
+        }
+    }
+
     const nuevoEvento = {
         id: Date.now(),
-        titulo: titulo,
-        descripcion: descripcion,
-        fecha: fecha,
+        titulo,
+        descripcion,
+        fecha,
         lugar: lugar || 'No especificado',
-        fotos: [],
+        fotos: urlsFotos,
         fechaPublicacion: new Date().toISOString().split('T')[0]
     };
-    
-    if (fotosInput.files && fotosInput.files.length > 0) {
-        const promises = [];
-        
-        for (let i = 0; i < fotosInput.files.length; i++) {
-            const file = fotosInput.files[i];
-            const promise = new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    resolve({
-                        nombre: file.name,
-                        tipo: file.type,
-                        datos: e.target.result.split(',')[1]
-                    });
-                };
-                reader.onerror = reject;
-                reader.readAsDataURL(file);
-            });
-            promises.push(promise);
-        }
-        
-        Promise.all(promises).then(fotos => {
-            nuevoEvento.fotos = fotos;
-            datos.eventos.push(nuevoEvento);
-            guardarDatos();
-            actualizarEventos();
-            
-            document.getElementById('formEvento').reset();
-            const hoy = new Date().toISOString().split('T')[0];
-            document.getElementById('fechaEvento').value = hoy;
-            
-            mostrarMensaje('Evento publicado exitosamente con ' + fotos.length + ' fotos', 'success');
-        }).catch(error => {
-            console.error('Error al cargar fotos:', error);
-            mostrarMensaje('Error al cargar algunas fotos', 'error');
-        });
-    } else {
-        datos.eventos.push(nuevoEvento);
-        guardarDatos();
-        actualizarEventos();
-        
-        document.getElementById('formEvento').reset();
-        const hoy = new Date().toISOString().split('T')[0];
-        document.getElementById('fechaEvento').value = hoy;
-        
-        mostrarMensaje('Evento publicado exitosamente', 'success');
-    }
+
+    datos.eventos.push(nuevoEvento);
+    guardarDatos();
+    actualizarEventos();
+
+    document.getElementById('formEvento').reset();
+    document.getElementById('fechaEvento').value = new Date().toISOString().split('T')[0];
+
+    mostrarMensaje('Evento publicado exitosamente', 'success');
 }
 
 // ACTUALIZAR EVENTOS MEJORADO
@@ -9574,6 +9531,31 @@ window.addEventListener('error', function(e) {
     console.error('❌ Error detectado:', e.message);
     console.error('En archivo:', e.filename, 'línea:', e.lineno);
 });
+
+
+async function subirImagenCloudinary(file) {
+    const CLOUD_NAME = "doivitmac";
+    const UPLOAD_PRESET = "kwnfo18f";
+
+    const url = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`;
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", UPLOAD_PRESET);
+
+    const response = await fetch(url, {
+        method: "POST",
+        body: formData
+    });
+
+    const data = await response.json();
+
+    if (!data.secure_url) {
+        throw new Error("Error subiendo imagen");
+    }
+
+    return data.secure_url;
+}
 
 
 console.log('✅ Sistema de Gestión Financiera cargado correctamente (Modo Local Estable)');
