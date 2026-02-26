@@ -6903,7 +6903,7 @@ async function probarSincronizacion() {
     // 2. Verificar conexión
     if (!window.sincronizador.conectado) {
         console.log('⚠️ Intentando reconectar...');
-        sincronizacionActiva = await window.sincronizador.conectar(CONFIG_FIREBASE);
+        sincronizacionActiva = await window.sincronizador.conectar();
         
         if (!sincronizacionActiva) {
             mostrarMensaje('❌ No se pudo conectar a Firebase. Modo local activado', 'error');
@@ -10009,5 +10009,6 @@ setInterval(() => {
 }, 10000);
 
 console.log('✅ Sistema de Gestión Financiera cargado completamente con todas las mejoras');
+
 
 
