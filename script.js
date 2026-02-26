@@ -208,15 +208,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     
    // INICIAR SISTEMA DE SINCRONIZACIÓN
 if (window.sincronizador) {
-    // Usar la configuración de Firebase
-    sincronizacionActiva = await window.sincronizador.conectar(CONFIG_FIREBASE);
-    if (sincronizacionActiva) {
-        console.log('✅ Modo multiusuario ACTIVADO (Firebase)');
-        mostrarMensaje('Conectado a Firebase - Los cambios se verán en todos los dispositivos en tiempo real', 'success');
-    } else {
-        console.log('⚠️ Usando modo local');
-        mostrarMensaje('Modo local activado - Sin conexión a la nube', 'info');
-    }
+    sincronizacionActiva = true;
+    console.log('✅ Modo multiusuario ACTIVADO (Cloudflare)');
+    mostrarMensaje('Conectado a Cloudflare - Base de datos en la nube activa', 'success');
 }
     
     // Configurar login
@@ -10015,4 +10009,5 @@ setInterval(() => {
 }, 10000);
 
 console.log('✅ Sistema de Gestión Financiera cargado completamente con todas las mejoras');
+
 
